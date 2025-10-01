@@ -1,8 +1,5 @@
 # Projektideen Team [TEAMNAME]
 
-> **Deadline:** Bis 24.09.2025 müssen wir uns für **1 Fach + 1 
-Klassenstufe** entscheiden!
-
 ## 👥 Teammitglieder
 - **GitHub Admin:** Marco Duzevic (GitHub: @md2810)
 - **Teammitglied 2:** Joel Dürr (GitHub: @joel12055)  
