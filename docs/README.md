@@ -1,6 +1,6 @@
-# Seminarkurs Lernapp · Mathematik Oberstufe
+# Seminarkurs Lernapp Mathematik Oberstufe 
 
-## 👥 Team
+## 👥 Teammitglieder
 
 - **GitHub Admin:** Marco Duzevic (GitHub: @md2810)
 - **Teammitglied 2:** Joel Dürr (GitHub: @joel12055)
@@ -8,77 +8,67 @@
 - **Teammitglied 4:** Luisa Schulze (GitHub: @luisaschulzemolly)
 - **Teammitglied 5:** Hatice Erdogan (GitHub: @haticeerdogan)
 
-## 🎯 Projektüberblick
+---
 
-**Fach & Stufe:** Mathematik, Kursstufe (K1)
+## Das Projekt
 
-**Warum relevant?**
 
-- Stärkerer Fokus auf **Abstraktion** & **Transfer** (AFB II/III), z. B. Optimierung, Modellierung, Beweise
-- Häufige Hürden: **Fehlerdiagnose** und **Mehrschrittaufgaben**
-- Lösungsidee: **adaptiver Tutor (LLM)**, **interaktive 2D/3D-Visualisierungen**, **Retrieval/Spacing**
+**Fach & Klassenstufe:** Mathematik, Kursstufe (K1)
 
-**Themenfelder (Beispiele):**
+**Warum ist das interessant?**
 
-- **Analysis I/II:** Ableitungen, Kurvendiskussion, Integrale, Anwendungen
-- **Analytische Geometrie / LA:** Vektoren, Geraden/Ebenen, Abstände, Lage, LGS
-- **Stochastik:** Binomial-/Normalverteilung, Zufallsvariablen, Schätzer, einfache Tests
+- In der Kursstufe steigen **Abstraktion** und **Transfer** stark an (AFB II/III): z. B. Optimierungsprobleme, Beweise, Modellierung.
+- Viele Schüler\*innen haben Probleme mit **Fehlerdiagnose** (wo genau ging’s schief?) und mit **Mehrschrittaufgaben**.
+- Eine App kann hier mit **adaptiven Hinweisen**, **sokratischem Tutor**, **interaktiven Visualisierungen (2D/3D)** und **Retrieval/Spacing** unterstützen.
 
-**Hauptfeatures (MVP-Idee):**
+**Konkrete Themenbereiche:**
 
-- **LLM-Tutor (Claude)** mit **Hinweistreppen (H1–H3)**, **Fehlerfeedback** und **Streaming**
-- **Aufgabengenerator + Auto‑Korrektor** (Server‑Validator mit SymPy): AFB‑Tagging, Difficulty, Curriculum‑Tags
-- **Interaktive 2D/3D‑Grafiken:** LLM erzeugt **MathVizSpec (JSON)** → React‑Renderer (2D/3D)
-- **Optionale GeoGebra‑Einbettung:** per `<iframe>` oder GeoGebra **JS‑API** (Lizenz prüfen)
-- **Gamification:** XP/Level/Badges/Streaks, AFB‑Missionen, Klassen‑Challenges (opt‑in)
-- **Lehrkräfte‑Dashboard:** Aufgabenlisten, Kompetenzraster, Exporte
+- **Analysis I/II**: Ableitungen, Kurvendiskussion, Integrale, Anwendungen (Wachstum/Extrema).
+- **Analytische Geometrie / Lineare Algebra**: Vektoren, Geraden/Ebenen, Abstände, Lagebeziehungen, LGS.
+- **Stochastik**: Binomial-/Normalverteilung, Zufallsvariablen, Schätzer, Hypothesentests (Grundlagen).
 
-## 🧩 Technische Architektur (Web, Vite + React + **JavaScript**)
+**Erste App-Idee (Hauptfeatures):**
 
-### Frontend (Vite + React)
+- **LLM-Tutor (basierend auf Claude)** mit **Hinweistreppen (H1–H3)**, **Fehlerfeedback** und **Streaming**.
+- **Aufgabengenerator + Auto-Korrektor** (SymPy-gestützt): AFB-Tagging (I/II/III), Difficulty-Level, Curriculum-Tags.
+- **Interaktive 2D/3D-Grafiken**: LLM erzeugt **MathVizSpec (JSON)** → wird in ReactJS gerendert.
+- **Optionale GeoGebra-Einbettung** (WebView + JS-API) für Konstruktionen; Lizenzlage vorab klären.
+- **Gamification**: XP/Level/Badges/Streaks, **AFB-Missionen**, Klassen-Challenges (opt-in).
+- **Lehrkräfte-Dashboard**: Aufgabenlisten ausspielen, Kompetenzraster, Exporte.
 
-- **Stack:** Vite, React, JavaScript (ESM), CSS (optional Tailwind)
-- **State/Server‑State:** leichtgewichtig (z. B. React Context) oder TanStack Query
-- **Visualisierung 2D:** **Recharts** (Startpunkt)
-  _Alternativen:_ Visx, Nivo, react-chartjs-2
-- **Visualisierung 3D:** **three.js** + **@react-three/fiber** (+ **@react-three/drei**)
-- **Mathe‑Rendering:** **KaTeX** (schnell) oder **MathJax**
-- **Formeleingabe (optional):** **mathlive**
-- **Sichere Visualisierung:** `MathVizSpec (JSON)` wird clientseitig gerendert; nur **whitelistete** Chart‑Typen/Props; **kein eval**
+**Zielgruppe genauer:**
 
-### Backend (Node.js)
+- Kursstufe K1; heterogene Vorkenntnisse; Lernort: Schule & Zuhause.
+- Tägliche Nutzung 10–20 min (Retrieval), 2–3×/Woche 30–45 min (Üben/Tests).
 
-- **API‑Gateway:** Node/Express (oder Vite/Next API‑Routen) als Proxy zu LLM & Python‑Service
-- **Streaming:** Server‑Sent Events (SSE) oder WebSocket → Frontend zeigt Token‑Stream live an
-- **Secrets:** API‑Keys **nur** serverseitig; Browser erhält nie Secrets
 
-### Validator‑Service (Python)
-
-- **Zweck:** symbolische Checks (SymPy), LaTeX‑Parsing, Numerik, Randomisierung für Item‑Varianten
-- **API:** z. B. FastAPI (REST); Kommunikation nur über Node‑Backend
-
-### GeoGebra‑Integration (optional)
-
-- **Einbettung:** `<iframe>` **oder** GeoGebra JS‑API im DOM
-- **Events/Kommandos:** über die offizielle JS‑API; keine WebView/Bridge nötig
+- **Pro**: Flutter Cross-Platform, stabile LLM-APIs, klare Curriculum-Struktur, erprobte Visualisierungs-Stacks.
+- **Contra-Risiken**: GeoGebra-Lizenzklarheit, 3D-Performance auf schwächeren Geräten, Qualitätssicherung LLM-Items → mitigierbar (Validator, Whitelists, Fallbacks).
 
 ---
 
-## 🔐 Sicherheit & Datenschutz
+## 🧩 Technisches Konzept (Kurzüberblick)
 
-- **Keys/Secrets** bleiben **immer** auf dem Server (ENV‑Variablen, niemals im Client bundlen)
-- **Input‑Validierung:** Zod/JSON‑Schema + serverseitige Whitelists für `MathVizSpec`
-- **CSP/Headers:** strikte `Content‑Security‑Policy`, `X‑Frame‑Options`, `Referrer‑Policy`
-- **Datenminimierung:** Pseudonyme, Löschkonzept, EU‑Regionen bei Providern bevorzugen
+- **Framework:** ReactJS (Web-App)
+- **LLM-Provider:** Anthropic; austauschbar über Service-Interface.
+- **Sichere Visualisierung:** LLM → **MathVizSpec (JSON)** → Renderer (2D: `fl_chart`; 3D: `flutter_gl`/`three_dart` oder WebView).
+- **GeoGebra-Integration (optional):** WebView-Einbettung (`flutter_inappwebview`) + JS-Bridge (`evalCommand`, Events).
+- **Validator-Service:** Python/SymPy für symbolische Checks, LaTeX-Parsing, Numerik.
+- **Datenschutz/EU:** Datenminimierung, Pseudonyme, EU-Regionen der Anbieter.
 
-## ❓ Offene Punkte
+---
 
-- [ ] GeoGebra‑Lizenz (kommerziell/Schule)
-- [ ] Umfang Gamification (pädagogisch sinnvoll?)
-- [ ] Offline‑Fähigkeit (falls gefordert)
+## ❓ Offene Fragen
+
+- [ ] GeoGebra-Lizenz für kommerzielle Nutzung / Schul-Lizenzmodell?
+- [ ] Wie viel Gamification ist schulverträglich (Streaks/Leaderboard opt-in)?
+- [ ] Lehrer-Dashboard: Minimal-Funktionen für MVP?
+- [ ] Offline-Fähigkeit nötig (wäre auf schwachen Geräten u.U. nicht möglich; müsste vorher heruntergeladen werden)?
+
+---
 
 ## 🔗 Nützliche Links
 
-- GeoGebra GitHub: [https://github.com/geogebra](https://github.com/geogebra)
-- GeoGebra Apps (Embedding/JS‑API): [https://www.geogebra.org/documents](https://www.geogebra.org/documents)
-- Bildungsplan Baden‑Württemberg: [https://www.bildungsplaene-bw.de/](https://www.bildungsplaene-bw.de/)
+- GeoGebra GitHub: https://github.com/geogebra
+- GeoGebra Apps (Embedding/JS-API): https://www.geogebra.org/documents
+- Bildungsplan Baden-Württemberg: https://www.bildungsplaene-bw.de/
