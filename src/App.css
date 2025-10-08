@@ -1,18 +1,22 @@
 .app {
   min-height: 100vh;
+  position: relative;
+  z-index: 1;
 }
 
 .header {
-  background: var(--bg-secondary);
+  background: var(--bg-glass);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
   border-bottom: 1px solid var(--border);
-  padding: 16px 24px;
+  padding: 20px 32px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   position: sticky;
   top: 0;
   z-index: 100;
-  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
 }
 
 .logo {
@@ -37,12 +41,45 @@
 .stat {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background: var(--bg-primary);
-  border-radius: 20px;
+  gap: 10px;
+  padding: 10px 20px;
+  background: var(--bg-glass);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  border-radius: 100px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.stat::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 100px;
+  padding: 2px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.stat:hover {
+  transform: scale(1.05);
+  background: var(--bg-glass-hover);
+  box-shadow: 0 4px 16px var(--primary-glow);
+}
+
+.stat:hover::before {
+  opacity: 1;
+}
+
+.stat:active {
+  transform: scale(0.98);
 }
 
 .stat-icon {
@@ -62,12 +99,15 @@
 }
 
 .hero h1 {
-  font-size: 48px;
-  margin-bottom: 16px;
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  font-size: 56px;
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, var(--primary-lighter), var(--primary), var(--primary-dark));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1.2;
 }
 
 .hero p {
@@ -90,14 +130,22 @@
   cursor: pointer;
 }
 
-.topic-card::before {
+.topic-card::after {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-light), var(--primary-lighter));
+  border-radius: 24px;
+  opacity: 0;
+  transition: opacity 0.4s;
+  z-index: -1;
+}
+
+.topic-card:hover::after {
+  opacity: 0.15;
 }
 
 .topic-header {

@@ -1,0 +1,229 @@
+.xp-popover {
+  position: fixed;
+  width: 380px;
+  background: var(--bg-card);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.6),
+    0 0 0 1px var(--primary-glow),
+    var(--glow-shadow);
+  z-index: 1000;
+  animation: morphIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.xp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.xp-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.xp-icon {
+  font-size: 48px;
+  filter: drop-shadow(0 0 16px var(--primary-glow));
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.xp-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.xp-current {
+  font-size: 28px;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--primary-lighter), var(--primary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.xp-total {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.xp-progress-ring {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
+
+.progress-percentage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.xp-needed-box {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: linear-gradient(135deg, var(--bg-glass), var(--bg-glass-hover));
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+
+.xp-needed-icon {
+  font-size: 32px;
+}
+
+.xp-needed-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.xp-needed-value {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--primary);
+  margin-top: 4px;
+}
+
+.daily-goals {
+  margin-bottom: 20px;
+}
+
+.goals-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+}
+
+.goal-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  margin-bottom: 8px;
+  background: var(--bg-glass);
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
+}
+
+.goal-item:hover {
+  background: var(--bg-glass-hover);
+  transform: translateX(4px);
+}
+
+.goal-item.completed {
+  border-color: var(--primary);
+  background: linear-gradient(135deg, var(--primary-glow), transparent);
+}
+
+.goal-item.completed .goal-check {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 0 12px var(--primary-glow);
+}
+
+.goal-check {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--bg-glass);
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  transition: all 0.3s;
+}
+
+.goal-label {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.goal-xp {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary-light);
+}
+
+.xp-boost {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: linear-gradient(135deg, var(--primary-glow), rgba(251, 146, 60, 0.2));
+  border-radius: 16px;
+  border: 1px solid var(--primary);
+  margin-bottom: 16px;
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 10px var(--primary-glow);
+  }
+  50% {
+    box-shadow: 0 0 20px var(--primary-glow);
+  }
+}
+
+.boost-icon {
+  font-size: 32px;
+}
+
+.boost-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.boost-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.total-xp {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.total-xp span {
+  font-weight: 700;
+  color: var(--primary-light);
+}

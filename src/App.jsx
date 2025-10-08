@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './App.css'
 import Login from './components/Login'
 import Settings from './components/Settings'
+import LevelPopover from './components/LevelPopover'
+import XPPopover from './components/XPPopover'
 
 // Dummy-Daten
 const topics = [
@@ -80,6 +82,12 @@ function App() {
   // Settings State
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [settings, setSettings] = useState(defaultSettings)
+
+  // Popover State
+  const [levelPopoverOpen, setLevelPopoverOpen] = useState(false)
+  const [xpPopoverOpen, setXpPopoverOpen] = useState(false)
+  const levelStatRef = useRef(null)
+  const xpStatRef = useRef(null)
 
   // Gamification State
   const [userStats, setUserStats] = useState({
@@ -190,11 +198,19 @@ function App() {
           <span>MatheLernApp</span>
         </div>
         <div className="user-stats">
-          <div className="stat">
+          <div
+            ref={levelStatRef}
+            className="stat"
+            onClick={() => setLevelPopoverOpen(!levelPopoverOpen)}
+          >
             <span className="stat-icon">⚡</span>
             <span>Level {userStats.level}</span>
           </div>
-          <div className="stat">
+          <div
+            ref={xpStatRef}
+            className="stat"
+            onClick={() => setXpPopoverOpen(!xpPopoverOpen)}
+          >
             <span className="stat-icon">✨</span>
             <span>{userStats.xp} / {userStats.xpToNextLevel} XP</span>
           </div>
@@ -382,6 +398,20 @@ function App() {
         onClose={() => setSettingsOpen(false)}
         settings={settings}
         onSettingsChange={handleSettingsChange}
+      />
+
+      <LevelPopover
+        isOpen={levelPopoverOpen}
+        onClose={() => setLevelPopoverOpen(false)}
+        userStats={userStats}
+        anchorRef={levelStatRef}
+      />
+
+      <XPPopover
+        isOpen={xpPopoverOpen}
+        onClose={() => setXpPopoverOpen(false)}
+        userStats={userStats}
+        anchorRef={xpStatRef}
       />
     </div>
   )

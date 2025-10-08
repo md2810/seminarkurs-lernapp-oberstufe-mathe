@@ -2,12 +2,60 @@ import { useState, useEffect } from 'react'
 import './Settings.css'
 
 const colorPresets = [
-  { name: 'Orange', primary: '#f97316', secondary: '#fb923c' },
-  { name: 'Blau', primary: '#3b82f6', secondary: '#60a5fa' },
-  { name: 'Lila', primary: '#8b5cf6', secondary: '#a78bfa' },
-  { name: 'Grün', primary: '#10b981', secondary: '#34d399' },
-  { name: 'Pink', primary: '#ec4899', secondary: '#f472b6' },
-  { name: 'Rot', primary: '#ef4444', secondary: '#f87171' }
+  {
+    name: 'Orange',
+    primary: '#f97316',
+    primaryDark: '#ea580c',
+    primaryLight: '#fb923c',
+    primaryLighter: '#fdba74',
+    primaryUltraLight: '#fed7aa',
+    bgGradient: 'linear-gradient(135deg, #1a0b05 0%, #0f172a 50%, #0a0604 100%)'
+  },
+  {
+    name: 'Blau',
+    primary: '#3b82f6',
+    primaryDark: '#2563eb',
+    primaryLight: '#60a5fa',
+    primaryLighter: '#93c5fd',
+    primaryUltraLight: '#dbeafe',
+    bgGradient: 'linear-gradient(135deg, #020617 0%, #0c1222 50%, #030712 100%)'
+  },
+  {
+    name: 'Lila',
+    primary: '#8b5cf6',
+    primaryDark: '#7c3aed',
+    primaryLight: '#a78bfa',
+    primaryLighter: '#c4b5fd',
+    primaryUltraLight: '#ede9fe',
+    bgGradient: 'linear-gradient(135deg, #0f0514 0%, #0f172a 50%, #0a0412 100%)'
+  },
+  {
+    name: 'Grün',
+    primary: '#10b981',
+    primaryDark: '#059669',
+    primaryLight: '#34d399',
+    primaryLighter: '#6ee7b7',
+    primaryUltraLight: '#d1fae5',
+    bgGradient: 'linear-gradient(135deg, #021108 0%, #0f172a 50%, #020a06 100%)'
+  },
+  {
+    name: 'Pink',
+    primary: '#ec4899',
+    primaryDark: '#db2777',
+    primaryLight: '#f472b6',
+    primaryLighter: '#f9a8d4',
+    primaryUltraLight: '#fce7f3',
+    bgGradient: 'linear-gradient(135deg, #140508 0%, #0f172a 50%, #0f0308 100%)'
+  },
+  {
+    name: 'Rot',
+    primary: '#ef4444',
+    primaryDark: '#dc2626',
+    primaryLight: '#f87171',
+    primaryLighter: '#fca5a5',
+    primaryUltraLight: '#fee2e2',
+    bgGradient: 'linear-gradient(135deg, #140404 0%, #0f172a 50%, #0a0202 100%)'
+  }
 ]
 
 function Settings({ isOpen, onClose, settings, onSettingsChange }) {
@@ -23,7 +71,7 @@ function Settings({ isOpen, onClose, settings, onSettingsChange }) {
       theme: {
         ...localSettings.theme,
         primary: preset.primary,
-        secondary: preset.secondary,
+        secondary: preset.primaryLight,
         name: preset.name
       }
     }
@@ -32,7 +80,15 @@ function Settings({ isOpen, onClose, settings, onSettingsChange }) {
 
     // Apply colors to CSS variables
     document.documentElement.style.setProperty('--primary', preset.primary)
-    document.documentElement.style.setProperty('--secondary', preset.secondary)
+    document.documentElement.style.setProperty('--primary-dark', preset.primaryDark)
+    document.documentElement.style.setProperty('--primary-light', preset.primaryLight)
+    document.documentElement.style.setProperty('--primary-lighter', preset.primaryLighter)
+    document.documentElement.style.setProperty('--primary-ultra-light', preset.primaryUltraLight)
+    document.documentElement.style.setProperty('--primary-glow', `${preset.primary}80`)
+    document.documentElement.style.setProperty('--secondary', preset.primaryLight)
+    document.documentElement.style.setProperty('--bg-primary', preset.bgGradient)
+    document.documentElement.style.setProperty('--border', `${preset.primary}33`)
+    document.documentElement.style.setProperty('--border-light', `${preset.primary}1a`)
   }
 
   const handleSliderChange = (key, value) => {
@@ -77,7 +133,7 @@ function Settings({ isOpen, onClose, settings, onSettingsChange }) {
                   <div
                     className="color-preview"
                     style={{
-                      background: `linear-gradient(135deg, ${preset.primary}, ${preset.secondary})`
+                      background: `linear-gradient(135deg, ${preset.primary}, ${preset.primaryLight}, ${preset.primaryLighter})`
                     }}
                   />
                   <span>{preset.name}</span>
