@@ -256,7 +256,7 @@
 
 .hint-btn:hover:not(:disabled) {
   border-color: var(--primary);
-  background: rgba(99, 102, 241, 0.1);
+  background: rgba(249, 115, 22, 0.1);
 }
 
 .hint-btn:disabled {
@@ -267,7 +267,7 @@
 .hint-content {
   margin-top: 8px;
   padding: 12px;
-  background: rgba(99, 102, 241, 0.1);
+  background: rgba(249, 115, 22, 0.1);
   border-left: 3px solid var(--primary);
   border-radius: 4px;
   font-size: 14px;

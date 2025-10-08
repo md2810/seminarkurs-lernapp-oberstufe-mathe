@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
+import Login from './components/Login'
+import Settings from './components/Settings'
 
 // Dummy-Daten
 const topics = [
@@ -50,12 +52,34 @@ const sampleTask = {
   xpReward: 50
 }
 
+const defaultSettings = {
+  theme: {
+    name: 'Orange',
+    primary: '#f97316',
+    secondary: '#fb923c'
+  },
+  aiModel: {
+    detailLevel: 70,
+    temperature: 0.7,
+    helpfulness: 80
+  }
+}
+
 function App() {
+  // Auth State
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [user, setUser] = useState(null)
+
+  // View State
   const [currentView, setCurrentView] = useState('dashboard') // 'dashboard' | 'task'
   const [selectedTopic, setSelectedTopic] = useState(null)
   const [userAnswer, setUserAnswer] = useState('')
   const [unlockedHints, setUnlockedHints] = useState([])
   const [feedback, setFeedback] = useState(null)
+
+  // Settings State
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [settings, setSettings] = useState(defaultSettings)
 
   // Gamification State
   const [userStats, setUserStats] = useState({
@@ -65,6 +89,48 @@ function App() {
     streak: 12,
     totalXp: 3420
   })
+
+  // Load settings from localStorage
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('mathapp_settings')
+    if (savedSettings) {
+      const parsed = JSON.parse(savedSettings)
+      setSettings(parsed)
+      // Apply theme on load
+      if (parsed.theme) {
+        document.documentElement.style.setProperty('--primary', parsed.theme.primary)
+        document.documentElement.style.setProperty('--secondary', parsed.theme.secondary)
+      }
+    }
+
+    // Check if user is logged in (simple session check)
+    const savedUser = sessionStorage.getItem('mathapp_user')
+    if (savedUser) {
+      const userData = JSON.parse(savedUser)
+      setIsLoggedIn(true)
+      setUser(userData)
+      setUserStats(userData)
+    }
+  }, [])
+
+  const handleLogin = (userData) => {
+    setIsLoggedIn(true)
+    setUser(userData)
+    setUserStats(userData)
+    sessionStorage.setItem('mathapp_user', JSON.stringify(userData))
+  }
+
+  const handleLogout = () => {
+    setIsLoggedIn(false)
+    setUser(null)
+    sessionStorage.removeItem('mathapp_user')
+    setCurrentView('dashboard')
+  }
+
+  const handleSettingsChange = (newSettings) => {
+    setSettings(newSettings)
+    localStorage.setItem('mathapp_settings', JSON.stringify(newSettings))
+  }
 
   const handleTopicClick = (topic) => {
     setSelectedTopic(topic)
@@ -111,6 +177,10 @@ function App() {
     }
   }
 
+  if (!isLoggedIn) {
+    return <Login onLogin={handleLogin} />
+  }
+
   return (
     <div className="app">
       {/* Header */}
@@ -132,6 +202,21 @@ function App() {
             <span className="stat-icon">🔥</span>
             <span>{userStats.streak} Tage</span>
           </div>
+          <button
+            className="btn btn-secondary"
+            onClick={() => setSettingsOpen(true)}
+            style={{ marginLeft: '16px' }}
+          >
+            <span>⚙️</span>
+            <span>Einstellungen</span>
+          </button>
+          <button
+            className="btn btn-secondary"
+            onClick={handleLogout}
+          >
+            <span>🚪</span>
+            <span>Abmelden</span>
+          </button>
         </div>
       </header>
 
@@ -203,7 +288,7 @@ function App() {
                   <div style={{
                     display: 'inline-block',
                     padding: '4px 12px',
-                    background: 'rgba(139, 92, 246, 0.2)',
+                    background: 'rgba(249, 115, 22, 0.2)',
                     borderRadius: '12px',
                     fontSize: '12px',
                     fontWeight: '600',
@@ -278,7 +363,7 @@ function App() {
                 <div style={{
                   marginTop: '24px',
                   padding: '12px',
-                  background: 'rgba(99, 102, 241, 0.05)',
+                  background: 'rgba(249, 115, 22, 0.05)',
                   borderRadius: '8px',
                   fontSize: '13px',
                   color: 'var(--text-secondary)'
@@ -291,6 +376,13 @@ function App() {
           </div>
         )}
       </div>
+
+      <Settings
+        isOpen={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        settings={settings}
+        onSettingsChange={handleSettingsChange}
+      />
     </div>
   )
 }
