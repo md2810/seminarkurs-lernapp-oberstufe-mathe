@@ -6,146 +6,213 @@
 
 .header {
   background: var(--bg-glass);
-  backdrop-filter: blur(30px) saturate(180%);
-  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
-  padding: 20px 32px;
+  padding: 12px 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  gap: 12px;
+}
+
+@media (min-width: 768px) {
+  .header {
+    padding: 16px 24px;
+  }
 }
 
 .logo {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 20px;
+  gap: 8px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--text-primary);
 }
 
 .logo-icon {
-  font-size: 28px;
+  font-size: 24px;
 }
 
 .user-stats {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 8px;
 }
 
-.stat {
+.stat-combined {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 20px;
   background: var(--bg-glass);
   backdrop-filter: blur(10px);
   border: 1px solid var(--border);
   border-radius: 100px;
-  font-size: 14px;
-  font-weight: 600;
+  padding: 8px 12px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
+  transition: all 0.2s ease;
+  min-height: 44px;
+  touch-action: manipulation;
 }
 
-.stat::before {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  border-radius: 100px;
-  padding: 2px;
-  background: linear-gradient(135deg, var(--primary), var(--primary-light));
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  opacity: 0;
-  transition: opacity 0.3s;
+.stat-combined:active {
+  transform: scale(0.96);
 }
 
-.stat:hover {
-  transform: scale(1.05);
-  background: var(--bg-glass-hover);
-  box-shadow: 0 4px 16px var(--primary-glow);
+@media (hover: hover) {
+  .stat-combined:hover {
+    background: var(--bg-glass-hover);
+    border-color: var(--primary);
+  }
 }
 
-.stat:hover::before {
-  opacity: 1;
-}
-
-.stat:active {
-  transform: scale(0.98);
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
 }
 
 .stat-icon {
-  font-size: 18px;
+  font-size: 16px;
+}
+
+.stat-text {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.stat-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+}
+
+@media (max-width: 640px) {
+  .logo span:not(.logo-icon) {
+    display: none;
+  }
+
+  .stat-text {
+    font-size: 12px;
+  }
+
+  .stat-item {
+    padding: 0 6px;
+  }
+
+  .user-stats .btn {
+    padding: 8px 12px;
+    font-size: 0;
+  }
+
+  .user-stats .btn span:first-child {
+    font-size: 16px;
+  }
 }
 
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: 16px;
+}
+
+@media (min-width: 768px) {
+  .container {
+    padding: 24px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    padding: 32px 24px;
+  }
 }
 
 .hero {
   text-align: center;
-  margin-bottom: 48px;
-  animation: fadeIn 0.6s ease;
+  margin-bottom: 24px;
+  animation: fadeIn 0.4s ease;
 }
 
 .hero h1 {
-  font-size: 56px;
-  margin-bottom: 20px;
-  background: linear-gradient(135deg, var(--primary-lighter), var(--primary), var(--primary-dark));
+  font-size: 32px;
+  margin-bottom: 12px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   font-weight: 800;
-  letter-spacing: -1px;
   line-height: 1.2;
 }
 
 .hero p {
-  font-size: 18px;
+  font-size: 15px;
   color: var(--text-secondary);
   max-width: 600px;
   margin: 0 auto;
+  line-height: 1.5;
+}
+
+@media (min-width: 768px) {
+  .hero {
+    margin-bottom: 32px;
+  }
+
+  .hero h1 {
+    font-size: 42px;
+    margin-bottom: 16px;
+  }
+
+  .hero p {
+    font-size: 17px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero {
+    margin-bottom: 48px;
+  }
+
+  .hero h1 {
+    font-size: 48px;
+  }
+
+  .hero p {
+    font-size: 18px;
+  }
 }
 
 .topics-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 24px;
-  margin-bottom: 48px;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+@media (min-width: 640px) {
+  .topics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .topics-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
 }
 
 .topic-card {
   position: relative;
-  overflow: hidden;
   cursor: pointer;
-}
-
-.topic-card::after {
-  content: '';
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
-  background: linear-gradient(135deg, var(--primary), var(--primary-light), var(--primary-lighter));
-  border-radius: 24px;
-  opacity: 0;
-  transition: opacity 0.4s;
-  z-index: -1;
-}
-
-.topic-card:hover::after {
-  opacity: 0.15;
+  min-height: 44px;
+  touch-action: manipulation;
 }
 
 .topic-header {
@@ -228,9 +295,17 @@
 }
 
 .task-content {
-  display: grid;
-  grid-template-columns: 1fr 400px;
-  gap: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+@media (min-width: 1024px) {
+  .task-content {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 24px;
+  }
 }
 
 .task-main {
@@ -269,9 +344,14 @@
 }
 
 .tutor-panel {
-  position: sticky;
-  top: 88px;
   height: fit-content;
+}
+
+@media (min-width: 1024px) {
+  .tutor-panel {
+    position: sticky;
+    top: 88px;
+  }
 }
 
 .tutor-header {
@@ -344,21 +424,19 @@
   animation: celebrate 0.5s ease;
 }
 
-@media (max-width: 768px) {
-  .task-content {
-    grid-template-columns: 1fr;
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  .task-input {
+    font-size: 16px;
+    min-height: 100px;
   }
 
-  .tutor-panel {
-    position: relative;
-    top: 0;
+  .task-actions {
+    flex-direction: column;
   }
 
-  .hero h1 {
-    font-size: 32px;
-  }
-
-  .topics-grid {
-    grid-template-columns: 1fr;
+  .task-actions .btn {
+    width: 100%;
+    justify-content: center;
   }
 }

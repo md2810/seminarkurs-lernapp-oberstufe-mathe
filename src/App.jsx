@@ -2,8 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import './App.css'
 import Login from './components/Login'
 import Settings from './components/Settings'
-import LevelPopover from './components/LevelPopover'
-import XPPopover from './components/XPPopover'
+import StatsPopover from './components/StatsPopover'
 
 // Dummy-Daten
 const topics = [
@@ -84,10 +83,8 @@ function App() {
   const [settings, setSettings] = useState(defaultSettings)
 
   // Popover State
-  const [levelPopoverOpen, setLevelPopoverOpen] = useState(false)
-  const [xpPopoverOpen, setXpPopoverOpen] = useState(false)
-  const levelStatRef = useRef(null)
-  const xpStatRef = useRef(null)
+  const [statsPopoverOpen, setStatsPopoverOpen] = useState(false)
+  const statsRef = useRef(null)
 
   // Gamification State
   const [userStats, setUserStats] = useState({
@@ -199,24 +196,24 @@ function App() {
         </div>
         <div className="user-stats">
           <div
-            ref={levelStatRef}
-            className="stat"
-            onClick={() => setLevelPopoverOpen(!levelPopoverOpen)}
+            ref={statsRef}
+            className="stat-combined"
+            onClick={() => setStatsPopoverOpen(!statsPopoverOpen)}
           >
-            <span className="stat-icon">⚡</span>
-            <span>Level {userStats.level}</span>
-          </div>
-          <div
-            ref={xpStatRef}
-            className="stat"
-            onClick={() => setXpPopoverOpen(!xpPopoverOpen)}
-          >
-            <span className="stat-icon">✨</span>
-            <span>{userStats.xp} / {userStats.xpToNextLevel} XP</span>
-          </div>
-          <div className="stat streak-animation">
-            <span className="stat-icon">🔥</span>
-            <span>{userStats.streak} Tage</span>
+            <div className="stat-item">
+              <span className="stat-icon">⚡</span>
+              <span className="stat-text">Level {userStats.level}</span>
+            </div>
+            <div className="stat-divider"></div>
+            <div className="stat-item">
+              <span className="stat-icon">✨</span>
+              <span className="stat-text">{userStats.xp} XP</span>
+            </div>
+            <div className="stat-divider"></div>
+            <div className="stat-item">
+              <span className="stat-icon">🔥</span>
+              <span className="stat-text">{userStats.streak}</span>
+            </div>
           </div>
           <button
             className="btn btn-secondary"
@@ -400,18 +397,11 @@ function App() {
         onSettingsChange={handleSettingsChange}
       />
 
-      <LevelPopover
-        isOpen={levelPopoverOpen}
-        onClose={() => setLevelPopoverOpen(false)}
+      <StatsPopover
+        isOpen={statsPopoverOpen}
+        onClose={() => setStatsPopoverOpen(false)}
         userStats={userStats}
-        anchorRef={levelStatRef}
-      />
-
-      <XPPopover
-        isOpen={xpPopoverOpen}
-        onClose={() => setXpPopoverOpen(false)}
-        userStats={userStats}
-        anchorRef={xpStatRef}
+        anchorRef={statsRef}
       />
     </div>
   )
