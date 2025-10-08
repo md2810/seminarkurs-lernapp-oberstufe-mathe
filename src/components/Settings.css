@@ -4,22 +4,21 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.75);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 24px;
+  padding: 20px;
   animation: fadeIn 0.2s ease;
 }
 
 .settings-panel {
   width: 100%;
-  max-width: 600px;
+  max-width: 540px;
   max-height: 90vh;
   overflow-y: auto;
-  animation: slideIn 0.3s ease;
+  animation: slideIn 0.25s ease;
 }
 
 .settings-header {
@@ -32,11 +31,9 @@
 }
 
 .settings-header h2 {
-  font-size: 24px;
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .close-btn {
@@ -45,16 +42,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-primary);
+  background: transparent;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  font-size: 18px;
+  font-size: 16px;
   color: var(--text-secondary);
-  transition: all 0.2s ease;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.close-btn:hover {
-  background: var(--danger);
-  color: white;
+@media (hover: hover) {
+  .close-btn:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+  }
 }
 
 .settings-content {
@@ -92,30 +93,33 @@
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 12px;
-  background: var(--bg-primary);
-  border: 2px solid var(--border);
-  border-radius: 12px;
+  padding: 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
   font-size: 13px;
   color: var(--text-primary);
-  transition: all 0.2s ease;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.color-preset:hover {
-  border-color: var(--primary);
-  transform: translateY(-2px);
+@media (hover: hover) {
+  .color-preset:hover {
+    border-color: var(--border-hover);
+    background: var(--bg-card);
+  }
 }
 
 .color-preset.active {
-  border-color: var(--primary);
-  background: rgba(249, 115, 22, 0.1);
+  border-color: var(--border-hover);
+  background: var(--bg-card);
 }
 
 .color-preview {
   width: 100%;
-  height: 48px;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  height: 44px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 /* Sliders */
@@ -141,15 +145,15 @@
 }
 
 .slider-value {
-  color: var(--primary);
+  color: var(--text-primary);
   font-weight: 600;
 }
 
 .slider {
   width: 100%;
-  height: 8px;
-  background: var(--bg-primary);
-  border-radius: 4px;
+  height: 6px;
+  background: var(--bg-secondary);
+  border-radius: 3px;
   outline: none;
   -webkit-appearance: none;
 }
@@ -157,32 +161,34 @@
 .slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 20px;
-  height: 20px;
-  background: var(--primary);
+  width: 16px;
+  height: 16px;
+  background: var(--text-secondary);
   border-radius: 50%;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s;
 }
 
-.slider::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
-  box-shadow: 0 0 0 8px rgba(249, 115, 22, 0.2);
+@media (hover: hover) {
+  .slider::-webkit-slider-thumb:hover {
+    background: var(--text-primary);
+  }
 }
 
 .slider::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
-  background: var(--primary);
+  width: 16px;
+  height: 16px;
+  background: var(--text-secondary);
   border-radius: 50%;
   cursor: pointer;
   border: none;
-  transition: all 0.2s ease;
+  transition: all 0.2s;
 }
 
-.slider::-moz-range-thumb:hover {
-  transform: scale(1.2);
-  box-shadow: 0 0 0 8px rgba(249, 115, 22, 0.2);
+@media (hover: hover) {
+  .slider::-moz-range-thumb:hover {
+    background: var(--text-primary);
+  }
 }
 
 .slider-labels {
@@ -194,10 +200,11 @@
 
 .settings-info {
   padding: 12px;
-  background: rgba(249, 115, 22, 0.05);
-  border-left: 3px solid var(--primary);
-  border-radius: 4px;
+  background: var(--bg-secondary);
+  border-left: 2px solid var(--text-tertiary);
+  border-radius: 6px;
   font-size: 13px;
+  line-height: 1.5;
   color: var(--text-secondary);
 }
 

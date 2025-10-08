@@ -56,8 +56,7 @@ const sampleTask = {
 const defaultSettings = {
   theme: {
     name: 'Orange',
-    primary: '#f97316',
-    secondary: '#fb923c'
+    primary: '#f97316'
   },
   aiModel: {
     detailLevel: 70,
@@ -104,7 +103,6 @@ function App() {
       // Apply theme on load
       if (parsed.theme) {
         document.documentElement.style.setProperty('--primary', parsed.theme.primary)
-        document.documentElement.style.setProperty('--secondary', parsed.theme.secondary)
       }
     }
 

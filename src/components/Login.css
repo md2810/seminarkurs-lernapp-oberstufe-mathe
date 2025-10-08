@@ -31,12 +31,10 @@
 }
 
 .login-header h1 {
-  font-size: 32px;
+  font-size: 28px;
   margin-bottom: 8px;
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .login-header p {
@@ -63,20 +61,20 @@
 }
 
 .form-input {
-  padding: 12px 16px;
-  background: var(--bg-primary);
-  border: 2px solid var(--border);
+  padding: 12px 14px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--text-primary);
   font-size: 14px;
   font-family: inherit;
-  transition: all 0.2s ease;
+  transition: all 0.2s;
 }
 
 .form-input:focus {
   outline: none;
-  border-color: var(--primary);
-  background: var(--bg-secondary);
+  border-color: var(--border-hover);
+  background: var(--bg-card);
 }
 
 .form-input::placeholder {
@@ -86,29 +84,30 @@
 
 .login-error {
   padding: 12px;
-  background: rgba(239, 68, 68, 0.1);
-  border-left: 3px solid var(--danger);
-  border-radius: 4px;
-  color: var(--danger);
+  background: var(--bg-secondary);
+  border-left: 2px solid var(--danger);
+  border-radius: 6px;
+  color: var(--text-primary);
   font-size: 14px;
 }
 
 .login-btn {
   width: 100%;
   padding: 14px;
-  font-size: 16px;
+  font-size: 15px;
+  font-weight: 500;
   margin-top: 8px;
 }
 
 .login-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
 .login-hint {
   margin-top: 24px;
   padding: 12px;
-  background: rgba(249, 115, 22, 0.05);
+  background: var(--bg-secondary);
   border-radius: 8px;
   font-size: 13px;
   color: var(--text-secondary);
@@ -116,5 +115,5 @@
 }
 
 .login-hint strong {
-  color: var(--primary);
+  color: var(--text-primary);
 }

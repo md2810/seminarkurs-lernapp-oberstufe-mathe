@@ -1,28 +1,37 @@
 :root {
+  /* Minimale Farbakzente - nur für wichtige Interaktionen */
   --primary: #f97316;
-  --primary-dark: #ea580c;
-  --primary-light: #fb923c;
-  --primary-lighter: #fdba74;
-  --primary-ultra-light: #fed7aa;
-  --primary-glow: rgba(249, 115, 22, 0.5);
-  --secondary: #fb923c;
+  --primary-subtle: rgba(249, 115, 22, 0.08);
+  --primary-hover: rgba(249, 115, 22, 0.12);
+
+  /* Dunkle Grautöne - ChatGPT/Claude/Notion Style */
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #141414;
+  --bg-card: #1a1a1a;
+  --bg-elevated: #212121;
+
+  /* Sehr subtile Borders */
+  --border: rgba(255, 255, 255, 0.06);
+  --border-hover: rgba(255, 255, 255, 0.1);
+
+  /* Text mit hohem Kontrast */
+  --text-primary: #ececec;
+  --text-secondary: #8e8e93;
+  --text-tertiary: #5e5e62;
+
+  /* Neomorphism Shadows */
+  --shadow-light: rgba(255, 255, 255, 0.03);
+  --shadow-dark: rgba(0, 0, 0, 0.4);
+  --neo-shadow:
+    4px 4px 12px var(--shadow-dark),
+    -2px -2px 8px var(--shadow-light);
+  --neo-shadow-inset:
+    inset 2px 2px 6px var(--shadow-dark),
+    inset -2px -2px 6px var(--shadow-light);
+
+  /* Status colors - sehr reduziert */
   --success: #10b981;
-  --warning: #f59e0b;
   --danger: #ef4444;
-
-  /* Glassmorphism backgrounds - durchgängige Farbthemen */
-  --bg-primary: linear-gradient(135deg, #1a0b05 0%, #0f172a 50%, #0a0604 100%);
-  --bg-secondary: rgba(249, 115, 22, 0.03);
-  --bg-card: rgba(249, 115, 22, 0.08);
-  --bg-glass: rgba(255, 255, 255, 0.05);
-  --bg-glass-hover: rgba(255, 255, 255, 0.1);
-
-  --text-primary: #ffffff;
-  --text-secondary: #cbd5e1;
-  --border: rgba(249, 115, 22, 0.2);
-  --border-light: rgba(249, 115, 22, 0.1);
-  --shadow: rgba(0, 0, 0, 0.3);
-  --glow-shadow: 0 0 20px var(--primary-glow);
 }
 
 * {
@@ -45,30 +54,13 @@ body {
   max-width: 100vw;
 }
 
-body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background:
-    radial-gradient(circle at 50% 0%, var(--primary-glow) 0%, transparent 50%);
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.15;
-}
-
 #root {
   min-height: 100vh;
   width: 100%;
   overflow-x: hidden;
 }
 
-/* Smooth animations */
-* {
-  transition: all 0.2s ease;
-}
+/* Minimal transitions - nur wo nötig */
 
 button {
   cursor: pointer;
@@ -77,100 +69,87 @@ button {
   font-family: inherit;
 }
 
-/* Scrollbar styling */
+/* Scrollbar styling - sehr subtil */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: rgba(255, 255, 255, 0.15);
 }
 
 /* Utility classes */
 .card {
   background: var(--bg-card);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: 20px;
+  border-radius: 16px;
   padding: 24px;
   border: 1px solid var(--border);
-  box-shadow: none;
+  box-shadow: var(--neo-shadow);
   position: relative;
-  transition: all 0.3s ease;
-}
-
-.card:active {
-  transform: scale(0.98);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @media (min-width: 768px) {
   .card {
     padding: 32px;
-    border-radius: 24px;
+    border-radius: 20px;
   }
 }
 
 @media (hover: hover) {
   .card:hover {
-    border-color: var(--primary);
+    border-color: var(--border-hover);
+    background: var(--bg-elevated);
   }
 }
 
 .btn {
   padding: 12px 20px;
-  border-radius: 12px;
-  font-weight: 600;
+  border-radius: 10px;
+  font-weight: 500;
   font-size: 14px;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   min-height: 44px;
   touch-action: manipulation;
+  border: none;
 }
 
 .btn-primary {
   background: var(--primary);
   color: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.btn-primary:active {
-  transform: scale(0.96);
 }
 
 @media (hover: hover) {
   .btn-primary:hover {
-    background: var(--primary-dark);
+    background: #ea580c;
+    transform: translateY(-1px);
   }
 }
 
 .btn-secondary {
-  background: var(--bg-glass);
-  backdrop-filter: blur(10px);
+  background: var(--bg-secondary);
   color: var(--text-primary);
   border: 1px solid var(--border);
 }
 
-.btn-secondary:active {
-  transform: scale(0.96);
-  background: var(--bg-glass-hover);
-}
-
 @media (hover: hover) {
   .btn-secondary:hover {
-    border-color: var(--primary);
-    background: var(--bg-glass-hover);
+    background: var(--bg-card);
+    border-color: var(--border-hover);
   }
 }
 
