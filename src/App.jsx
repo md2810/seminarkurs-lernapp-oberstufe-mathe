@@ -194,41 +194,21 @@ function App() {
           <span className="logo-icon">📚</span>
           <span>MatheLernApp</span>
         </div>
-        <div className="user-stats">
-          <div
+        <div className="header-actions">
+          <button
             ref={statsRef}
-            className="stat-combined"
+            className="stats-btn"
             onClick={() => setStatsPopoverOpen(!statsPopoverOpen)}
           >
-            <div className="stat-item">
-              <span className="stat-icon">⚡</span>
-              <span className="stat-text">Level {userStats.level}</span>
-            </div>
-            <div className="stat-divider"></div>
-            <div className="stat-item">
-              <span className="stat-icon">✨</span>
-              <span className="stat-text">{userStats.xp} XP</span>
-            </div>
-            <div className="stat-divider"></div>
-            <div className="stat-item">
-              <span className="stat-icon">🔥</span>
-              <span className="stat-text">{userStats.streak}</span>
-            </div>
-          </div>
-          <button
-            className="btn btn-secondary"
-            onClick={() => setSettingsOpen(true)}
-            style={{ marginLeft: '16px' }}
-          >
-            <span>⚙️</span>
-            <span>Einstellungen</span>
+            <span className="stats-level">Level {userStats.level}</span>
+            <span className="stats-streak">🔥 {userStats.streak}</span>
           </button>
           <button
-            className="btn btn-secondary"
-            onClick={handleLogout}
+            className="icon-btn"
+            onClick={() => setSettingsOpen(true)}
+            title="Einstellungen"
           >
-            <span>🚪</span>
-            <span>Abmelden</span>
+            ⚙️
           </button>
         </div>
       </header>
@@ -236,15 +216,6 @@ function App() {
       <div className="container">
         {currentView === 'dashboard' ? (
           <>
-            {/* Hero Section */}
-            <div className="hero">
-              <h1>Deine Mathematik-Reise</h1>
-              <p>
-                Meistere Analysis, Geometrie und Stochastik mit interaktiven Aufgaben
-                und einem KI-Tutor, der dir bei jedem Schritt hilft.
-              </p>
-            </div>
-
             {/* Topics Grid */}
             <div className="topics-grid">
               {topics.map((topic) => (
@@ -255,9 +226,15 @@ function App() {
                 >
                   <div className="topic-header">
                     <span className="topic-icon">{topic.icon}</span>
-                    <h2 className="topic-title">{topic.title}</h2>
+                    <div className="topic-info">
+                      <h2 className="topic-title">{topic.title}</h2>
+                      <div className="topic-meta">
+                        <span>{topic.level}</span>
+                        <span>•</span>
+                        <span>{topic.total} Aufgaben</span>
+                      </div>
+                    </div>
                   </div>
-                  <p className="topic-description">{topic.description}</p>
 
                   <div className="topic-progress">
                     <div className="progress-bar">
@@ -267,14 +244,8 @@ function App() {
                       ></div>
                     </div>
                     <div className="progress-text">
-                      <span>{topic.completed} / {topic.total} Aufgaben</span>
-                      <span>{topic.progress}%</span>
+                      {topic.completed} von {topic.total} abgeschlossen
                     </div>
-                  </div>
-
-                  <div className="topic-stats">
-                    <span>📊 {topic.level}</span>
-                    <span>🎯 {topic.total - topic.completed} offen</span>
                   </div>
                 </div>
               ))}
