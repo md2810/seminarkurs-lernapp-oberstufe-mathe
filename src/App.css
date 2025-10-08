@@ -19,6 +19,12 @@
   gap: 12px;
   width: 100%;
   overflow-x: hidden;
+  animation: slideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all 0.3s ease !important;
+}
+
+.header:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 @media (min-width: 640px) {
@@ -41,10 +47,22 @@
   font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
+  animation: slideInRight 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s backwards;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+.logo:hover {
+  transform: scale(1.05) !important;
 }
 
 .logo-icon {
   font-size: 24px;
+  animation: pulse 2s ease-in-out infinite;
+  display: inline-block;
+}
+
+.logo:hover .logo-icon {
+  animation: celebrate 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .header-actions {
@@ -63,24 +81,59 @@
   align-items: flex-start;
   gap: 2px;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  animation: slideInLeft 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s backwards;
+  position: relative;
+  overflow: hidden;
+}
+
+.stats-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: var(--primary);
+  opacity: 0.1;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.6s ease, height 0.6s ease;
+}
+
+.stats-btn:hover::before {
+  width: 200px;
+  height: 200px;
 }
 
 .stats-level {
   font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
+  transition: all 0.3s ease !important;
 }
 
 .stats-streak {
   font-size: 12px;
   color: var(--text-secondary);
+  transition: all 0.3s ease !important;
 }
 
 @media (hover: hover) {
   .stats-btn:hover {
     background: var(--bg-card);
     border-color: var(--border-hover);
+    transform: translateY(-3px) scale(1.05) !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4) !important;
+  }
+
+  .stats-btn:hover .stats-level {
+    color: var(--primary);
+    transform: scale(1.1);
+  }
+
+  .stats-btn:hover .stats-streak {
+    transform: scale(1.05);
   }
 }
 
@@ -95,13 +148,16 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  animation: bounceIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.4s backwards;
 }
 
 @media (hover: hover) {
   .icon-btn:hover {
     background: var(--bg-card);
     border-color: var(--border-hover);
+    transform: rotate(180deg) scale(1.15) !important;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3) !important;
   }
 }
 
@@ -162,6 +218,27 @@
   min-height: 44px;
   touch-action: manipulation;
   width: 100%;
+  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+.topic-card:nth-child(1) {
+  animation: slideInLeft 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s backwards;
+}
+
+.topic-card:nth-child(2) {
+  animation: slideInLeft 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s backwards;
+}
+
+.topic-card:nth-child(3) {
+  animation: slideInLeft 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s backwards;
+}
+
+.topic-card:nth-child(4) {
+  animation: slideInLeft 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.4s backwards;
+}
+
+.topic-card:hover {
+  transform: translateX(12px) scale(1.02) !important;
 }
 
 .topic-header {
@@ -176,6 +253,13 @@
   flex-shrink: 0;
   line-height: 1;
   opacity: 0.9;
+  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  animation: bounceIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.topic-card:hover .topic-icon {
+  transform: scale(1.2) rotate(10deg) !important;
+  animation: float 2s ease-in-out infinite;
 }
 
 .topic-info {
@@ -231,9 +315,34 @@
 
 .progress-fill {
   height: 100%;
-  background: var(--text-secondary);
+  background: linear-gradient(
+    90deg,
+    var(--text-secondary),
+    var(--primary),
+    var(--text-secondary)
+  );
+  background-size: 200% 100%;
   border-radius: 2px;
-  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  animation: shimmer 2s linear infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  animation: shimmer 1.5s linear infinite;
 }
 
 .progress-text {
@@ -243,7 +352,7 @@
 }
 
 .task-view {
-  animation: fadeIn 0.4s ease;
+  animation: fadeIn 1s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .task-header {
@@ -398,7 +507,8 @@
   font-size: 14px;
   line-height: 1.6;
   color: var(--text-secondary);
-  animation: slideIn 0.3s ease;
+  animation: slideInLeft 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: left;
 }
 
 .feedback {
@@ -407,19 +517,31 @@
   margin-top: 16px;
   font-size: 14px;
   line-height: 1.5;
-  animation: slideIn 0.2s ease;
+  animation: bounceIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all 0.4s ease !important;
 }
 
 .feedback.success {
   background: var(--bg-secondary);
   border-left: 2px solid var(--success);
   color: var(--text-primary);
+  animation: celebrate 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.feedback.success:hover {
+  transform: scale(1.02) !important;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3) !important;
 }
 
 .feedback.error {
   background: var(--bg-secondary);
   border-left: 2px solid var(--danger);
   color: var(--text-primary);
+}
+
+.feedback.error:hover {
+  transform: scale(1.02) !important;
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.3) !important;
 }
 
 .streak-animation {
