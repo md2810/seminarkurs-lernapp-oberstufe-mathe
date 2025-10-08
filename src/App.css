@@ -315,34 +315,9 @@
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    var(--text-secondary),
-    var(--primary),
-    var(--text-secondary)
-  );
-  background-size: 200% 100%;
+  background: var(--text-secondary);
   border-radius: 2px;
   transition: width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
-  animation: shimmer 2s linear infinite;
-  position: relative;
-  overflow: hidden;
-}
-
-.progress-fill::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  right: 0;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.3),
-    transparent
-  );
-  animation: shimmer 1.5s linear infinite;
 }
 
 .progress-text {
