@@ -5,7 +5,12 @@ import {
   signOut,
   onAuthStateChanged,
   sendEmailVerification,
-  updateProfile
+  updateProfile,
+  updatePassword,
+  updateEmail,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
+  sendPasswordResetEmail
 } from 'firebase/auth'
 import { auth } from '../firebase/config'
 
@@ -62,6 +67,70 @@ export function AuthProvider({ children }) {
     }
   }
 
+  // Update user's display name
+  async function updateUserProfile(displayName) {
+    if (auth.currentUser) {
+      await updateProfile(auth.currentUser, {
+        displayName: displayName
+      })
+      // Trigger re-render by updating currentUser
+      setCurrentUser({ ...auth.currentUser })
+    }
+  }
+
+  // Update user's email
+  async function updateUserEmail(newEmail, currentPassword) {
+    if (!auth.currentUser) {
+      throw new Error('Kein angemeldeter Benutzer')
+    }
+
+    // Check if email is from allowed domain
+    if (!newEmail.endsWith('@mvl-gym.de')) {
+      throw new Error('Nur E-Mail-Adressen mit der Domain @mvl-gym.de sind erlaubt.')
+    }
+
+    // Re-authenticate user before email change (security requirement)
+    const credential = EmailAuthProvider.credential(
+      auth.currentUser.email,
+      currentPassword
+    )
+    await reauthenticateWithCredential(auth.currentUser, credential)
+
+    // Update email
+    await updateEmail(auth.currentUser, newEmail)
+
+    // Send verification email to new address
+    await sendEmailVerification(auth.currentUser, {
+      url: window.location.origin + '/login',
+      handleCodeInApp: false
+    })
+  }
+
+  // Update user's password
+  async function updateUserPassword(currentPassword, newPassword) {
+    if (!auth.currentUser) {
+      throw new Error('Kein angemeldeter Benutzer')
+    }
+
+    // Re-authenticate user before password change (security requirement)
+    const credential = EmailAuthProvider.credential(
+      auth.currentUser.email,
+      currentPassword
+    )
+    await reauthenticateWithCredential(auth.currentUser, credential)
+
+    // Update password
+    await updatePassword(auth.currentUser, newPassword)
+  }
+
+  // Reset password via email
+  async function resetPassword(email) {
+    await sendPasswordResetEmail(auth, email, {
+      url: window.location.origin + '/login',
+      handleCodeInApp: false
+    })
+  }
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user)
@@ -76,7 +145,11 @@ export function AuthProvider({ children }) {
     signup,
     login,
     logout,
-    resendVerificationEmail
+    resendVerificationEmail,
+    updateUserProfile,
+    updateUserEmail,
+    updateUserPassword,
+    resetPassword
   }
 
   return (
