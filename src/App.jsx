@@ -12,6 +12,14 @@ import ParticleExplosion from './components/ParticleExplosion'
 import LearningPlan from './components/LearningPlan'
 import { logTask } from './utils/taskLogger'
 import {
+  initializeUserProfile,
+  updateUserStats,
+  updateUserSettings,
+  addTaskToHistory,
+  subscribeToUserData,
+  updateStreak
+} from './firebase/firestore'
+import {
   BookOpenText,
   CaretDown,
   CaretRight,
@@ -175,24 +183,60 @@ function App() {
     }
   }, [mouseX, mouseY, scrollSpring])
 
-  // Load settings from localStorage and user data from Firebase
+  // Load/initialize user data from Firestore and set up real-time sync
   useEffect(() => {
-    const savedSettings = localStorage.getItem('mathapp_settings')
-    if (savedSettings) {
-      const parsed = JSON.parse(savedSettings)
-      setSettings(parsed)
-      // Apply theme on load
-      if (parsed.theme) {
-        document.documentElement.style.setProperty('--primary', parsed.theme.primary)
+    if (!currentUser || !currentUser.emailVerified) {
+      return
+    }
+
+    let unsubscribe = null
+
+    const setupUserData = async () => {
+      try {
+        // Initialize user profile if first time
+        await initializeUserProfile(currentUser.uid, {
+          displayName: currentUser.displayName,
+          email: currentUser.email
+        })
+
+        // Update streak
+        await updateStreak(currentUser.uid)
+
+        // Subscribe to real-time updates
+        unsubscribe = subscribeToUserData(currentUser.uid, (userData) => {
+          if (userData) {
+            // Update stats
+            if (userData.stats) {
+              setUserStats(userData.stats)
+            }
+
+            // Update settings
+            if (userData.settings) {
+              setSettings(userData.settings)
+              // Apply theme
+              if (userData.settings.theme) {
+                document.documentElement.style.setProperty('--primary', userData.settings.theme.primary)
+              }
+            }
+          }
+        })
+      } catch (error) {
+        console.error('Error setting up user data:', error)
+        // Fallback to localStorage
+        const userStatsKey = `mathapp_stats_${currentUser.uid}`
+        const savedStats = localStorage.getItem(userStatsKey)
+        if (savedStats) {
+          setUserStats(JSON.parse(savedStats))
+        }
       }
     }
 
-    // Load user stats from Firebase/localStorage when user logs in
-    if (currentUser) {
-      const userStatsKey = `mathapp_stats_${currentUser.uid}`
-      const savedStats = localStorage.getItem(userStatsKey)
-      if (savedStats) {
-        setUserStats(JSON.parse(savedStats))
+    setupUserData()
+
+    // Cleanup subscription on unmount
+    return () => {
+      if (unsubscribe) {
+        unsubscribe()
       }
     }
   }, [currentUser])
@@ -207,9 +251,20 @@ function App() {
     }
   }
 
-  const handleSettingsChange = (newSettings) => {
+  const handleSettingsChange = async (newSettings) => {
     setSettings(newSettings)
-    localStorage.setItem('mathapp_settings', JSON.stringify(newSettings))
+
+    // Save to Firestore
+    if (currentUser) {
+      try {
+        await updateUserSettings(currentUser.uid, newSettings)
+        console.log('Settings saved to Firestore')
+      } catch (error) {
+        console.error('Error saving settings:', error)
+        // Fallback to localStorage
+        localStorage.setItem('mathapp_settings', JSON.stringify(newSettings))
+      }
+    }
   }
 
   const handleTopicClick = (topic) => {
@@ -231,15 +286,14 @@ function App() {
     }
   }
 
-  const checkAnswer = () => {
+  const checkAnswer = async () => {
     const isCorrect = userAnswer.toLowerCase().includes('5,8') ||
                      userAnswer.toLowerCase().includes('5.8') ||
                      userAnswer.toLowerCase().includes('5,85') ||
                      userAnswer.toLowerCase().includes('5.85')
 
-    // Log task performance
-    const taskStartTime = Date.now() // In real app, track when task started
-    logTask({
+    // Prepare task data
+    const taskData = {
       taskId: sampleTask.id,
       topicId: selectedTopic?.id,
       difficulty: sampleTask.difficulty,
@@ -250,7 +304,10 @@ function App() {
       userAnswer: userAnswer,
       gradeLevel: settings.gradeLevel,
       courseType: settings.courseType
-    })
+    }
+
+    // Log task performance (console logging)
+    logTask(taskData)
 
     if (isCorrect) {
       setFeedback({
@@ -258,12 +315,37 @@ function App() {
         message: '🎉 Richtig! Ausgezeichnete Arbeit! Die optimale Seitenlänge beträgt etwa 5,85 cm.',
         xp: sampleTask.xpReward
       })
-      // Update XP
-      setUserStats(prev => ({
-        ...prev,
-        xp: prev.xp + sampleTask.xpReward,
-        totalXp: prev.totalXp + sampleTask.xpReward
-      }))
+
+      // Calculate new stats
+      const newStats = {
+        ...userStats,
+        xp: userStats.xp + sampleTask.xpReward,
+        totalXp: userStats.totalXp + sampleTask.xpReward
+      }
+
+      // Check for level up
+      if (newStats.xp >= newStats.xpToNextLevel) {
+        newStats.level += 1
+        newStats.xp = newStats.xp - newStats.xpToNextLevel
+        newStats.xpToNextLevel = Math.floor(newStats.xpToNextLevel * 1.5)
+      }
+
+      // Update local state
+      setUserStats(newStats)
+
+      // Save to Firestore
+      if (currentUser) {
+        try {
+          await updateUserStats(currentUser.uid, newStats)
+          await addTaskToHistory(currentUser.uid, taskData)
+          console.log('Stats and task history saved to Firestore')
+        } catch (error) {
+          console.error('Error saving to Firestore:', error)
+          // Fallback to localStorage
+          localStorage.setItem(`mathapp_stats_${currentUser.uid}`, JSON.stringify(newStats))
+        }
+      }
+
       // Trigger particle explosion
       setShowParticleExplosion(true)
       setTimeout(() => setShowParticleExplosion(false), 100)
@@ -272,6 +354,15 @@ function App() {
         type: 'error',
         message: '🤔 Das ist noch nicht ganz richtig. Versuche es nochmal oder nutze einen Hinweis!'
       })
+
+      // Still save incorrect attempt to history
+      if (currentUser) {
+        try {
+          await addTaskToHistory(currentUser.uid, taskData)
+        } catch (error) {
+          console.error('Error saving task to Firestore:', error)
+        }
+      }
     }
   }
 
