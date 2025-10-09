@@ -65,6 +65,81 @@
   animation: celebrate 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+.dropdown-arrow {
+  font-size: 10px;
+  margin-left: 6px;
+  color: var(--text-secondary);
+  display: inline-block;
+}
+
+/* Navigation Dropdown */
+.nav-dropdown {
+  position: fixed;
+  top: 60px;
+  left: 16px;
+  right: 16px;
+  max-width: 400px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  padding: 8px;
+  z-index: 99;
+  backdrop-filter: blur(8px);
+}
+
+@media (min-width: 768px) {
+  .nav-dropdown {
+    left: 24px;
+    top: 70px;
+  }
+}
+
+.nav-dropdown-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nav-dropdown-item:hover {
+  background: var(--bg-secondary);
+}
+
+.nav-item-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.nav-item-label {
+  flex: 1;
+}
+
+.nav-item-detail {
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.nav-dropdown-item.stats-item {
+  flex-wrap: wrap;
+}
+
+.nav-dropdown-item.stats-item .nav-item-detail {
+  width: 100%;
+  margin-left: 32px;
+}
+
 .header-actions {
   display: flex;
   align-items: center;
@@ -200,6 +275,286 @@
   }
 }
 
+/* Stats Dashboard Container */
+.stats-dashboard-container {
+  margin-bottom: 32px;
+  background: color-mix(in srgb, var(--bg-card) 50%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+  border-radius: 16px;
+  padding: 20px;
+  backdrop-filter: blur(10px);
+}
+
+@media (max-width: 640px) {
+  .stats-dashboard-container {
+    padding: 16px;
+  }
+}
+
+/* Stats Dashboard */
+.stats-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.stats-grid-top {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .stats-dashboard {
+    gap: 20px;
+  }
+
+  .stats-grid-top {
+    gap: 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  .stats-grid-top {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: default;
+}
+
+.stat-card:hover {
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
+.stat-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.stat-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary);
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+
+@media (max-width: 640px) {
+  .stat-card {
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .stat-icon {
+    font-size: 28px;
+  }
+
+  .stat-value {
+    font-size: 20px;
+  }
+
+  .stat-label {
+    font-size: 12px;
+  }
+}
+
+/* Wide XP Card */
+.stat-card-wide {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: default;
+}
+
+.stat-card-wide:hover {
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
+.xp-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.xp-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.stat-icon-large {
+  font-size: 40px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.xp-info-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* XP Progression Path */
+.xp-path {
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+}
+
+.path-track {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  position: relative;
+}
+
+.path-milestone {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.milestone-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--bg-primary);
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  margin-bottom: 8px;
+  transition: all 0.3s ease;
+  z-index: 2;
+}
+
+.path-milestone.reached .milestone-icon {
+  background: var(--primary);
+  border-color: var(--primary);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--primary) 40%, transparent);
+}
+
+.path-milestone.active .milestone-icon {
+  background: var(--bg-card);
+  border-color: var(--border-hover);
+}
+
+.milestone-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.path-milestone.reached .milestone-label {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.milestone-connector {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  width: calc(100% + 8px);
+  height: 3px;
+  background: var(--bg-primary);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.connector-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), color-mix(in srgb, var(--primary) 60%, transparent));
+  border-radius: 2px;
+}
+
+.milestone-xp {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--primary);
+  white-space: nowrap;
+  background: var(--bg-card);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+@media (max-width: 640px) {
+  .stat-card-wide {
+    padding: 16px;
+  }
+
+  .xp-header {
+    gap: 12px;
+  }
+
+  .stat-icon-large {
+    font-size: 32px;
+  }
+
+  .xp-card-content {
+    gap: 16px;
+  }
+
+  .milestone-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+
+  .milestone-connector {
+    top: 16px;
+  }
+
+  .milestone-label {
+    font-size: 10px;
+  }
+
+  .milestone-xp {
+    font-size: 9px;
+    top: -18px;
+  }
+}
+
 .topics-grid {
   display: flex;
   flex-direction: column;
@@ -239,6 +594,8 @@
 
 .topic-card:hover {
   transform: translateX(12px) scale(1.02) !important;
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--primary) 20%, transparent);
 }
 
 .topic-header {
@@ -282,6 +639,14 @@
   color: var(--text-secondary);
 }
 
+.topic-meta span:first-child {
+  color: var(--primary);
+  font-weight: 600;
+  padding: 2px 8px;
+  background: color-mix(in srgb, var(--primary) 15%, transparent);
+  border-radius: 6px;
+}
+
 @media (min-width: 768px) {
   .topic-header {
     gap: 16px;
@@ -306,24 +671,32 @@
 }
 
 .progress-bar {
-  height: 4px;
+  height: 6px;
   background: var(--bg-secondary);
-  border-radius: 2px;
+  border-radius: 3px;
   overflow: hidden;
   margin-bottom: 10px;
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
 }
 
 .progress-fill {
   height: 100%;
-  background: var(--text-secondary);
+  background: linear-gradient(90deg, var(--primary), color-mix(in srgb, var(--primary) 70%, white));
   border-radius: 2px;
   transition: width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--primary) 40%, transparent);
 }
 
 .progress-text {
   font-size: 13px;
   font-weight: 500;
   color: var(--text-secondary);
+  transition: color 0.3s ease;
+}
+
+.topic-card:hover .progress-text {
+  color: var(--primary);
+  font-weight: 600;
 }
 
 .task-view {

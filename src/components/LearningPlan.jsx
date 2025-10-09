@@ -10,6 +10,7 @@ function LearningPlan({ isOpen, onClose, userSettings }) {
   const [examDate, setExamDate] = useState('')
   const [examTitle, setExamTitle] = useState('')
   const [showImageUpload, setShowImageUpload] = useState(false)
+  const [openLeitidee, setOpenLeitidee] = useState(null)
 
   // Get themes based on user settings
   const getAvailableThemes = () => {
@@ -35,6 +36,21 @@ function LearningPlan({ isOpen, onClose, userSettings }) {
     } else {
       setSelectedThemes([...selectedThemes, themeId])
     }
+  }
+
+  const toggleLeitidee = (leitidee) => {
+    if (openLeitidee === leitidee) {
+      setOpenLeitidee(null)
+    } else {
+      setOpenLeitidee(leitidee)
+    }
+  }
+
+  const getSelectedCountForThema = (leitidee, thema, unterthemen) => {
+    return unterthemen.filter(unterthema => {
+      const themeId = `${leitidee}|${thema}|${unterthema}`
+      return selectedThemes.includes(themeId)
+    }).length
   }
 
   const addToPlan = () => {
@@ -231,28 +247,57 @@ function LearningPlan({ isOpen, onClose, userSettings }) {
                     <div className="themes-tree">
                       {Object.entries(availableThemes).map(([leitidee, themen]) => (
                         <div key={leitidee} className="leitidee-group">
-                          <h4 className="leitidee-title">{leitidee}</h4>
-                          {Object.entries(themen).map(([thema, unterthemen]) => (
-                            <div key={thema} className="thema-group">
-                              <h5 className="thema-title">{thema}</h5>
-                              <div className="unterthemen-list">
-                                {unterthemen.map((unterthema, idx) => {
-                                  const themeId = `${leitidee}|${thema}|${unterthema}`
-                                  const isSelected = selectedThemes.includes(themeId)
+                          <h4
+                            className="leitidee-title"
+                            onClick={() => toggleLeitidee(leitidee)}
+                            style={{ cursor: 'pointer' }}
+                          >
+                            <span className="collapse-icon">
+                              {openLeitidee === leitidee ? '▼' : '▶'}
+                            </span>
+                            {leitidee}
+                          </h4>
+                          <AnimatePresence>
+                            {openLeitidee === leitidee && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.3 }}
+                                style={{ overflow: 'hidden' }}
+                              >
+                                {Object.entries(themen).map(([thema, unterthemen]) => {
+                                  const selectedCount = getSelectedCountForThema(leitidee, thema, unterthemen)
                                   return (
-                                    <label key={idx} className={`unterthema-item ${isSelected ? 'selected' : ''}`}>
-                                      <input
-                                        type="checkbox"
-                                        checked={isSelected}
-                                        onChange={() => toggleTheme(leitidee, thema, unterthema)}
-                                      />
-                                      <span>{unterthema}</span>
-                                    </label>
+                                    <div key={thema} className="thema-group">
+                                      <h5 className="thema-title">
+                                        {thema}
+                                        <span className="selection-count">
+                                          {selectedCount}/{unterthemen.length}
+                                        </span>
+                                      </h5>
+                                      <div className="unterthemen-list">
+                                        {unterthemen.map((unterthema, idx) => {
+                                          const themeId = `${leitidee}|${thema}|${unterthema}`
+                                          const isSelected = selectedThemes.includes(themeId)
+                                          return (
+                                            <label key={idx} className={`unterthema-item ${isSelected ? 'selected' : ''}`}>
+                                              <input
+                                                type="checkbox"
+                                                checked={isSelected}
+                                                onChange={() => toggleTheme(leitidee, thema, unterthema)}
+                                              />
+                                              <span>{unterthema}</span>
+                                            </label>
+                                          )
+                                        })}
+                                      </div>
+                                    </div>
                                   )
                                 })}
-                              </div>
-                            </div>
-                          ))}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                       ))}
                     </div>

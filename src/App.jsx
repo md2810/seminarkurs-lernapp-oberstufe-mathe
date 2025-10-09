@@ -95,6 +95,9 @@ function App() {
   // Learning Plan State
   const [learningPlanOpen, setLearningPlanOpen] = useState(false)
 
+  // Navigation Dropdown State
+  const [navDropdownOpen, setNavDropdownOpen] = useState(false)
+
   // Gamification State
   const [userStats, setUserStats] = useState({
     level: 7,
@@ -250,71 +253,60 @@ function App() {
           damping: 30
         }}
       >
-        <div className="logo">
+        <motion.div
+          className="logo"
+          onClick={() => setNavDropdownOpen(!navDropdownOpen)}
+          style={{ cursor: 'pointer' }}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
           <span className="logo-icon">📚</span>
           <span>MatheLernApp</span>
-        </div>
-        <div className="header-actions">
-          <motion.button
-            ref={statsRef}
-            className="stats-btn"
-            onClick={() => setStatsPopoverOpen(!statsPopoverOpen)}
-            whileHover={{
-              scale: 1.02,
-              y: -2,
-              transition: {
-                type: "spring",
-                stiffness: 400,
-                damping: 25
-              }
-            }}
-            whileTap={{
-              scale: 0.98
-            }}
+          <motion.span
+            className="dropdown-arrow"
+            animate={{ rotate: navDropdownOpen ? 180 : 0 }}
+            transition={{ duration: 0.2 }}
           >
-            <span className="stats-level">Level {userStats.level}</span>
-            <span className="stats-streak">🔥 {userStats.streak}</span>
-          </motion.button>
-          <motion.button
-            className="icon-btn"
-            onClick={() => setLearningPlanOpen(true)}
-            title="Lernplan"
-            whileHover={{
-              scale: 1.05,
-              y: -2,
-              transition: {
-                type: "spring",
-                stiffness: 300,
-                damping: 25
-              }
-            }}
-            whileTap={{
-              scale: 0.95
-            }}
-          >
-            📚
-          </motion.button>
-          <motion.button
-            className="icon-btn"
-            onClick={() => setSettingsOpen(true)}
-            title="Einstellungen"
-            whileHover={{
-              scale: 1.05,
-              rotate: 90,
-              transition: {
-                type: "spring",
-                stiffness: 300,
-                damping: 25
-              }
-            }}
-            whileTap={{
-              scale: 0.95
-            }}
-          >
-            ⚙️
-          </motion.button>
-        </div>
+            ▼
+          </motion.span>
+        </motion.div>
       </motion.header>
+
+      {/* Navigation Dropdown */}
+      <AnimatePresence>
+        {navDropdownOpen && (
+          <motion.div
+            className="nav-dropdown"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+          >
+            <motion.button
+              className="nav-dropdown-item"
+              onClick={() => {
+                setLearningPlanOpen(true)
+                setNavDropdownOpen(false)
+              }}
+              whileHover={{ x: 4 }}
+            >
+              <span className="nav-item-icon">📚</span>
+              <span className="nav-item-label">Lernplan</span>
+            </motion.button>
+            <motion.button
+              className="nav-dropdown-item"
+              onClick={() => {
+                setSettingsOpen(true)
+                setNavDropdownOpen(false)
+              }}
+              whileHover={{ x: 4 }}
+            >
+              <span className="nav-item-icon">⚙️</span>
+              <span className="nav-item-label">Einstellungen</span>
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <motion.div
         className="container"
@@ -325,6 +317,124 @@ function App() {
       >
         {currentView === 'dashboard' ? (
           <>
+            {/* Stats Dashboard */}
+            <motion.div
+              className="stats-dashboard-container"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                type: "spring",
+                stiffness: 300,
+                damping: 30
+              }}
+            >
+              <div className="stats-dashboard">
+                {/* Top Row: 3 Cards */}
+                <div className="stats-grid-top">
+                  <motion.div
+                    className="stat-card"
+                    whileHover={{ y: -4, scale: 1.02 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                  >
+                    <div className="stat-icon">🔥</div>
+                    <div className="stat-content">
+                      <div className="stat-value">{userStats.streak} Tage</div>
+                      <div className="stat-label">Streak</div>
+                    </div>
+                  </motion.div>
+
+                  <motion.div
+                    className="stat-card"
+                    whileHover={{ y: -4, scale: 1.02 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                  >
+                    <div className="stat-icon">🏆</div>
+                    <div className="stat-content">
+                      <div className="stat-value">Level {userStats.level}</div>
+                      <div className="stat-label">Dein Level</div>
+                    </div>
+                  </motion.div>
+
+                  <motion.div
+                    className="stat-card"
+                    whileHover={{ y: -4, scale: 1.02 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                  >
+                    <div className="stat-icon">💎</div>
+                    <div className="stat-content">
+                      <div className="stat-value">{userStats.totalXp.toLocaleString()}</div>
+                      <div className="stat-label">Gesamt XP</div>
+                    </div>
+                  </motion.div>
+                </div>
+
+                {/* Bottom Row: XP Card with Path */}
+                <motion.div
+                  className="stat-card-wide"
+                  whileHover={{ y: -4, scale: 1.01 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                >
+                  <div className="xp-card-content">
+                    <div className="xp-header">
+                      <div className="stat-icon-large">⚡</div>
+                      <div className="xp-info-main">
+                        <div className="stat-value">{userStats.xp.toLocaleString()} XP</div>
+                        <div className="stat-label">Aktuelle XP · {(userStats.xpToNextLevel - userStats.xp).toLocaleString()} XP bis Level {userStats.level + 1}</div>
+                      </div>
+                    </div>
+
+                    {/* XP Progression Path */}
+                    <motion.div
+                      className="xp-path"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <div className="path-track">
+                        {[
+                          { level: userStats.level, xp: 0, label: 'Aktuell', icon: '📍', active: true },
+                          { level: userStats.level + 1, xp: userStats.xpToNextLevel, label: `Level ${userStats.level + 1}`, icon: '🎯', active: false },
+                          { level: userStats.level + 2, xp: userStats.xpToNextLevel * 2.2, label: `Level ${userStats.level + 2}`, icon: '⭐', active: false },
+                          { level: userStats.level + 3, xp: userStats.xpToNextLevel * 3.5, label: `Level ${userStats.level + 3}`, icon: '🏆', active: false }
+                        ].map((milestone, index) => {
+                          const isReached = index === 0
+                          const progressPercent = (userStats.xp / userStats.xpToNextLevel) * 100
+                          const progress = index === 0 ? 100 : (index === 1 ? progressPercent : 0)
+                          const xpNeeded = userStats.xpToNextLevel - userStats.xp
+
+                          return (
+                            <motion.div
+                              key={milestone.level}
+                              className={`path-milestone ${isReached ? 'reached' : ''} ${milestone.active ? 'active' : ''}`}
+                              initial={{ opacity: 0, scale: 0.8 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{ delay: 0.3 + index * 0.1 }}
+                            >
+                              <div className="milestone-icon">{milestone.icon}</div>
+                              <div className="milestone-label">{milestone.label}</div>
+                              {index < 3 && (
+                                <div className="milestone-connector">
+                                  <motion.div
+                                    className="connector-fill"
+                                    initial={{ width: '0%' }}
+                                    animate={{ width: index === 0 ? `${progress}%` : '0%' }}
+                                    transition={{ delay: 0.5, duration: 0.8, ease: "easeOut" }}
+                                  />
+                                </div>
+                              )}
+                              {index === 1 && (
+                                <div className="milestone-xp">{xpNeeded.toLocaleString()} XP</div>
+                              )}
+                            </motion.div>
+                          )
+                        })}
+                      </div>
+                    </motion.div>
+                  </div>
+                </motion.div>
+              </div>
+            </motion.div>
+
             {/* Topics Grid */}
             <motion.div
               className="topics-grid"
