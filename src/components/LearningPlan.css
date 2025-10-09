@@ -40,6 +40,15 @@
   font-weight: 700;
   color: var(--text-primary);
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.modal-header h2 svg {
+  width: 24px;
+  height: 24px;
+  color: var(--primary);
 }
 
 .close-btn {
@@ -57,10 +66,14 @@
   transition: all 0.2s;
 }
 
+.close-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
 .close-btn:hover {
   background: var(--bg-secondary);
   color: var(--text-primary);
-  transform: scale(1.05);
 }
 
 .modal-content {
@@ -85,8 +98,16 @@
 
 .empty-icon {
   font-size: 64px;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-bottom: 16px;
+  color: var(--text-secondary);
+}
+
+.empty-icon svg {
+  width: 64px;
+  height: 64px;
 }
 
 .empty-state p {
@@ -160,6 +181,12 @@
   white-space: nowrap;
 }
 
+.exam-date svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
 .exam-date.urgent {
   background: rgba(249, 115, 22, 0.1);
   border-color: var(--primary);
@@ -208,6 +235,14 @@
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.remove-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 .remove-btn:hover {
@@ -310,7 +345,15 @@
 
 .collapse-icon {
   font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: transform 0.3s ease;
+}
+
+.collapse-icon svg {
+  width: 14px;
+  height: 14px;
 }
 
 .thema-group {

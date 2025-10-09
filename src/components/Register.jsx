@@ -1,49 +1,130 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../contexts/AuthContext'
-import { EnvelopeSimple, Lock } from '@phosphor-icons/react'
+import { EnvelopeSimple, Lock, User, CheckCircle } from '@phosphor-icons/react'
 import './Login.css'
 
-function Login({ onLogin, onSwitchToRegister }) {
+function Register({ onSwitchToLogin, onRegisterSuccess }) {
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
 
-  const { login } = useAuth()
+  const { signup } = useAuth()
+
+  const validateEmail = (email) => {
+    return email.endsWith('@mvl-gym.de')
+  }
+
+  const validatePassword = (password) => {
+    return password.length >= 6
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    setSuccess(false)
+
+    // Validation
+    if (!name.trim()) {
+      setError('Bitte gib deinen Namen ein')
+      return
+    }
+
+    if (!validateEmail(email)) {
+      setError('Bitte verwende eine @mvl-gym.de E-Mail-Adresse')
+      return
+    }
+
+    if (!validatePassword(password)) {
+      setError('Das Passwort muss mindestens 6 Zeichen lang sein')
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setError('Die Passwörter stimmen nicht überein')
+      return
+    }
+
     setLoading(true)
 
     try {
-      const userCredential = await login(email, password)
-      const user = userCredential.user
+      await signup(email, password, name)
+      setSuccess(true)
 
-      // Check if email is verified
-      if (!user.emailVerified) {
-        setError('Bitte bestätige zuerst deine E-Mail-Adresse.')
-        setLoading(false)
-        return
-      }
-
-      // Success - user is logged in and verified
-      onLogin(user)
+      // Redirect to email verification screen after 2 seconds
+      setTimeout(() => {
+        onRegisterSuccess()
+      }, 2000)
     } catch (err) {
-      console.error('Login error:', err)
-      if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
-        setError('Ungültige E-Mail oder Passwort')
-      } else if (err.code === 'auth/too-many-requests') {
-        setError('Zu viele fehlgeschlagene Versuche. Bitte warte einen Moment.')
+      console.error('Registration error:', err)
+      if (err.code === 'auth/email-already-in-use') {
+        setError('Diese E-Mail-Adresse wird bereits verwendet')
+      } else if (err.code === 'auth/weak-password') {
+        setError('Das Passwort ist zu schwach')
       } else if (err.code === 'auth/invalid-email') {
         setError('Ungültige E-Mail-Adresse')
       } else {
-        setError('Bei der Anmeldung ist ein Fehler aufgetreten')
+        setError(err.message || 'Bei der Registrierung ist ein Fehler aufgetreten')
       }
     } finally {
       setLoading(false)
     }
+  }
+
+  if (success) {
+    return (
+      <motion.div
+        className="login-container"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
+        <motion.div
+          className="login-card card"
+          initial={{ opacity: 0, scale: 0.9, filter: "blur(15px)" }}
+          animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+          transition={{
+            type: "spring",
+            stiffness: 200,
+            damping: 25
+          }}
+        >
+          <motion.div
+            className="login-header"
+            style={{ textAlign: 'center' }}
+          >
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{
+                type: "spring",
+                stiffness: 300,
+                damping: 20
+              }}
+            >
+              <CheckCircle size={64} weight="fill" color="#10b981" />
+            </motion.div>
+            <motion.h1
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              Registrierung erfolgreich!
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              Bitte überprüfe deine E-Mails und bestätige deine E-Mail-Adresse.
+            </motion.p>
+          </motion.div>
+        </motion.div>
+      </motion.div>
+    )
   }
 
   return (
@@ -51,9 +132,6 @@ function Login({ onLogin, onSwitchToRegister }) {
       className="login-container"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{
-        duration: 0.5
-      }}
     >
       <motion.div
         className="login-card card"
@@ -100,7 +178,7 @@ function Login({ onLogin, onSwitchToRegister }) {
               delay: 0.3
             }}
           >
-            MatheLernApp
+            Registrierung
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 10 }}
@@ -112,7 +190,7 @@ function Login({ onLogin, onSwitchToRegister }) {
               delay: 0.35
             }}
           >
-            Dein interaktiver Mathe-Tutor
+            Erstelle deinen Account
           </motion.p>
         </motion.div>
 
@@ -134,8 +212,39 @@ function Login({ onLogin, onSwitchToRegister }) {
               delay: 0.45
             }}
           >
+            <label htmlFor="name">
+              <User size={16} weight="bold" /> Name
+            </label>
+            <motion.input
+              id="name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Max Mustermann"
+              className="form-input"
+              autoComplete="name"
+              required
+              whileFocus={{
+                scale: 1.02,
+                boxShadow: "0 0 20px rgba(249, 115, 22, 0.3)",
+                transition: { type: "spring", stiffness: 350, damping: 25 }
+              }}
+            />
+          </motion.div>
+
+          <motion.div
+            className="form-group"
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{
+              type: "spring",
+              stiffness: 260,
+              damping: 25,
+              delay: 0.5
+            }}
+          >
             <label htmlFor="email">
-              <EnvelopeSimple size={16} weight="bold" /> E-Mail
+              <EnvelopeSimple size={16} weight="bold" /> E-Mail (@mvl-gym.de)
             </label>
             <motion.input
               id="email"
@@ -162,7 +271,7 @@ function Login({ onLogin, onSwitchToRegister }) {
               type: "spring",
               stiffness: 260,
               damping: 25,
-              delay: 0.5
+              delay: 0.55
             }}
           >
             <label htmlFor="password">
@@ -173,9 +282,40 @@ function Login({ onLogin, onSwitchToRegister }) {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Dein Passwort"
+              placeholder="Mindestens 6 Zeichen"
               className="form-input"
-              autoComplete="current-password"
+              autoComplete="new-password"
+              required
+              whileFocus={{
+                scale: 1.02,
+                boxShadow: "0 0 20px rgba(249, 115, 22, 0.3)",
+                transition: { type: "spring", stiffness: 350, damping: 25 }
+              }}
+            />
+          </motion.div>
+
+          <motion.div
+            className="form-group"
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{
+              type: "spring",
+              stiffness: 260,
+              damping: 25,
+              delay: 0.6
+            }}
+          >
+            <label htmlFor="confirmPassword">
+              <Lock size={16} weight="bold" /> Passwort bestätigen
+            </label>
+            <motion.input
+              id="confirmPassword"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Passwort wiederholen"
+              className="form-input"
+              autoComplete="new-password"
               required
               whileFocus={{
                 scale: 1.02,
@@ -213,7 +353,7 @@ function Login({ onLogin, onSwitchToRegister }) {
               type: "spring",
               stiffness: 260,
               damping: 25,
-              delay: 0.55
+              delay: 0.65
             }}
             whileHover={{
               scale: 1.05,
@@ -225,7 +365,7 @@ function Login({ onLogin, onSwitchToRegister }) {
               scale: 0.95
             }}
           >
-            {loading ? 'Lädt...' : 'Anmelden'}
+            {loading ? 'Registrierung läuft...' : 'Registrieren'}
           </motion.button>
         </motion.form>
 
@@ -237,12 +377,12 @@ function Login({ onLogin, onSwitchToRegister }) {
             type: "spring",
             stiffness: 260,
             damping: 25,
-            delay: 0.6
+            delay: 0.7
           }}
         >
-          Noch kein Account?{' '}
+          Bereits registriert?{' '}
           <motion.button
-            onClick={onSwitchToRegister}
+            onClick={onSwitchToLogin}
             style={{
               background: 'none',
               border: 'none',
@@ -254,7 +394,7 @@ function Login({ onLogin, onSwitchToRegister }) {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            Jetzt registrieren
+            Zum Login
           </motion.button>
         </motion.div>
       </motion.div>
@@ -262,4 +402,4 @@ function Login({ onLogin, onSwitchToRegister }) {
   )
 }
 
-export default Login
+export default Register

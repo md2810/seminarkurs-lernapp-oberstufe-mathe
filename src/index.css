@@ -127,6 +127,13 @@ button {
   border: none;
   position: relative;
   overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.btn svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 .btn-primary {

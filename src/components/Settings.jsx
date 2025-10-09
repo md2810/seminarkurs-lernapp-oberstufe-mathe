@@ -1,5 +1,15 @@
 import { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import './Settings.css'
+import {
+  X,
+  Sparkle,
+  GraduationCap,
+  Books,
+  Palette,
+  Robot,
+  Lightbulb
+} from '@phosphor-icons/react'
 
 const colorPresets = [
   { name: 'Orange', primary: '#f97316' },
@@ -16,8 +26,8 @@ const gradeLevels = [
 ]
 
 const courseTypes = [
-  { value: 'Leistungsfach', label: 'Leistungsfach', icon: '🎓' },
-  { value: 'Basisfach', label: 'Basisfach', icon: '📚' }
+  { value: 'Leistungsfach', label: 'Leistungsfach', icon: GraduationCap },
+  { value: 'Basisfach', label: 'Basisfach', icon: Books }
 ]
 
 function Settings({ isOpen, onClose, settings, onSettingsChange }) {
@@ -126,17 +136,72 @@ function Settings({ isOpen, onClose, settings, onSettingsChange }) {
   if (!isOpen) return null
 
   return (
-    <div className="settings-overlay" onClick={onClose}>
-      <div className="settings-panel card" onClick={(e) => e.stopPropagation()}>
-        <div className="settings-header">
-          <h2>Einstellungen</h2>
-          <button className="close-btn" onClick={onClose}>✕</button>
-        </div>
+    <AnimatePresence>
+      <motion.div
+        className="settings-overlay"
+        onClick={onClose}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{
+          type: "spring",
+          stiffness: 300,
+          damping: 30
+        }}
+      >
+        <motion.div
+          className="settings-panel card"
+          onClick={(e) => e.stopPropagation()}
+          initial={{ opacity: 0, x: 300, scale: 0.9, filter: "blur(10px)" }}
+          animate={{ opacity: 1, x: 0, scale: 1, filter: "blur(0px)" }}
+          exit={{ opacity: 0, x: 300, scale: 0.9, filter: "blur(10px)" }}
+          transition={{
+            type: "spring",
+            stiffness: 280,
+            damping: 28,
+            mass: 0.9
+          }}
+        >
+          <motion.div
+            className="settings-header"
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{
+              type: "spring",
+              stiffness: 300,
+              damping: 25,
+              delay: 0.05
+            }}
+          >
+            <h2>Einstellungen</h2>
+            <motion.button
+              className="close-btn"
+              onClick={onClose}
+              whileHover={{
+                scale: 1.1,
+                rotate: 90,
+                transition: { type: "spring", stiffness: 400, damping: 20 }
+              }}
+              whileTap={{ scale: 0.9 }}
+            >
+              <X weight="bold" />
+            </motion.button>
+          </motion.div>
 
-        <div className="settings-content">
-          {/* Academic Settings */}
-          <section className="settings-section">
-            <h3>🎓 Akademische Einstellungen</h3>
+          <div className="settings-content">
+            {/* Academic Settings with smooth stagger */}
+            <motion.section
+              className="settings-section"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                type: "spring",
+                stiffness: 260,
+                damping: 26,
+                delay: 0.1
+              }}
+            >
+            <h3><GraduationCap weight="bold" /> Akademische Einstellungen</h3>
             <p className="section-description">
               Passe die App an deine Klassenstufe und Kurstyp an
             </p>
@@ -145,16 +210,30 @@ function Settings({ isOpen, onClose, settings, onSettingsChange }) {
               <div className="setting-group">
                 <label className="setting-label">Klassenstufe</label>
                 <div className="grade-selector">
-                  {gradeLevels.map((grade) => (
-                    <button
+                  {gradeLevels.map((grade, index) => (
+                    <motion.button
                       key={grade.value}
                       className={`option-btn ${
                         localSettings.gradeLevel === grade.value ? 'active' : ''
                       }`}
                       onClick={() => handleGradeLevelChange(grade.value)}
+                      whileHover={{
+                        scale: 1.05,
+                        y: -2,
+                        transition: { type: "spring", stiffness: 400, damping: 18 }
+                      }}
+                      whileTap={{ scale: 0.95 }}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 280,
+                        damping: 25,
+                        delay: 0.15 + index * 0.05
+                      }}
                     >
                       {grade.label}
-                    </button>
+                    </motion.button>
                   ))}
                 </div>
               </div>
@@ -162,52 +241,105 @@ function Settings({ isOpen, onClose, settings, onSettingsChange }) {
               <div className="setting-group">
                 <label className="setting-label">Kurstyp</label>
                 <div className="course-type-selector">
-                  {courseTypes.map((course) => (
-                    <button
+                  {courseTypes.map((course, index) => (
+                    <motion.button
                       key={course.value}
                       className={`course-btn ${
                         localSettings.courseType === course.value ? 'active' : ''
                       }`}
                       onClick={() => handleCourseTypeChange(course.value)}
+                      whileHover={{
+                        scale: 1.04,
+                        y: -3,
+                        transition: { type: "spring", stiffness: 400, damping: 18 }
+                      }}
+                      whileTap={{ scale: 0.96 }}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 280,
+                        damping: 25,
+                        delay: 0.25 + index * 0.05
+                      }}
                     >
-                      <span className="course-icon">{course.icon}</span>
+                      <span className="course-icon"><course.icon weight="bold" /></span>
                       <span>{course.label}</span>
-                    </button>
+                    </motion.button>
                   ))}
                 </div>
               </div>
             </div>
-          </section>
+            </motion.section>
 
-          {/* Theme Section */}
-          <section className="settings-section">
-            <h3>🎨 Design</h3>
+            {/* Theme Section with stagger */}
+            <motion.section
+              className="settings-section"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                type: "spring",
+                stiffness: 260,
+                damping: 26,
+                delay: 0.2
+              }}
+            >
+            <h3><Palette weight="bold" /> Design</h3>
             <p className="section-description">
               Wähle deine Lieblingsfarbe für die App
             </p>
 
             <div className="color-grid">
-              {colorPresets.map((preset) => (
-                <button
+              {colorPresets.map((preset, index) => (
+                <motion.button
                   key={preset.name}
                   className={`color-preset ${
                     localSettings.theme.name === preset.name ? 'active' : ''
                   }`}
                   onClick={() => handleColorChange(preset)}
+                  whileHover={{
+                    scale: 1.1,
+                    y: -4,
+                    transition: { type: "spring", stiffness: 400, damping: 18 }
+                  }}
+                  whileTap={{ scale: 0.9 }}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 300,
+                    damping: 25,
+                    delay: 0.3 + index * 0.04
+                  }}
                 >
-                  <div
+                  <motion.div
                     className="color-preview"
                     style={{ background: preset.primary }}
+                    whileHover={{
+                      scale: 1.2,
+                      rotate: 180,
+                      transition: { type: "spring", stiffness: 300, damping: 20 }
+                    }}
                   />
                   <span>{preset.name}</span>
-                </button>
+                </motion.button>
               ))}
             </div>
-          </section>
+            </motion.section>
 
-          {/* AI Model Settings */}
-          <section className="settings-section">
-            <h3>🤖 KI-Tutor Verhalten</h3>
+            {/* AI Model Settings with smooth entry */}
+            <motion.section
+              className="settings-section"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                type: "spring",
+                stiffness: 260,
+                damping: 26,
+                delay: 0.3
+              }}
+            >
+            <h3><Robot weight="bold" /> KI-Tutor Verhalten</h3>
             <p className="section-description">
               Passe an, wie der KI-Tutor dir Antworten gibt
             </p>
@@ -216,7 +348,7 @@ function Settings({ isOpen, onClose, settings, onSettingsChange }) {
               <div className="auto-mode-header">
                 <div className="auto-mode-info">
                   <h4 className="auto-mode-title">
-                    <span className="auto-icon">✨</span>
+                    <span className="auto-icon"><Sparkle weight="bold" /></span>
                     AUTO Modus
                   </h4>
                   <p className="auto-description">
@@ -320,17 +452,28 @@ function Settings({ isOpen, onClose, settings, onSettingsChange }) {
                 </div>
               </div>
             </div>
-          </section>
+            </motion.section>
 
-          {/* Info Section */}
-          <section className="settings-section">
-            <div className="settings-info">
-              💡 Deine Einstellungen werden lokal gespeichert und bleiben erhalten.
-            </div>
-          </section>
-        </div>
-      </div>
-    </div>
+            {/* Info Section with smooth entry */}
+            <motion.section
+              className="settings-section"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                type: "spring",
+                stiffness: 260,
+                damping: 26,
+                delay: 0.4
+              }}
+            >
+              <div className="settings-info">
+                <Lightbulb weight="bold" /> Deine Einstellungen werden lokal gespeichert und bleiben erhalten.
+              </div>
+            </motion.section>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   )
 }
 
