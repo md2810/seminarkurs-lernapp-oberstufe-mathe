@@ -11,15 +11,16 @@
 
 .learning-plan-modal {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: min(900px, calc(100vw - 32px));
-  max-height: 85vh;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100vh;
   background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  box-shadow: var(--neo-shadow);
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
   z-index: 1001;
   overflow: hidden;
   display: flex;
@@ -359,16 +360,6 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .learning-plan-modal {
-    width: 100%;
-    height: 100%;
-    max-height: 100vh;
-    border-radius: 0;
-    top: 0;
-    left: 0;
-    transform: none;
-  }
-
   .modal-header {
     padding: 16px;
   }

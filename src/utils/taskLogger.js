@@ -19,7 +19,7 @@ export const logTask = (taskData) => {
       xpEarned: taskData.xpEarned,
       userAnswer: taskData.userAnswer || null,
       // Additional metadata
-      gradeLevel: taskData.gradeLevel || 'Klassen_11_12',
+      gradeLevel: taskData.gradeLevel || 'Klasse_11',
       courseType: taskData.courseType || 'Leistungsfach'
     }
 

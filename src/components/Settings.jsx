@@ -11,7 +11,8 @@ const colorPresets = [
 ]
 
 const gradeLevels = [
-  { value: 'Klassen_11_12', label: 'Klasse 11/12' }
+  { value: 'Klasse_11', label: 'Klasse 11' },
+  { value: 'Klasse_12', label: 'Klasse 12' }
 ]
 
 const courseTypes = [
@@ -212,20 +213,43 @@ function Settings({ isOpen, onClose, settings, onSettingsChange }) {
             </p>
 
             <div className="auto-mode-container">
-              <button
-                className={`auto-mode-btn ${autoMode ? 'active' : ''}`}
-                onClick={handleAutoMode}
-                title="Lass die KI automatisch die besten Einstellungen für dich wählen"
-              >
-                <span className="auto-icon">✨</span>
-                <span>AUTO Modus</span>
-                {autoMode && <span className="auto-badge">Aktiv</span>}
-              </button>
-              <p className="auto-description">
-                {autoMode
-                  ? '✓ Die KI passt ihre Hilfestellung automatisch an deinen Lernfortschritt an'
-                  : 'Aktiviere den AUTO-Modus für automatisch optimierte Einstellungen'}
-              </p>
+              <div className="auto-mode-header">
+                <div className="auto-mode-info">
+                  <h4 className="auto-mode-title">
+                    <span className="auto-icon">✨</span>
+                    AUTO Modus
+                  </h4>
+                  <p className="auto-description">
+                    {autoMode
+                      ? 'Die KI passt ihre Hilfestellung automatisch an deinen Lernfortschritt an'
+                      : 'Lasse die KI automatisch die besten Einstellungen für dich wählen'}
+                  </p>
+                </div>
+                <label className="auto-toggle">
+                  <input
+                    type="checkbox"
+                    checked={autoMode}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        handleAutoMode()
+                      } else {
+                        // Disable auto mode but keep current values
+                        const newSettings = {
+                          ...localSettings,
+                          aiModel: {
+                            ...localSettings.aiModel,
+                            autoMode: false
+                          }
+                        }
+                        setLocalSettings(newSettings)
+                        setAutoMode(false)
+                        onSettingsChange(newSettings)
+                      }
+                    }}
+                  />
+                  <span className="toggle-slider"></span>
+                </label>
+              </div>
             </div>
 
             <div className={`slider-group ${autoMode ? 'disabled' : ''}`}>

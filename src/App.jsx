@@ -63,12 +63,12 @@ const defaultSettings = {
     primary: '#f97316'
   },
   aiModel: {
-    detailLevel: 70,
-    temperature: 0.7,
-    helpfulness: 80,
-    autoMode: false
+    detailLevel: 50,
+    temperature: 0.5,
+    helpfulness: 50,
+    autoMode: true
   },
-  gradeLevel: 'Klassen_11_12',
+  gradeLevel: 'Klasse_11',
   courseType: 'Leistungsfach'
 }
 

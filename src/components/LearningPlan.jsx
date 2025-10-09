@@ -13,10 +13,13 @@ function LearningPlan({ isOpen, onClose, userSettings }) {
 
   // Get themes based on user settings
   const getAvailableThemes = () => {
-    const gradeLevel = userSettings.gradeLevel || 'Klassen_11_12'
+    // Map new grade levels to the data structure
+    let gradeLevel = userSettings.gradeLevel || 'Klasse_11'
+    // Both Klasse_11 and Klasse_12 use the same curriculum data
+    const dataKey = 'Klassen_11_12'
     const courseType = userSettings.courseType || 'Leistungsfach'
 
-    const themes = themesData[gradeLevel]?.[courseType]
+    const themes = themesData[dataKey]?.[courseType]
     if (!themes) return {}
 
     return themes
