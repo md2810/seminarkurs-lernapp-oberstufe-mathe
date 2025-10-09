@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { MapPin, Target, Star, Trophy, Fire } from '@phosphor-icons/react'
 import './StatsPopover.css'
 
 function StatsPopover({ isOpen, onClose, userStats, anchorRef }) {
@@ -160,13 +161,14 @@ function StatsPopover({ isOpen, onClose, userStats, anchorRef }) {
           <div className="path-title">Dein Level-Pfad</div>
           <div className="path-track">
             {[
-              { level: userStats.level, xp: 0, label: 'Aktuell', icon: '📍', active: true },
-              { level: userStats.level + 1, xp: userStats.xpToNextLevel, label: `Level ${userStats.level + 1}`, icon: '🎯', active: false },
-              { level: userStats.level + 2, xp: userStats.xpToNextLevel * 2.2, label: `Level ${userStats.level + 2}`, icon: '⭐', active: false },
-              { level: userStats.level + 3, xp: userStats.xpToNextLevel * 3.5, label: `Level ${userStats.level + 3}`, icon: '🏆', active: false }
+              { level: userStats.level, xp: 0, label: 'Aktuell', icon: MapPin, active: true },
+              { level: userStats.level + 1, xp: userStats.xpToNextLevel, label: `Level ${userStats.level + 1}`, icon: Target, active: false },
+              { level: userStats.level + 2, xp: userStats.xpToNextLevel * 2.2, label: `Level ${userStats.level + 2}`, icon: Star, active: false },
+              { level: userStats.level + 3, xp: userStats.xpToNextLevel * 3.5, label: `Level ${userStats.level + 3}`, icon: Trophy, active: false }
             ].map((milestone, index) => {
               const isReached = index === 0
               const progress = index === 0 ? 100 : (index === 1 ? progressPercent : 0)
+              const IconComponent = milestone.icon
 
               return (
                 <motion.div
@@ -176,7 +178,7 @@ function StatsPopover({ isOpen, onClose, userStats, anchorRef }) {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.3 + index * 0.1 }}
                 >
-                  <div className="milestone-icon">{milestone.icon}</div>
+                  <div className="milestone-icon"><IconComponent weight="bold" /></div>
                   <div className="milestone-label">{milestone.label}</div>
                   {index < 3 && (
                     <div className="milestone-connector">
@@ -199,17 +201,17 @@ function StatsPopover({ isOpen, onClose, userStats, anchorRef }) {
 
         <div className="stats-grid">
           <div className="stat-box">
-            <div className="stat-icon">🎯</div>
+            <div className="stat-icon"><Target weight="bold" /></div>
             <div className="stat-value">{xpNeeded.toLocaleString()}</div>
             <div className="stat-label">bis Level {userStats.level + 1}</div>
           </div>
           <div className="stat-box">
-            <div className="stat-icon">🏆</div>
+            <div className="stat-icon"><Trophy weight="bold" /></div>
             <div className="stat-value">{userStats.totalXp.toLocaleString()}</div>
             <div className="stat-label">Gesamt XP</div>
           </div>
           <div className="stat-box highlight">
-            <div className="stat-icon">🔥</div>
+            <div className="stat-icon"><Fire weight="bold" /></div>
             <div className="stat-value">{userStats.streak}</div>
             <div className="stat-label">Tage Streak</div>
           </div>

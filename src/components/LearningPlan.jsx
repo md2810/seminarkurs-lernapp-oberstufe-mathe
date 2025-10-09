@@ -2,6 +2,16 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import themesData from '../../data/bw_oberstufe_themen.json'
 import './LearningPlan.css'
+import {
+  Books,
+  X,
+  NotePencil,
+  CalendarBlank,
+  Trash,
+  Camera,
+  CaretRight,
+  CaretDown
+} from '@phosphor-icons/react'
 
 function LearningPlan({ isOpen, onClose, userSettings }) {
   const [learningPlan, setLearningPlan] = useState([])
@@ -123,33 +133,71 @@ function LearningPlan({ isOpen, onClose, userSettings }) {
           />
           <motion.div
             className="learning-plan-modal"
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            initial={{ opacity: 0, scale: 0.9, y: 40, filter: "blur(15px)" }}
+            animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
+            exit={{ opacity: 0, scale: 0.9, y: 40, filter: "blur(15px)" }}
+            transition={{
+              type: "spring",
+              stiffness: 280,
+              damping: 28,
+              mass: 0.9
+            }}
           >
-            <div className="modal-header">
-              <h2>📚 Mein Lernplan</h2>
-              <button className="close-btn" onClick={onClose}>✕</button>
-            </div>
+            <motion.div
+              className="modal-header"
+              initial={{ y: -20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{
+                type: "spring",
+                stiffness: 300,
+                damping: 25,
+                delay: 0.05
+              }}
+            >
+              <h2><Books weight="bold" /> Mein Lernplan</h2>
+              <motion.button
+                className="close-btn"
+                onClick={onClose}
+                whileHover={{
+                  scale: 1.1,
+                  rotate: 90,
+                  transition: { type: "spring", stiffness: 400, damping: 20 }
+                }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <X weight="bold" />
+              </motion.button>
+            </motion.div>
 
             <div className="modal-content">
               {/* Current Learning Plan */}
               <div className="plan-list">
                 {learningPlan.length === 0 ? (
                   <div className="empty-state">
-                    <span className="empty-icon">📝</span>
+                    <span className="empty-icon"><NotePencil weight="bold" /></span>
                     <p>Dein Lernplan ist noch leer</p>
                     <p className="empty-hint">Füge Themen hinzu, um strukturiert zu lernen!</p>
                   </div>
                 ) : (
-                  learningPlan.map(item => (
+                  learningPlan.map((item, index) => (
                     <motion.div
                       key={item.id}
                       className={`plan-item ${item.completed ? 'completed' : ''}`}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
+                      initial={{ opacity: 0, y: 20, scale: 0.95, filter: "blur(5px)" }}
+                      animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+                      exit={{ opacity: 0, scale: 0.95, x: -100 }}
                       layout
+                      transition={{
+                        type: "spring",
+                        stiffness: 280,
+                        damping: 26,
+                        delay: index * 0.05
+                      }}
+                      whileHover={{
+                        scale: 1.02,
+                        y: -4,
+                        transition: { type: "spring", stiffness: 400, damping: 20 }
+                      }}
                     >
                       <div className="plan-item-header">
                         <div className="plan-item-title">
@@ -163,7 +211,7 @@ function LearningPlan({ isOpen, onClose, userSettings }) {
                         </div>
                         {item.examDate && (
                           <div className={`exam-date ${getDaysUntilExam(item.examDate) <= 7 ? 'urgent' : ''}`}>
-                            📅 {new Date(item.examDate).toLocaleDateString('de-DE')}
+                            <CalendarBlank weight="bold" /> {new Date(item.examDate).toLocaleDateString('de-DE')}
                             {getDaysUntilExam(item.examDate) >= 0 && (
                               <span className="days-until">
                                 {getDaysUntilExam(item.examDate) === 0 ? ' Heute!' : ` in ${getDaysUntilExam(item.examDate)} Tagen`}
@@ -180,12 +228,18 @@ function LearningPlan({ isOpen, onClose, userSettings }) {
                           </div>
                         ))}
                       </div>
-                      <button
+                      <motion.button
                         className="remove-btn"
                         onClick={() => removePlanItem(item.id)}
+                        whileHover={{
+                          scale: 1.05,
+                          x: 4,
+                          transition: { type: "spring", stiffness: 400, damping: 20 }
+                        }}
+                        whileTap={{ scale: 0.95 }}
                       >
-                        🗑️ Entfernen
-                      </button>
+                        <Trash weight="bold" /> Entfernen
+                      </motion.button>
                     </motion.div>
                   ))
                 )}
@@ -193,14 +247,31 @@ function LearningPlan({ isOpen, onClose, userSettings }) {
 
               {/* Add New Button */}
               {!showThemeSelector && (
-                <div className="add-plan-section">
-                  <button
+                <motion.div
+                  className="add-plan-section"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 260,
+                    damping: 25,
+                    delay: 0.2
+                  }}
+                >
+                  <motion.button
                     className="btn btn-primary"
                     onClick={() => setShowThemeSelector(true)}
+                    whileHover={{
+                      scale: 1.05,
+                      y: -3,
+                      boxShadow: "0 10px 40px rgba(249, 115, 22, 0.4)",
+                      transition: { type: "spring", stiffness: 400, damping: 18 }
+                    }}
+                    whileTap={{ scale: 0.95 }}
                   >
                     + Neues Lernziel hinzufügen
-                  </button>
-                </div>
+                  </motion.button>
+                </motion.div>
               )}
 
               {/* Theme Selector */}
@@ -208,9 +279,14 @@ function LearningPlan({ isOpen, onClose, userSettings }) {
                 {showThemeSelector && (
                   <motion.div
                     className="theme-selector"
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
+                    initial={{ opacity: 0, height: 0, scale: 0.95, filter: "blur(5px)" }}
+                    animate={{ opacity: 1, height: 'auto', scale: 1, filter: "blur(0px)" }}
+                    exit={{ opacity: 0, height: 0, scale: 0.95, filter: "blur(5px)" }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 280,
+                      damping: 28
+                    }}
                   >
                     <h3>Themen auswählen</h3>
 
@@ -239,7 +315,7 @@ function LearningPlan({ isOpen, onClose, userSettings }) {
                         title="Kommt bald: Lade ein Foto deiner Themenliste hoch"
                         disabled
                       >
-                        📷 Themenliste hochladen (Bald verfügbar)
+                        <Camera weight="bold" /> Themenliste hochladen (Bald verfügbar)
                       </button>
                     </div>
 
@@ -253,17 +329,21 @@ function LearningPlan({ isOpen, onClose, userSettings }) {
                             style={{ cursor: 'pointer' }}
                           >
                             <span className="collapse-icon">
-                              {openLeitidee === leitidee ? '▼' : '▶'}
+                              {openLeitidee === leitidee ? <CaretDown weight="bold" /> : <CaretRight weight="bold" />}
                             </span>
                             {leitidee}
                           </h4>
                           <AnimatePresence>
                             {openLeitidee === leitidee && (
                               <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                transition={{ duration: 0.3 }}
+                                initial={{ height: 0, opacity: 0, filter: "blur(5px)" }}
+                                animate={{ height: 'auto', opacity: 1, filter: "blur(0px)" }}
+                                exit={{ height: 0, opacity: 0, filter: "blur(5px)" }}
+                                transition={{
+                                  type: "spring",
+                                  stiffness: 280,
+                                  damping: 28
+                                }}
                                 style={{ overflow: 'hidden' }}
                               >
                                 {Object.entries(themen).map(([thema, unterthemen]) => {
@@ -302,9 +382,19 @@ function LearningPlan({ isOpen, onClose, userSettings }) {
                       ))}
                     </div>
 
-                    {/* Actions */}
-                    <div className="selector-actions">
-                      <button
+                    {/* Actions with smooth animations */}
+                    <motion.div
+                      className="selector-actions"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 260,
+                        damping: 25,
+                        delay: 0.2
+                      }}
+                    >
+                      <motion.button
                         className="btn btn-secondary"
                         onClick={() => {
                           setShowThemeSelector(false)
@@ -312,17 +402,30 @@ function LearningPlan({ isOpen, onClose, userSettings }) {
                           setExamDate('')
                           setExamTitle('')
                         }}
+                        whileHover={{
+                          scale: 1.04,
+                          y: -2,
+                          transition: { type: "spring", stiffness: 400, damping: 18 }
+                        }}
+                        whileTap={{ scale: 0.96 }}
                       >
                         Abbrechen
-                      </button>
-                      <button
+                      </motion.button>
+                      <motion.button
                         className="btn btn-primary"
                         onClick={addToPlan}
                         disabled={selectedThemes.length === 0}
+                        whileHover={{
+                          scale: selectedThemes.length > 0 ? 1.05 : 1,
+                          y: selectedThemes.length > 0 ? -3 : 0,
+                          boxShadow: selectedThemes.length > 0 ? "0 10px 40px rgba(249, 115, 22, 0.4)" : "none",
+                          transition: { type: "spring", stiffness: 400, damping: 18 }
+                        }}
+                        whileTap={{ scale: selectedThemes.length > 0 ? 0.95 : 1 }}
                       >
                         Zum Lernplan hinzufügen ({selectedThemes.length})
-                      </button>
-                    </div>
+                      </motion.button>
+                    </motion.div>
                   </motion.div>
                 )}
               </AnimatePresence>

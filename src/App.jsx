@@ -1,19 +1,43 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, useMotionValue, useTransform, useSpring, AnimatePresence } from 'framer-motion'
+import { useAuth } from './contexts/AuthContext'
 import './App.css'
 import Login from './components/Login'
+import Register from './components/Register'
+import EmailVerification from './components/EmailVerification'
 import Settings from './components/Settings'
 import StatsPopover from './components/StatsPopover'
 import ParticleExplosion from './components/ParticleExplosion'
 import LearningPlan from './components/LearningPlan'
 import { logTask } from './utils/taskLogger'
+import {
+  BookOpenText,
+  CaretDown,
+  CaretRight,
+  Books,
+  Gear,
+  Fire,
+  Trophy,
+  Diamond,
+  Lightning,
+  MapPin,
+  Target,
+  Star,
+  TrendUp,
+  Ruler,
+  DiceSix,
+  Lightbulb,
+  Check,
+  FastForward,
+  ArrowLeft
+} from '@phosphor-icons/react'
 
 // Dummy-Daten
 const topics = [
   {
     id: 1,
     title: 'Analysis',
-    icon: '📈',
+    icon: TrendUp,
     description: 'Ableitungen, Kurvendiskussion, Integrale und Extremwertprobleme',
     progress: 65,
     completed: 13,
@@ -23,7 +47,7 @@ const topics = [
   {
     id: 2,
     title: 'Analytische Geometrie',
-    icon: '📐',
+    icon: Ruler,
     description: 'Vektoren, Geraden, Ebenen und Lagebeziehungen im Raum',
     progress: 40,
     completed: 8,
@@ -33,7 +57,7 @@ const topics = [
   {
     id: 3,
     title: 'Stochastik',
-    icon: '🎲',
+    icon: DiceSix,
     description: 'Wahrscheinlichkeiten, Binomial- und Normalverteilung',
     progress: 25,
     completed: 5,
@@ -73,9 +97,10 @@ const defaultSettings = {
 }
 
 function App() {
-  // Auth State
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [user, setUser] = useState(null)
+  const { currentUser, logout } = useAuth()
+
+  // Auth View State: 'login' | 'register' | 'email-verification'
+  const [authView, setAuthView] = useState('login')
 
   // View State
   const [currentView, setCurrentView] = useState('dashboard') // 'dashboard' | 'task'
@@ -98,28 +123,32 @@ function App() {
   // Navigation Dropdown State
   const [navDropdownOpen, setNavDropdownOpen] = useState(false)
 
-  // Gamification State
+  // Gamification State - Initialize from Firebase user or defaults
   const [userStats, setUserStats] = useState({
-    level: 7,
-    xp: 1250,
-    xpToNextLevel: 1500,
-    streak: 12,
-    totalXp: 3420
+    level: 1,
+    xp: 0,
+    xpToNextLevel: 100,
+    streak: 0,
+    totalXp: 0
   })
 
-  // Physics-based animation state
+  // Physics-based animation state - Ultra smooth settings
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
-  const mouseX = useSpring(0, { stiffness: 50, damping: 20 })
-  const mouseY = useSpring(0, { stiffness: 50, damping: 20 })
+  const mouseX = useSpring(0, { stiffness: 80, damping: 25, mass: 0.5 })
+  const mouseY = useSpring(0, { stiffness: 80, damping: 25, mass: 0.5 })
 
-  // Define transforms at the top level (not inside JSX)
-  const containerX = useTransform(mouseX, [-50, 50], [-5, 5])
-  const containerY = useTransform(mouseY, [-50, 50], [-5, 5])
+  // Define transforms at the top level (not inside JSX) - Enhanced parallax
+  const containerX = useTransform(mouseX, [-50, 50], [-8, 8])
+  const containerY = useTransform(mouseY, [-50, 50], [-8, 8])
+
+  // Smooth scroll-based animations
+  const [scrollY, setScrollY] = useState(0)
+  const scrollSpring = useSpring(scrollY, { stiffness: 100, damping: 30 })
 
   // Particle explosion state
   const [showParticleExplosion, setShowParticleExplosion] = useState(false)
 
-  // Parallax effect
+  // Enhanced parallax effect with smooth physics
   useEffect(() => {
     const handleMouseMove = (e) => {
       const x = e.clientX / window.innerWidth - 0.5
@@ -128,11 +157,21 @@ function App() {
       mouseX.set(x * 50)
       mouseY.set(y * 50)
     }
-    window.addEventListener('mousemove', handleMouseMove)
-    return () => window.removeEventListener('mousemove', handleMouseMove)
-  }, [mouseX, mouseY])
 
-  // Load settings from localStorage
+    const handleScroll = () => {
+      setScrollY(window.scrollY)
+      scrollSpring.set(window.scrollY)
+    }
+
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('scroll', handleScroll)
+    }
+  }, [mouseX, mouseY, scrollSpring])
+
+  // Load settings from localStorage and user data from Firebase
   useEffect(() => {
     const savedSettings = localStorage.getItem('mathapp_settings')
     if (savedSettings) {
@@ -144,28 +183,24 @@ function App() {
       }
     }
 
-    // Check if user is logged in (simple session check)
-    const savedUser = sessionStorage.getItem('mathapp_user')
-    if (savedUser) {
-      const userData = JSON.parse(savedUser)
-      setIsLoggedIn(true)
-      setUser(userData)
-      setUserStats(userData)
+    // Load user stats from Firebase/localStorage when user logs in
+    if (currentUser) {
+      const userStatsKey = `mathapp_stats_${currentUser.uid}`
+      const savedStats = localStorage.getItem(userStatsKey)
+      if (savedStats) {
+        setUserStats(JSON.parse(savedStats))
+      }
     }
-  }, [])
+  }, [currentUser])
 
-  const handleLogin = (userData) => {
-    setIsLoggedIn(true)
-    setUser(userData)
-    setUserStats(userData)
-    sessionStorage.setItem('mathapp_user', JSON.stringify(userData))
-  }
-
-  const handleLogout = () => {
-    setIsLoggedIn(false)
-    setUser(null)
-    sessionStorage.removeItem('mathapp_user')
-    setCurrentView('dashboard')
+  const handleLogout = async () => {
+    try {
+      await logout()
+      setCurrentView('dashboard')
+      setAuthView('login')
+    } catch (err) {
+      console.error('Logout error:', err)
+    }
   }
 
   const handleSettingsChange = (newSettings) => {
@@ -236,51 +271,94 @@ function App() {
     }
   }
 
-  if (!isLoggedIn) {
-    return <Login onLogin={handleLogin} />
+  // Show auth views if user is not logged in or email not verified
+  if (!currentUser || !currentUser.emailVerified) {
+    if (authView === 'register') {
+      return (
+        <Register
+          onSwitchToLogin={() => setAuthView('login')}
+          onRegisterSuccess={() => setAuthView('email-verification')}
+        />
+      )
+    }
+
+    if (authView === 'email-verification') {
+      return (
+        <EmailVerification
+          userEmail={currentUser?.email || ''}
+          onBackToLogin={() => setAuthView('login')}
+        />
+      )
+    }
+
+    // Default to login view
+    return (
+      <Login
+        onLogin={() => {
+          // Login successful - component will auto-refresh when currentUser updates
+        }}
+        onSwitchToRegister={() => setAuthView('register')}
+      />
+    )
   }
 
   return (
     <div className="app">
-      {/* Header */}
+      {/* Header with enhanced smooth animation */}
       <motion.header
         className="header"
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
+        initial={{ y: -20, opacity: 0, filter: "blur(10px)" }}
+        animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
         transition={{
           type: "spring",
-          stiffness: 300,
-          damping: 30
+          stiffness: 200,
+          damping: 25,
+          mass: 0.8
         }}
       >
         <motion.div
           className="logo"
           onClick={() => setNavDropdownOpen(!navDropdownOpen)}
           style={{ cursor: 'pointer' }}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+          whileHover={{
+            scale: 1.03,
+            transition: { type: "spring", stiffness: 400, damping: 15 }
+          }}
+          whileTap={{
+            scale: 0.97,
+            transition: { type: "spring", stiffness: 500, damping: 20 }
+          }}
         >
-          <span className="logo-icon">📚</span>
+          <span className="logo-icon"><BookOpenText weight="bold" /></span>
           <span>MatheLernApp</span>
           <motion.span
             className="dropdown-arrow"
             animate={{ rotate: navDropdownOpen ? 180 : 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{
+              type: "spring",
+              stiffness: 300,
+              damping: 25
+            }}
           >
-            ▼
+            <CaretDown weight="bold" />
           </motion.span>
         </motion.div>
       </motion.header>
 
-      {/* Navigation Dropdown */}
+      {/* Navigation Dropdown with smooth physics */}
       <AnimatePresence>
         {navDropdownOpen && (
           <motion.div
             className="nav-dropdown"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
+            initial={{ opacity: 0, y: -10, scale: 0.95, filter: "blur(5px)" }}
+            animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+            exit={{ opacity: 0, y: -10, scale: 0.95, filter: "blur(5px)" }}
+            transition={{
+              type: "spring",
+              stiffness: 400,
+              damping: 30,
+              mass: 0.8
+            }}
           >
             <motion.button
               className="nav-dropdown-item"
@@ -288,9 +366,16 @@ function App() {
                 setLearningPlanOpen(true)
                 setNavDropdownOpen(false)
               }}
-              whileHover={{ x: 4 }}
+              whileHover={{
+                x: 8,
+                transition: { type: "spring", stiffness: 400, damping: 20 }
+              }}
+              whileTap={{
+                scale: 0.98,
+                x: 4
+              }}
             >
-              <span className="nav-item-icon">📚</span>
+              <span className="nav-item-icon"><Books weight="bold" /></span>
               <span className="nav-item-label">Lernplan</span>
             </motion.button>
             <motion.button
@@ -299,10 +384,36 @@ function App() {
                 setSettingsOpen(true)
                 setNavDropdownOpen(false)
               }}
-              whileHover={{ x: 4 }}
+              whileHover={{
+                x: 8,
+                transition: { type: "spring", stiffness: 400, damping: 20 }
+              }}
+              whileTap={{
+                scale: 0.98,
+                x: 4
+              }}
             >
-              <span className="nav-item-icon">⚙️</span>
+              <span className="nav-item-icon"><Gear weight="bold" /></span>
               <span className="nav-item-label">Einstellungen</span>
+            </motion.button>
+            <motion.button
+              className="nav-dropdown-item"
+              onClick={() => {
+                handleLogout()
+                setNavDropdownOpen(false)
+              }}
+              whileHover={{
+                x: 8,
+                transition: { type: "spring", stiffness: 400, damping: 20 }
+              }}
+              whileTap={{
+                scale: 0.98,
+                x: 4
+              }}
+              style={{ color: '#ef4444' }}
+            >
+              <span className="nav-item-icon">👋</span>
+              <span className="nav-item-label">Abmelden</span>
             </motion.button>
           </motion.div>
         )}
@@ -317,26 +428,36 @@ function App() {
       >
         {currentView === 'dashboard' ? (
           <>
-            {/* Stats Dashboard */}
+            {/* Stats Dashboard with enhanced smooth entry */}
             <motion.div
               className="stats-dashboard-container"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, y: 30, scale: 0.95, filter: "blur(10px)" }}
+              animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
               transition={{
                 type: "spring",
-                stiffness: 300,
-                damping: 30
+                stiffness: 200,
+                damping: 28,
+                mass: 0.9
               }}
             >
               <div className="stats-dashboard">
-                {/* Top Row: 3 Cards */}
+                {/* Top Row: 3 Cards with ultra smooth 3D effects */}
                 <div className="stats-grid-top">
                   <motion.div
                     className="stat-card"
-                    whileHover={{ y: -4, scale: 1.02 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                    whileHover={{
+                      y: -8,
+                      scale: 1.04,
+                      rotateX: 5,
+                      transition: { type: "spring", stiffness: 400, damping: 20 }
+                    }}
+                    whileTap={{
+                      scale: 0.98,
+                      transition: { type: "spring", stiffness: 500, damping: 25 }
+                    }}
+                    style={{ transformStyle: "preserve-3d", transformPerspective: 1000 }}
                   >
-                    <div className="stat-icon">🔥</div>
+                    <div className="stat-icon"><Fire weight="bold" /></div>
                     <div className="stat-content">
                       <div className="stat-value">{userStats.streak} Tage</div>
                       <div className="stat-label">Streak</div>
@@ -345,10 +466,19 @@ function App() {
 
                   <motion.div
                     className="stat-card"
-                    whileHover={{ y: -4, scale: 1.02 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                    whileHover={{
+                      y: -8,
+                      scale: 1.04,
+                      rotateX: 5,
+                      transition: { type: "spring", stiffness: 400, damping: 20 }
+                    }}
+                    whileTap={{
+                      scale: 0.98,
+                      transition: { type: "spring", stiffness: 500, damping: 25 }
+                    }}
+                    style={{ transformStyle: "preserve-3d", transformPerspective: 1000 }}
                   >
-                    <div className="stat-icon">🏆</div>
+                    <div className="stat-icon"><Trophy weight="bold" /></div>
                     <div className="stat-content">
                       <div className="stat-value">Level {userStats.level}</div>
                       <div className="stat-label">Dein Level</div>
@@ -357,10 +487,19 @@ function App() {
 
                   <motion.div
                     className="stat-card"
-                    whileHover={{ y: -4, scale: 1.02 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                    whileHover={{
+                      y: -8,
+                      scale: 1.04,
+                      rotateX: 5,
+                      transition: { type: "spring", stiffness: 400, damping: 20 }
+                    }}
+                    whileTap={{
+                      scale: 0.98,
+                      transition: { type: "spring", stiffness: 500, damping: 25 }
+                    }}
+                    style={{ transformStyle: "preserve-3d", transformPerspective: 1000 }}
                   >
-                    <div className="stat-icon">💎</div>
+                    <div className="stat-icon"><Diamond weight="bold" /></div>
                     <div className="stat-content">
                       <div className="stat-value">{userStats.totalXp.toLocaleString()}</div>
                       <div className="stat-label">Gesamt XP</div>
@@ -368,15 +507,22 @@ function App() {
                   </motion.div>
                 </div>
 
-                {/* Bottom Row: XP Card with Path */}
+                {/* Bottom Row: XP Card with Path - Smooth physics */}
                 <motion.div
                   className="stat-card-wide"
-                  whileHover={{ y: -4, scale: 1.01 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                  whileHover={{
+                    y: -6,
+                    scale: 1.02,
+                    transition: { type: "spring", stiffness: 350, damping: 20 }
+                  }}
+                  whileTap={{
+                    scale: 0.99,
+                    transition: { type: "spring", stiffness: 500, damping: 25 }
+                  }}
                 >
                   <div className="xp-card-content">
                     <div className="xp-header">
-                      <div className="stat-icon-large">⚡</div>
+                      <div className="stat-icon-large"><Lightning weight="bold" /></div>
                       <div className="xp-info-main">
                         <div className="stat-value">{userStats.xp.toLocaleString()} XP</div>
                         <div className="stat-label">Aktuelle XP · {(userStats.xpToNextLevel - userStats.xp).toLocaleString()} XP bis Level {userStats.level + 1}</div>
@@ -392,10 +538,10 @@ function App() {
                     >
                       <div className="path-track">
                         {[
-                          { level: userStats.level, xp: 0, label: 'Aktuell', icon: '📍', active: true },
-                          { level: userStats.level + 1, xp: userStats.xpToNextLevel, label: `Level ${userStats.level + 1}`, icon: '🎯', active: false },
-                          { level: userStats.level + 2, xp: userStats.xpToNextLevel * 2.2, label: `Level ${userStats.level + 2}`, icon: '⭐', active: false },
-                          { level: userStats.level + 3, xp: userStats.xpToNextLevel * 3.5, label: `Level ${userStats.level + 3}`, icon: '🏆', active: false }
+                          { level: userStats.level, xp: 0, label: 'Aktuell', icon: MapPin, active: true },
+                          { level: userStats.level + 1, xp: userStats.xpToNextLevel, label: `Level ${userStats.level + 1}`, icon: Target, active: false },
+                          { level: userStats.level + 2, xp: userStats.xpToNextLevel * 2.2, label: `Level ${userStats.level + 2}`, icon: Star, active: false },
+                          { level: userStats.level + 3, xp: userStats.xpToNextLevel * 3.5, label: `Level ${userStats.level + 3}`, icon: Trophy, active: false }
                         ].map((milestone, index) => {
                           const isReached = index === 0
                           const progressPercent = (userStats.xp / userStats.xpToNextLevel) * 100
@@ -410,7 +556,7 @@ function App() {
                               animate={{ opacity: 1, scale: 1 }}
                               transition={{ delay: 0.3 + index * 0.1 }}
                             >
-                              <div className="milestone-icon">{milestone.icon}</div>
+                              <div className="milestone-icon"><milestone.icon weight="bold" /></div>
                               <div className="milestone-label">{milestone.label}</div>
                               {index < 3 && (
                                 <div className="milestone-connector">
@@ -435,13 +581,16 @@ function App() {
               </div>
             </motion.div>
 
-            {/* Topics Grid */}
+            {/* Topics Grid with staggered smooth animations */}
             <motion.div
               className="topics-grid"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{
-                duration: 0.3
+                type: "spring",
+                stiffness: 200,
+                damping: 28,
+                mass: 0.8
               }}
             >
               <AnimatePresence>
@@ -450,42 +599,50 @@ function App() {
                     key={topic.id}
                     className="card topic-card"
                     whileHover={{
-                      scale: 1.02,
-                      y: -4,
+                      scale: 1.03,
+                      y: -10,
+                      rotateX: 3,
+                      rotateY: -2,
+                      boxShadow: "0 20px 60px rgba(0, 0, 0, 0.25)",
                       transition: {
                         type: "spring",
-                        stiffness: 400,
-                        damping: 25
+                        stiffness: 350,
+                        damping: 18,
+                        mass: 0.6
                       }
                     }}
                     whileTap={{
-                      scale: 0.98,
+                      scale: 0.97,
                       transition: {
                         type: "spring",
                         stiffness: 500,
-                        damping: 30
+                        damping: 25
                       }
                     }}
                     initial={{
                       opacity: 0,
-                      y: 20,
-                      scale: 0.95
+                      y: 40,
+                      scale: 0.92,
+                      filter: "blur(8px)"
                     }}
                     animate={{
                       opacity: 1,
                       y: 0,
-                      scale: 1
+                      scale: 1,
+                      filter: "blur(0px)"
                     }}
                     transition={{
                       type: "spring",
-                      stiffness: 300,
-                      damping: 30,
-                      delay: index * 0.05
+                      stiffness: 250,
+                      damping: 28,
+                      mass: 0.8,
+                      delay: index * 0.08
                     }}
+                    style={{ transformStyle: "preserve-3d", transformPerspective: 1000 }}
                     onClick={() => handleTopicClick(topic)}
                   >
                     <div className="topic-header">
-                      <span className="topic-icon">{topic.icon}</span>
+                      <span className="topic-icon"><topic.icon weight="bold" /></span>
                       <div className="topic-info">
                         <h2 className="topic-title">{topic.title}</h2>
                         <div className="topic-meta">
@@ -500,13 +657,14 @@ function App() {
                       <div className="progress-bar">
                         <motion.div
                           className="progress-fill"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${topic.progress}%` }}
+                          initial={{ width: 0, opacity: 0.5 }}
+                          animate={{ width: `${topic.progress}%`, opacity: 1 }}
                           transition={{
                             type: "spring",
-                            stiffness: 100,
-                            damping: 15,
-                            delay: index * 0.2 + 0.3
+                            stiffness: 120,
+                            damping: 20,
+                            mass: 0.8,
+                            delay: index * 0.15 + 0.4
                           }}
                         />
                       </div>
@@ -520,42 +678,48 @@ function App() {
             </motion.div>
           </>
         ) : (
-          /* Task View */
+          /* Task View with ultra smooth entry */
           <motion.div
             className="task-view"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 40, scale: 0.95, filter: "blur(10px)" }}
+            animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+            exit={{ opacity: 0, y: -40, scale: 0.95, filter: "blur(10px)" }}
             transition={{
               type: "spring",
-              stiffness: 300,
-              damping: 30
+              stiffness: 250,
+              damping: 28,
+              mass: 0.8
             }}
           >
             <motion.div
               className="task-header"
-              initial={{ y: -20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
+              initial={{ y: -20, opacity: 0, filter: "blur(5px)" }}
+              animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
               transition={{
                 type: "spring",
-                stiffness: 300,
-                damping: 30
+                stiffness: 280,
+                damping: 26,
+                mass: 0.7
               }}
             >
               <motion.button
                 className="back-btn"
                 onClick={handleBackToDashboard}
                 whileHover={{
-                  x: -4,
-                  transition: { type: "spring", stiffness: 400, damping: 25 }
+                  x: -8,
+                  scale: 1.02,
+                  transition: { type: "spring", stiffness: 400, damping: 18 }
                 }}
-                whileTap={{ scale: 0.98 }}
+                whileTap={{
+                  scale: 0.96,
+                  x: -4
+                }}
               >
-                <span>←</span>
+                <span><ArrowLeft weight="bold" /></span>
                 <span>Zurück zur Übersicht</span>
               </motion.button>
               <div className="stat">
-                <span className="stat-icon">💎</span>
+                <span className="stat-icon"><Diamond weight="bold" /></span>
                 <span>+{sampleTask.xpReward} XP</span>
               </div>
             </motion.div>
@@ -563,13 +727,14 @@ function App() {
             <div className="task-content">
               <motion.div
                 className="task-main"
-                initial={{ x: -50, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
+                initial={{ x: -60, opacity: 0, filter: "blur(8px)" }}
+                animate={{ x: 0, opacity: 1, filter: "blur(0px)" }}
                 transition={{
                   type: "spring",
-                  stiffness: 300,
-                  damping: 30,
-                  delay: 0.1
+                  stiffness: 250,
+                  damping: 28,
+                  mass: 0.9,
+                  delay: 0.05
                 }}
               >
                 <div className="card">
@@ -597,9 +762,18 @@ function App() {
                     value={userAnswer}
                     onChange={(e) => setUserAnswer(e.target.value)}
                     whileFocus={{
-                      scale: 1.02,
-                      boxShadow: "0 0 30px rgba(249, 115, 22, 0.4)",
-                      transition: { type: "spring", stiffness: 300, damping: 20 }
+                      scale: 1.015,
+                      y: -2,
+                      boxShadow: "0 0 40px rgba(249, 115, 22, 0.5), 0 10px 30px rgba(0, 0, 0, 0.1)",
+                      transition: { type: "spring", stiffness: 350, damping: 22 }
+                    }}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 250,
+                      damping: 25,
+                      delay: 0.15
                     }}
                   />
 
@@ -608,37 +782,56 @@ function App() {
                       className="btn btn-primary"
                       onClick={checkAnswer}
                       whileHover={{
-                        scale: 1.03,
-                        y: -2,
+                        scale: 1.05,
+                        y: -4,
+                        boxShadow: "0 10px 40px rgba(249, 115, 22, 0.4)",
                         transition: {
                           type: "spring",
                           stiffness: 400,
-                          damping: 25
+                          damping: 18
                         }
                       }}
                       whileTap={{
-                        scale: 0.98
+                        scale: 0.96,
+                        y: 0
+                      }}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 250,
+                        damping: 25,
+                        delay: 0.2
                       }}
                     >
-                      <span>✓</span>
+                      <span><Check weight="bold" /></span>
                       <span>Lösung prüfen</span>
                     </motion.button>
                     <motion.button
                       className="btn btn-secondary"
                       whileHover={{
-                        scale: 1.02,
-                        y: -2,
+                        scale: 1.04,
+                        y: -3,
                         transition: {
                           type: "spring",
                           stiffness: 400,
-                          damping: 25
+                          damping: 18
                         }
                       }}
                       whileTap={{
-                        scale: 0.98
+                        scale: 0.96,
+                        y: 0
+                      }}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 250,
+                        damping: 25,
+                        delay: 0.22
                       }}
                     >
-                      <span>⏭</span>
+                      <span><FastForward weight="bold" /></span>
                       <span>Aufgabe überspringen</span>
                     </motion.button>
                   </div>
@@ -649,24 +842,32 @@ function App() {
                         className={`feedback ${feedback.type}`}
                         initial={{
                           opacity: 0,
-                          y: -20,
-                          scale: 0.95
+                          y: -30,
+                          scale: 0.9,
+                          filter: "blur(5px)"
                         }}
                         animate={{
                           opacity: 1,
                           y: 0,
-                          scale: 1
+                          scale: 1,
+                          filter: "blur(0px)"
                         }}
                         exit={{
                           opacity: 0,
                           y: -20,
                           scale: 0.95,
-                          transition: { duration: 0.2 }
+                          filter: "blur(5px)",
+                          transition: {
+                            type: "spring",
+                            stiffness: 500,
+                            damping: 35
+                          }
                         }}
                         transition={{
                           type: "spring",
-                          stiffness: 400,
-                          damping: 30
+                          stiffness: 350,
+                          damping: 25,
+                          mass: 0.7
                         }}
                       >
                         <div style={{ fontWeight: '600', marginBottom: '8px' }}>
@@ -688,20 +889,21 @@ function App() {
                 </div>
               </motion.div>
 
-              {/* Tutor Panel */}
+              {/* Tutor Panel with smooth slide-in */}
               <motion.div
                 className="tutor-panel card"
-                initial={{ x: 50, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
+                initial={{ x: 60, opacity: 0, filter: "blur(8px)" }}
+                animate={{ x: 0, opacity: 1, filter: "blur(0px)" }}
                 transition={{
                   type: "spring",
-                  stiffness: 300,
-                  damping: 30,
-                  delay: 0.2
+                  stiffness: 250,
+                  damping: 28,
+                  mass: 0.9,
+                  delay: 0.1
                 }}
               >
                 <div className="tutor-header">
-                  <span>💡</span>
+                  <span><Lightbulb weight="bold" /></span>
                   <span>KI-Tutor Hinweise</span>
                 </div>
 
@@ -709,13 +911,14 @@ function App() {
                   {sampleTask.hints.map((hint, index) => (
                     <motion.div
                       key={hint.level}
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
+                      initial={{ opacity: 0, x: 30, filter: "blur(5px)" }}
+                      animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
                       transition={{
                         type: "spring",
-                        stiffness: 300,
-                        damping: 30,
-                        delay: index * 0.05 + 0.3
+                        stiffness: 280,
+                        damping: 26,
+                        mass: 0.7,
+                        delay: index * 0.08 + 0.25
                       }}
                     >
                       <motion.button
@@ -723,18 +926,21 @@ function App() {
                         onClick={() => unlockHint(hint.level)}
                         disabled={unlockedHints.includes(hint.level)}
                         whileHover={!unlockedHints.includes(hint.level) ? {
-                          scale: 1.02,
-                          x: 4,
+                          scale: 1.03,
+                          x: 8,
                           transition: {
                             type: "spring",
                             stiffness: 400,
-                            damping: 25
+                            damping: 18
                           }
                         } : {}}
-                        whileTap={{ scale: 0.98 }}
+                        whileTap={{
+                          scale: 0.97,
+                          x: 4
+                        }}
                       >
                         <span>Hinweis {hint.level}</span>
-                        <span>{unlockedHints.includes(hint.level) ? '✓' : '→'}</span>
+                        <span>{unlockedHints.includes(hint.level) ? <Check weight="bold" /> : <CaretRight weight="bold" />}</span>
                       </motion.button>
                       <AnimatePresence>
                         {unlockedHints.includes(hint.level) && (
@@ -742,21 +948,32 @@ function App() {
                             className="hint-content"
                             initial={{
                               opacity: 0,
-                              height: 0
+                              height: 0,
+                              y: -10,
+                              filter: "blur(5px)"
                             }}
                             animate={{
                               opacity: 1,
-                              height: "auto"
+                              height: "auto",
+                              y: 0,
+                              filter: "blur(0px)"
                             }}
                             exit={{
                               opacity: 0,
                               height: 0,
-                              transition: { duration: 0.2 }
+                              y: -10,
+                              filter: "blur(5px)",
+                              transition: {
+                                type: "spring",
+                                stiffness: 400,
+                                damping: 35
+                              }
                             }}
                             transition={{
                               type: "spring",
-                              stiffness: 300,
-                              damping: 30
+                              stiffness: 280,
+                              damping: 28,
+                              mass: 0.8
                             }}
                           >
                             {hint.text}

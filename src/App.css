@@ -57,19 +57,58 @@
 
 .logo-icon {
   font-size: 24px;
-  animation: pulse 2s ease-in-out infinite;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
 }
 
-.logo:hover .logo-icon {
-  animation: celebrate 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+.logo-icon svg {
+  width: 24px;
+  height: 24px;
 }
 
 .dropdown-arrow {
   font-size: 10px;
   margin-left: 6px;
   color: var(--text-secondary);
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dropdown-arrow svg {
+  width: 10px;
+  height: 10px;
+}
+
+/* Global Icon Styles */
+svg {
+  flex-shrink: 0;
+}
+
+.stat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+}
+
+.stat-icon svg {
+  width: 32px;
+  height: 32px;
+}
+
+.stat-icon-large {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+}
+
+.stat-icon-large svg {
+  width: 40px;
+  height: 40px;
 }
 
 /* Navigation Dropdown */
@@ -119,6 +158,15 @@
 .nav-item-icon {
   font-size: 20px;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+}
+
+.nav-item-icon svg {
+  width: 20px;
+  height: 20px;
 }
 
 .nav-item-label {
@@ -460,17 +508,25 @@
   margin-bottom: 8px;
   transition: all 0.3s ease;
   z-index: 2;
+  color: var(--text-secondary);
+}
+
+.milestone-icon svg {
+  width: 18px;
+  height: 18px;
 }
 
 .path-milestone.reached .milestone-icon {
   background: var(--primary);
   border-color: var(--primary);
   box-shadow: 0 0 20px color-mix(in srgb, var(--primary) 40%, transparent);
+  color: white;
 }
 
 .path-milestone.active .milestone-icon {
   background: var(--bg-card);
   border-color: var(--border-hover);
+  color: var(--primary);
 }
 
 .milestone-label {
@@ -609,14 +665,21 @@
   font-size: 32px;
   flex-shrink: 0;
   line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
   opacity: 0.9;
-  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
-  animation: bounceIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: opacity 0.3s ease;
+}
+
+.topic-icon svg {
+  width: 32px;
+  height: 32px;
 }
 
 .topic-card:hover .topic-icon {
-  transform: scale(1.2) rotate(10deg) !important;
-  animation: float 2s ease-in-out infinite;
+  opacity: 1;
 }
 
 .topic-info {
@@ -722,9 +785,14 @@
   transition: color 0.2s;
 }
 
+.back-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
 @media (hover: hover) {
   .back-btn:hover {
-    color: var(--text-primary);
+    color: var(--primary);
   }
 }
 
@@ -810,6 +878,18 @@
   margin-bottom: 16px;
   font-size: 16px;
   font-weight: 600;
+}
+
+.tutor-header > span:first-child {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+}
+
+.tutor-header svg {
+  width: 20px;
+  height: 20px;
 }
 
 .hint-levels {
