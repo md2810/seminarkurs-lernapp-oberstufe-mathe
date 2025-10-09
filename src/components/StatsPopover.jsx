@@ -10,26 +10,33 @@ function StatsPopover({ isOpen, onClose, userStats, anchorRef }) {
       const isMobile = window.innerWidth < 768
 
       if (isMobile) {
-        return { top: 0, left: 0 }
+        return { top: 0, left: 0, right: 0 }
       }
 
-      const popoverWidth = 380
-      let left = rect.left + rect.width / 2
+      const popoverWidth = Math.min(380, window.innerWidth - 32)
+      const padding = 16
 
-      if (left + popoverWidth / 2 > window.innerWidth - 16) {
-        left = window.innerWidth - popoverWidth / 2 - 16
+      // Calculate desired center position (under button center)
+      let centerX = rect.left + rect.width / 2
+
+      // Calculate the left edge of popover if centered
+      let leftEdge = centerX - popoverWidth / 2
+
+      // Ensure popover stays within bounds
+      if (leftEdge < padding) {
+        leftEdge = padding
       }
-
-      if (left - popoverWidth / 2 < 16) {
-        left = popoverWidth / 2 + 16
+      if (leftEdge + popoverWidth > window.innerWidth - padding) {
+        leftEdge = window.innerWidth - popoverWidth - padding
       }
 
       return {
         top: rect.bottom + 10,
-        left: left
+        left: leftEdge,
+        right: 'auto'
       }
     }
-    return { top: 0, left: 0 }
+    return { top: 0, left: 0, right: 'auto' }
   })
 
   useEffect(() => {
@@ -38,22 +45,29 @@ function StatsPopover({ isOpen, onClose, userStats, anchorRef }) {
       const isMobile = window.innerWidth < 768
 
       if (isMobile) {
-        setPosition({ top: 0, left: 0 })
+        setPosition({ top: 0, left: 0, right: 0 })
       } else {
-        const popoverWidth = 380
-        let left = rect.left + rect.width / 2
+        const popoverWidth = Math.min(380, window.innerWidth - 32)
+        const padding = 16
 
-        if (left + popoverWidth / 2 > window.innerWidth - 16) {
-          left = window.innerWidth - popoverWidth / 2 - 16
+        // Calculate desired center position (under button center)
+        let centerX = rect.left + rect.width / 2
+
+        // Calculate the left edge of popover if centered
+        let leftEdge = centerX - popoverWidth / 2
+
+        // Ensure popover stays within bounds
+        if (leftEdge < padding) {
+          leftEdge = padding
         }
-
-        if (left - popoverWidth / 2 < 16) {
-          left = popoverWidth / 2 + 16
+        if (leftEdge + popoverWidth > window.innerWidth - padding) {
+          leftEdge = window.innerWidth - popoverWidth - padding
         }
 
         setPosition({
           top: rect.bottom + 10,
-          left: left
+          left: leftEdge,
+          right: 'auto'
         })
       }
     }
@@ -88,7 +102,7 @@ function StatsPopover({ isOpen, onClose, userStats, anchorRef }) {
             style={!isMobile ? {
               top: `${position.top}px`,
               left: `${position.left}px`,
-              transform: 'translateX(-50%)',
+              right: position.right,
               transformOrigin: transformOrigin
             } : {}}
             initial={{

@@ -101,6 +101,10 @@ function App() {
   const mouseX = useSpring(0, { stiffness: 50, damping: 20 })
   const mouseY = useSpring(0, { stiffness: 50, damping: 20 })
 
+  // Define transforms at the top level (not inside JSX)
+  const containerX = useTransform(mouseX, [-50, 50], [-5, 5])
+  const containerY = useTransform(mouseY, [-50, 50], [-5, 5])
+
   // Particle explosion state
   const [showParticleExplosion, setShowParticleExplosion] = useState(false)
 
@@ -115,7 +119,7 @@ function App() {
     }
     window.addEventListener('mousemove', handleMouseMove)
     return () => window.removeEventListener('mousemove', handleMouseMove)
-  }, [])
+  }, [mouseX, mouseY])
 
   // Load settings from localStorage
   useEffect(() => {
@@ -215,134 +219,54 @@ function App() {
       {/* Header */}
       <motion.header
         className="header"
-        initial={{ y: -100, opacity: 0 }}
+        initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{
           type: "spring",
-          stiffness: 150,
-          damping: 20,
-          mass: 1.5
+          stiffness: 300,
+          damping: 30
         }}
       >
-        <motion.div
-          className="logo"
-          whileHover={{
-            scale: 1.1,
-            rotateZ: [0, -5, 5, 0],
-            transition: {
-              type: "spring",
-              stiffness: 400,
-              damping: 10
-            }
-          }}
-          animate={{
-            y: [0, -3, 0],
-            transition: {
-              duration: 3,
-              repeat: Infinity,
-              repeatType: "reverse"
-            }
-          }}
-        >
-          <motion.span
-            className="logo-icon"
-            animate={{
-              rotateY: [0, 360],
-              scale: [1, 1.2, 1]
-            }}
-            transition={{
-              duration: 4,
-              repeat: Infinity,
-              repeatType: "reverse"
-            }}
-          >
-            📚
-          </motion.span>
+        <div className="logo">
+          <span className="logo-icon">📚</span>
           <span>MatheLernApp</span>
-        </motion.div>
+        </div>
         <div className="header-actions">
           <motion.button
             ref={statsRef}
             className="stats-btn"
             onClick={() => setStatsPopoverOpen(!statsPopoverOpen)}
             whileHover={{
-              scale: 1.1,
-              rotateZ: [0, -3, 3, 0],
+              scale: 1.02,
+              y: -2,
               transition: {
                 type: "spring",
                 stiffness: 400,
-                damping: 10
+                damping: 25
               }
             }}
             whileTap={{
-              scale: 0.9,
-              rotateZ: 10
-            }}
-            animate={{
-              boxShadow: [
-                "0 0 0px rgba(249, 115, 22, 0.2)",
-                "0 0 20px rgba(249, 115, 22, 0.4)",
-                "0 0 0px rgba(249, 115, 22, 0.2)"
-              ]
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              repeatType: "reverse"
+              scale: 0.98
             }}
           >
-            <motion.span
-              className="stats-level"
-              animate={{
-                scale: [1, 1.1, 1]
-              }}
-              transition={{
-                duration: 1.5,
-                repeat: Infinity,
-                repeatType: "reverse"
-              }}
-            >
-              Level {userStats.level}
-            </motion.span>
-            <motion.span
-              className="stats-streak"
-              animate={{
-                scale: [1, 1.3, 1],
-                rotateZ: [0, -10, 10, 0]
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                repeatType: "reverse"
-              }}
-            >
-              🔥 {userStats.streak}
-            </motion.span>
+            <span className="stats-level">Level {userStats.level}</span>
+            <span className="stats-streak">🔥 {userStats.streak}</span>
           </motion.button>
           <motion.button
             className="icon-btn"
             onClick={() => setSettingsOpen(true)}
             title="Einstellungen"
             whileHover={{
-              scale: 1.2,
-              rotateZ: 180,
+              scale: 1.05,
+              rotate: 90,
               transition: {
                 type: "spring",
                 stiffness: 300,
-                damping: 10
+                damping: 25
               }
             }}
             whileTap={{
-              scale: 0.8,
-              rotateZ: 360
-            }}
-            animate={{
-              rotateZ: [0, 5, -5, 0]
-            }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              repeatType: "reverse"
+              scale: 0.95
             }}
           >
             ⚙️
@@ -353,8 +277,8 @@ function App() {
       <motion.div
         className="container"
         style={{
-          x: useTransform(mouseX, [-50, 50], [-10, 10]),
-          y: useTransform(mouseY, [-50, 50], [-10, 10])
+          x: containerX,
+          y: containerY
         }}
       >
         {currentView === 'dashboard' ? (
@@ -362,13 +286,10 @@ function App() {
             {/* Topics Grid */}
             <motion.div
               className="topics-grid"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{
-                type: "spring",
-                stiffness: 100,
-                damping: 15,
-                mass: 1.5
+                duration: 0.3
               }}
             >
               <AnimatePresence>
@@ -376,81 +297,43 @@ function App() {
                   <motion.div
                     key={topic.id}
                     className="card topic-card"
-                    drag
-                    dragElastic={0.3}
-                    dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-                    dragTransition={{
-                      bounceStiffness: 600,
-                      bounceDamping: 20,
-                      power: 0.2
-                    }}
                     whileHover={{
-                      scale: 1.1,
-                      rotateZ: [-2, 2, -2, 0],
-                      rotateX: mousePosition.y * 20,
-                      rotateY: mousePosition.x * 20,
-                      z: 100,
+                      scale: 1.02,
+                      y: -4,
                       transition: {
                         type: "spring",
-                        stiffness: 300,
-                        damping: 10
+                        stiffness: 400,
+                        damping: 25
                       }
                     }}
                     whileTap={{
-                      scale: 0.85,
-                      rotateZ: 5,
+                      scale: 0.98,
                       transition: {
                         type: "spring",
                         stiffness: 500,
-                        damping: 15
+                        damping: 30
                       }
                     }}
                     initial={{
                       opacity: 0,
-                      y: 100,
-                      rotateX: -90,
-                      scale: 0.5
+                      y: 20,
+                      scale: 0.95
                     }}
                     animate={{
                       opacity: 1,
                       y: 0,
-                      rotateX: 0,
                       scale: 1
                     }}
                     transition={{
                       type: "spring",
-                      stiffness: 200,
-                      damping: 20,
-                      delay: index * 0.1,
-                      mass: 2
+                      stiffness: 300,
+                      damping: 30,
+                      delay: index * 0.05
                     }}
                     onClick={() => handleTopicClick(topic)}
-                    style={{
-                      transformStyle: "preserve-3d",
-                      perspective: 1000
-                    }}
                   >
-                    <motion.div
-                      className="topic-header"
-                      whileHover={{
-                        x: [0, -5, 5, -5, 0],
-                        transition: { duration: 0.5 }
-                      }}
-                    >
-                      <motion.span
-                        className="topic-icon"
-                        animate={{
-                          rotateZ: [0, -10, 10, -10, 0],
-                          scale: [1, 1.2, 1, 1.2, 1]
-                        }}
-                        transition={{
-                          duration: 2,
-                          repeat: Infinity,
-                          repeatType: "reverse"
-                        }}
-                      >
-                        {topic.icon}
-                      </motion.span>
+                    <div className="topic-header">
+                      <span className="topic-icon">{topic.icon}</span>
                       <div className="topic-info">
                         <h2 className="topic-title">{topic.title}</h2>
                         <div className="topic-meta">
@@ -459,7 +342,7 @@ function App() {
                           <span>{topic.total} Aufgaben</span>
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
 
                     <div className="topic-progress">
                       <div className="progress-bar">
@@ -488,78 +371,58 @@ function App() {
           /* Task View */
           <motion.div
             className="task-view"
-            initial={{ opacity: 0, scale: 0.9, rotateX: -30 }}
-            animate={{ opacity: 1, scale: 1, rotateX: 0 }}
-            exit={{ opacity: 0, scale: 0.9, rotateX: 30 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
             transition={{
               type: "spring",
-              stiffness: 150,
-              damping: 20,
-              mass: 1.5
+              stiffness: 300,
+              damping: 30
             }}
           >
             <motion.div
               className="task-header"
-              initial={{ y: -100, opacity: 0 }}
+              initial={{ y: -20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{
                 type: "spring",
-                stiffness: 200,
-                damping: 20
+                stiffness: 300,
+                damping: 30
               }}
             >
               <motion.button
                 className="back-btn"
                 onClick={handleBackToDashboard}
                 whileHover={{
-                  scale: 1.1,
-                  x: -10,
-                  transition: { type: "spring", stiffness: 400, damping: 10 }
+                  x: -4,
+                  transition: { type: "spring", stiffness: 400, damping: 25 }
                 }}
-                whileTap={{ scale: 0.9, x: -15 }}
+                whileTap={{ scale: 0.98 }}
               >
                 <span>←</span>
                 <span>Zurück zur Übersicht</span>
               </motion.button>
-              <motion.div
-                className="stat"
-                animate={{
-                  scale: [1, 1.2, 1],
-                  rotateZ: [0, 5, -5, 0]
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  repeatType: "reverse"
-                }}
-              >
+              <div className="stat">
                 <span className="stat-icon">💎</span>
                 <span>+{sampleTask.xpReward} XP</span>
-              </motion.div>
+              </div>
             </motion.div>
 
             <div className="task-content">
               <motion.div
                 className="task-main"
-                initial={{ x: -100, opacity: 0, rotateY: -45 }}
-                animate={{ x: 0, opacity: 1, rotateY: 0 }}
+                initial={{ x: -50, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
                 transition={{
                   type: "spring",
-                  stiffness: 100,
-                  damping: 15,
+                  stiffness: 300,
+                  damping: 30,
                   delay: 0.1
                 }}
               >
-                <motion.div
-                  className="card"
-                  whileHover={{
-                    scale: 1.02,
-                    rotateZ: [0, 1, -1, 0],
-                    transition: { type: "spring", stiffness: 300, damping: 15 }
-                  }}
-                >
+                <div className="card">
                   <h2>{sampleTask.title}</h2>
-                  <motion.div
+                  <div
                     style={{
                       display: 'inline-block',
                       padding: '4px 12px',
@@ -571,22 +434,9 @@ function App() {
                       marginBottom: '16px',
                       color: 'var(--secondary)'
                     }}
-                    animate={{
-                      scale: [1, 1.05, 1],
-                      boxShadow: [
-                        "0 0 0px rgba(249, 115, 22, 0.3)",
-                        "0 0 20px rgba(249, 115, 22, 0.5)",
-                        "0 0 0px rgba(249, 115, 22, 0.3)"
-                      ]
-                    }}
-                    transition={{
-                      duration: 2,
-                      repeat: Infinity,
-                      repeatType: "reverse"
-                    }}
                   >
                     {sampleTask.difficulty}
-                  </motion.div>
+                  </div>
                   <p className="task-question">{sampleTask.question}</p>
 
                   <motion.textarea
@@ -606,31 +456,16 @@ function App() {
                       className="btn btn-primary"
                       onClick={checkAnswer}
                       whileHover={{
-                        scale: 1.15,
-                        rotateZ: [0, -3, 3, 0],
-                        boxShadow: "0 15px 40px rgba(249, 115, 22, 0.6)",
+                        scale: 1.03,
+                        y: -2,
                         transition: {
                           type: "spring",
                           stiffness: 400,
-                          damping: 10
+                          damping: 25
                         }
                       }}
                       whileTap={{
-                        scale: 0.85,
-                        rotateZ: 10,
-                        transition: {
-                          type: "spring",
-                          stiffness: 500,
-                          damping: 15
-                        }
-                      }}
-                      animate={{
-                        y: [0, -5, 0],
-                        transition: {
-                          duration: 2,
-                          repeat: Infinity,
-                          repeatType: "reverse"
-                        }
+                        scale: 0.98
                       }}
                     >
                       <span>✓</span>
@@ -639,17 +474,16 @@ function App() {
                     <motion.button
                       className="btn btn-secondary"
                       whileHover={{
-                        scale: 1.1,
-                        x: 10,
+                        scale: 1.02,
+                        y: -2,
                         transition: {
                           type: "spring",
                           stiffness: 400,
-                          damping: 10
+                          damping: 25
                         }
                       }}
                       whileTap={{
-                        scale: 0.9,
-                        x: 15
+                        scale: 0.98
                       }}
                     >
                       <span>⏭</span>
@@ -663,58 +497,35 @@ function App() {
                         className={`feedback ${feedback.type}`}
                         initial={{
                           opacity: 0,
-                          scale: 0.3,
-                          y: -50,
-                          rotateX: -90
+                          y: -20,
+                          scale: 0.95
                         }}
                         animate={{
                           opacity: 1,
-                          scale: [0.3, 1.2, 1],
                           y: 0,
-                          rotateX: 0,
-                          rotateZ: feedback.type === 'success' ? [0, -5, 5, -5, 0] : 0
+                          scale: 1
                         }}
                         exit={{
                           opacity: 0,
-                          scale: 0.3,
-                          y: 50,
-                          transition: { duration: 0.3 }
+                          y: -20,
+                          scale: 0.95,
+                          transition: { duration: 0.2 }
                         }}
                         transition={{
                           type: "spring",
-                          stiffness: 300,
-                          damping: 15,
-                          mass: 1
+                          stiffness: 400,
+                          damping: 30
                         }}
                       >
-                        <motion.div
-                          style={{ fontWeight: '600', marginBottom: '8px' }}
-                          animate={feedback.type === 'success' ? {
-                            scale: [1, 1.05, 1],
-                            transition: {
-                              duration: 0.5,
-                              repeat: Infinity,
-                              repeatType: "reverse"
-                            }
-                          } : {}}
-                        >
+                        <div style={{ fontWeight: '600', marginBottom: '8px' }}>
                           {feedback.message}
-                        </motion.div>
+                        </div>
                         {feedback.xp && (
                           <motion.div
                             style={{ fontSize: '14px', opacity: 0.9 }}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{
-                              opacity: 1,
-                              y: [0, -5, 0],
-                              scale: [1, 1.1, 1]
-                            }}
-                            transition={{
-                              delay: 0.2,
-                              type: "spring",
-                              stiffness: 200,
-                              damping: 10
-                            }}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.1 }}
                           >
                             +{feedback.xp} XP erhalten! 🎊
                           </motion.div>
@@ -722,64 +533,37 @@ function App() {
                       </motion.div>
                     )}
                   </AnimatePresence>
-                </motion.div>
+                </div>
               </motion.div>
 
               {/* Tutor Panel */}
               <motion.div
                 className="tutor-panel card"
-                initial={{ x: 100, opacity: 0, rotateY: 45 }}
-                animate={{ x: 0, opacity: 1, rotateY: 0 }}
+                initial={{ x: 50, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
                 transition={{
                   type: "spring",
-                  stiffness: 100,
-                  damping: 15,
+                  stiffness: 300,
+                  damping: 30,
                   delay: 0.2
                 }}
-                whileHover={{
-                  scale: 1.02,
-                  rotateZ: [0, -1, 1, 0],
-                  transition: { type: "spring", stiffness: 300, damping: 15 }
-                }}
               >
-                <motion.div
-                  className="tutor-header"
-                  animate={{
-                    x: [0, 5, 0],
-                    transition: {
-                      duration: 3,
-                      repeat: Infinity,
-                      repeatType: "reverse"
-                    }
-                  }}
-                >
-                  <motion.span
-                    animate={{
-                      rotateZ: [0, -10, 10, -10, 0],
-                      scale: [1, 1.2, 1]
-                    }}
-                    transition={{
-                      duration: 2,
-                      repeat: Infinity,
-                      repeatType: "reverse"
-                    }}
-                  >
-                    💡
-                  </motion.span>
+                <div className="tutor-header">
+                  <span>💡</span>
                   <span>KI-Tutor Hinweise</span>
-                </motion.div>
+                </div>
 
                 <div className="hint-levels">
                   {sampleTask.hints.map((hint, index) => (
                     <motion.div
                       key={hint.level}
-                      initial={{ opacity: 0, x: 50 }}
+                      initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{
                         type: "spring",
-                        stiffness: 150,
-                        damping: 20,
-                        delay: index * 0.1 + 0.3
+                        stiffness: 300,
+                        damping: 30,
+                        delay: index * 0.05 + 0.3
                       }}
                     >
                       <motion.button
@@ -787,25 +571,18 @@ function App() {
                         onClick={() => unlockHint(hint.level)}
                         disabled={unlockedHints.includes(hint.level)}
                         whileHover={!unlockedHints.includes(hint.level) ? {
-                          scale: 1.05,
-                          x: 10,
+                          scale: 1.02,
+                          x: 4,
                           transition: {
                             type: "spring",
                             stiffness: 400,
-                            damping: 10
+                            damping: 25
                           }
                         } : {}}
-                        whileTap={{ scale: 0.95 }}
+                        whileTap={{ scale: 0.98 }}
                       >
                         <span>Hinweis {hint.level}</span>
-                        <motion.span
-                          animate={unlockedHints.includes(hint.level) ? {
-                            rotateZ: [0, 360],
-                            transition: { duration: 0.5 }
-                          } : {}}
-                        >
-                          {unlockedHints.includes(hint.level) ? '✓' : '→'}
-                        </motion.span>
+                        <span>{unlockedHints.includes(hint.level) ? '✓' : '→'}</span>
                       </motion.button>
                       <AnimatePresence>
                         {unlockedHints.includes(hint.level) && (
@@ -813,26 +590,21 @@ function App() {
                             className="hint-content"
                             initial={{
                               opacity: 0,
-                              height: 0,
-                              scale: 0.8,
-                              y: -20
+                              height: 0
                             }}
                             animate={{
                               opacity: 1,
-                              height: "auto",
-                              scale: 1,
-                              y: 0
+                              height: "auto"
                             }}
                             exit={{
                               opacity: 0,
                               height: 0,
-                              scale: 0.8,
                               transition: { duration: 0.2 }
                             }}
                             transition={{
                               type: "spring",
-                              stiffness: 200,
-                              damping: 20
+                              stiffness: 300,
+                              damping: 30
                             }}
                           >
                             {hint.text}
@@ -843,7 +615,7 @@ function App() {
                   ))}
                 </div>
 
-                <motion.div
+                <div
                   style={{
                     marginTop: '24px',
                     padding: '12px',
@@ -852,22 +624,10 @@ function App() {
                     fontSize: '13px',
                     color: 'var(--text-secondary)'
                   }}
-                  animate={{
-                    boxShadow: [
-                      "0 0 0px rgba(249, 115, 22, 0.1)",
-                      "0 0 15px rgba(249, 115, 22, 0.2)",
-                      "0 0 0px rgba(249, 115, 22, 0.1)"
-                    ]
-                  }}
-                  transition={{
-                    duration: 3,
-                    repeat: Infinity,
-                    repeatType: "reverse"
-                  }}
                 >
                   💬 Tipp: Nutze die Hinweise schrittweise, wenn du nicht weiterkommst.
                   Das Ziel ist, den Lösungsweg zu verstehen!
-                </motion.div>
+                </div>
               </motion.div>
             </div>
           </motion.div>
