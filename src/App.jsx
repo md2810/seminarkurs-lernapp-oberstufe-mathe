@@ -6,6 +6,7 @@ import Login from './components/Login'
 import Register from './components/Register'
 import EmailVerification from './components/EmailVerification'
 import Settings from './components/Settings'
+import AccountSettings from './components/AccountSettings'
 import StatsPopover from './components/StatsPopover'
 import ParticleExplosion from './components/ParticleExplosion'
 import LearningPlan from './components/LearningPlan'
@@ -29,7 +30,9 @@ import {
   Lightbulb,
   Check,
   FastForward,
-  ArrowLeft
+  ArrowLeft,
+  SignOut,
+  UserCircle
 } from '@phosphor-icons/react'
 
 // Dummy-Daten
@@ -111,6 +114,7 @@ function App() {
 
   // Settings State
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [accountSettingsOpen, setAccountSettingsOpen] = useState(false)
   const [settings, setSettings] = useState(defaultSettings)
 
   // Popover State
@@ -381,6 +385,24 @@ function App() {
             <motion.button
               className="nav-dropdown-item"
               onClick={() => {
+                setAccountSettingsOpen(true)
+                setNavDropdownOpen(false)
+              }}
+              whileHover={{
+                x: 8,
+                transition: { type: "spring", stiffness: 400, damping: 20 }
+              }}
+              whileTap={{
+                scale: 0.98,
+                x: 4
+              }}
+            >
+              <span className="nav-item-icon"><UserCircle weight="bold" /></span>
+              <span className="nav-item-label">Account</span>
+            </motion.button>
+            <motion.button
+              className="nav-dropdown-item"
+              onClick={() => {
                 setSettingsOpen(true)
                 setNavDropdownOpen(false)
               }}
@@ -412,7 +434,7 @@ function App() {
               }}
               style={{ color: '#ef4444' }}
             >
-              <span className="nav-item-icon">👋</span>
+              <span className="nav-item-icon"><SignOut weight="bold" /></span>
               <span className="nav-item-label">Abmelden</span>
             </motion.button>
           </motion.div>
@@ -1008,6 +1030,11 @@ function App() {
         onClose={() => setSettingsOpen(false)}
         settings={settings}
         onSettingsChange={handleSettingsChange}
+      />
+
+      <AccountSettings
+        isOpen={accountSettingsOpen}
+        onClose={() => setAccountSettingsOpen(false)}
       />
 
       <StatsPopover
