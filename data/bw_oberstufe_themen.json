@@ -1,0 +1,194 @@
+{
+  "Klassen_11_12": {
+    "Leistungsfach": {
+      "3.4.1 Leitidee Zahl – Variable – Operation": {
+        "Zahlenwerte approximieren": [
+          "die eulersche Zahl e näherungsweise bestimmen"
+        ],
+        "weitere Ableitungsregeln anwenden": [
+          "ein iteratives Verfahren zur näherungsweisen Bestimmung von Nullstellen begründen und durchführen",
+          "die Produkt- und Kettenregel zum Ableiten von Funktionen verwenden",
+          "gebrochenrationale Funktionen durch Verbindung der Ableitungsregeln in einfachen Fällen ableiten (z. B. f(x)=2/(3x^2−4), nicht jedoch f(x)=x/(3x^2−4))"
+        ],
+        "Integrationsregeln verwenden und Integrale berechnen": [
+          "die Potenzregel, die Regel für konstanten Faktor, die Summenregel sowie das Verfahren der linearen Substitution für die Bestimmung einer Stammfunktion verwenden",
+          "Stammfunktionsterme zu den Funktionstermen sin(x), cos(x), e^x, 1/x angeben",
+          "den Hauptsatz der Differential- und Integralrechnung zur Berechnung von bestimmten Integralen nutzen",
+          "uneigentliche Integrale untersuchen"
+        ],
+        "Produkte von Vektoren bilden": [
+          "das Skalarprodukt berechnen, geometrisch interpretieren und bei Berechnungen nutzen",
+          "das Vektorprodukt berechnen, geometrisch interpretieren und bei Berechnungen nutzen"
+        ],
+        "Gauß-Algorithmus verwenden": [
+          "das Gaußverfahren zum Lösen eines linearen Gleichungssystems als ein Beispiel für ein algorithmisches Verfahren erläutern",
+          "das Gaußverfahren, auch in Matrixschreibweise, zum Lösen eines linearen Gleichungssystems durchführen",
+          "die Lösungsmenge eines linearen 3×3‑Gleichungssystems geometrisch interpretieren"
+        ]
+      },
+      "3.4.2 Leitidee Messen": {
+        "Winkelweiten, Abstände und Flächeninhalte in kartesischen Koordinatensystemen berechnen": [
+          "die Orthogonalität zweier Vektoren mithilfe des Skalarprodukts überprüfen",
+          "Winkelweiten mithilfe des Skalarprodukts bestimmen",
+          "Schnittwinkel zwischen geometrischen Objekten (Geraden und Ebenen) bestimmen",
+          "die Hesse’sche Normalenform einer Ebenengleichung zur Berechnung des Abstands eines Punktes zu einer Ebene anwenden",
+          "Abstände zwischen den geometrischen Objekten Punkt, Gerade und Ebene (auch zwischen windschiefen Geraden) ermitteln",
+          "das Vektorprodukt zum Ermitteln von Flächeninhalten anwenden"
+        ],
+        "das Integral nutzen": [
+          "das bestimmte Integral als Grenzwert einer Summe erläutern und geometrisch deuten",
+          "den Mittelwert einer Funktion auf einem Intervall berechnen",
+          "Flächeninhalte zwischen Graph und x‑Achse und zwischen zwei Graphen bestimmen",
+          "das Volumen von Körpern berechnen, die durch Rotation von Flächen um die x‑Achse entstehen"
+        ]
+      },
+      "3.4.3 Leitidee Raum und Form": {
+        "Produkte von Vektoren geometrisch nutzen": [
+          "das Skalarprodukt und das Vektorprodukt geometrisch deuten",
+          "einen gemeinsamen orthogonalen Vektor zu zwei Vektoren bestimmen"
+        ],
+        "vektorielle Darstellungen zur Beschreibung des Anschauungsraumes verwenden": [
+          "Ebenen mithilfe von Spurpunkten und Spurgeraden im Schrägbild eines Koordinatensystems veranschaulichen",
+          "Ebenen mithilfe einer Parameterdarstellung, einer Koordinatengleichung und einer Normalengleichung analytisch beschreiben",
+          "eine Parameterdarstellung einer Ebene in eine Normalengleichung und in eine Koordinatengleichung umrechnen",
+          "zwischen Gerade–Ebene und Ebene–Ebene die Lagebeziehung untersuchen sowie gegebenenfalls die Schnittgebilde rechnerisch bestimmen",
+          "Problemstellungen, wie z. B. Spiegelung eines Punktes an einer Ebene, Spiegelung einer Geraden an einen Punkt, Abstands‑, Flächeninhalts‑ und Volumenberechnungen sowie Untersuchungen geradliniger Bewegungen, im Raum bearbeiten"
+        ],
+        "vektorielle Darstellungen beim Beweisen nutzen": [
+          "einfache mathematische Aussagen und Sätze beweisen (z. B. „In einem Trapez ist die Mittellinie parallel zu den Grundseiten“, „Die Seitenmitten eines räumlichen Vierecks bilden die Eckpunkte eines Parallelogramms“, „In einer Raute sind die Diagonalen zueinander orthogonal“, Satz des Thales)"
+        ]
+      },
+      "3.4.4 Leitidee Funktionaler Zusammenhang": {
+        "mit der natürlichen Exponential‑ und Logarithmusfunktion umgehen": [
+          "die besondere Bedeutung der Basis e bei Exponentialfunktionen erläutern",
+          "die Graphen der natürlichen Exponential‑ und Logarithmusfunktion unter Verwendung charakteristischer Eigenschaften skizzieren und die Beziehung zwischen den Graphen beschreiben, auch unter dem Aspekt der Umkehrfunktion",
+          "charakteristische Eigenschaften der Funktion f mit f(x)=e^x beschreiben",
+          "die Ableitungsfunktion und eine Stammfunktion der Funktion f mit f(x)=e^x angeben",
+          "die Ableitungsfunktion der Funktion f mit f(x)=ln(x) angeben"
+        ],
+        "mit Umkehrfunktionen arbeiten": [
+          "Definitionsmengen und Wertemengen von Funktionen bestimmen und den Zusammenhang zwischen der Wertemenge einer Funktion und der Definitionsmenge ihrer Umkehrfunktion erläutern",
+          "die strenge Monotonie einer Funktion verwenden, um ihre Umkehrbarkeit nachzuweisen, und die Nichtumkehrbarkeit einer Funktion anhand ihrer charakteristischen Eigenschaften begründen",
+          "zu einer gegebenen umkehrbaren Funktion den Term ihrer Umkehrfunktion bestimmen"
+        ],
+        "mit zusammengesetzten Funktionen umgehen": [
+          "Funktionen verketten und Verkettungen von Funktionen erkennen",
+          "die Graphen von Funktionen in einfachen Fällen auf waagrechte und senkrechte Asymptoten und Nullstellen untersuchen, deren Funktionsterm als Quotient zuvor behandelter Funktionstypen gebildet werden kann",
+          "Graphen von zusammengesetzten Funktionen (Summe, Produkt, Verkettung) untersuchen"
+        ],
+        "Differentialrechnung anwenden": [
+          "Extremwertprobleme mit Nebenbedingungen lösen",
+          "einen Funktionsterm zu gegebenen Eigenschaften eines Graphen ermitteln",
+          "bei Funktionsscharen einzelne Fragestellungen zu Eigenschaften ihrer Graphen oder zu Zusammenhängen zwischen den Graphen untersuchen"
+        ],
+        "die Grundidee der Integralrechnung verstehen und mit Integralen umgehen": [
+          "den Wert des bestimmten Integrals als orientierten Flächeninhalt und als Bestandsveränderung erklären",
+          "Funktionen aus ihren Änderungsraten rekonstruieren",
+          "den Bestand aus Anfangsbestand und Änderungsraten bestimmen",
+          "den Inhalt des Hauptsatzes der Differential‑ und Integralrechnung angeben",
+          "die Begriffe Integralfunktion und Stammfunktion gegeneinander abgrenzen",
+          "vom Graphen der Funktion auf den Graphen einer Stammfunktion schließen und umgekehrt",
+          "den Hauptsatz der Differential‑ und Integralrechnung in Begründungszusammenhängen (z. B. zum Nachweis der Linearität des Integrals) nutzen",
+          "die Linearität des Integrals anschaulich begründen und rechenökonomisch nutzen"
+        ]
+      },
+      "3.4.5 Leitidee Daten und Zufall": {
+        "Hypothesen bei binomialverteilten Zufallsgrößen testen": [
+          "das Argumentationsmuster erläutern, das dem Testen von Hypothesen zugrunde liegt",
+          "eine Nullhypothese so formulieren, dass sie der Zielsetzung des Tests entspricht",
+          "Ablehnungsbereich und Irrtumswahrscheinlichkeit an einem Histogramm erläutern",
+          "ein‑ und zweiseitige Hypothesentests durchführen und den Ablehnungsbereich, die Entscheidungsregel und die Irrtumswahrscheinlichkeit angeben",
+          "Signifikanzniveau und Irrtumswahrscheinlichkeit gegeneinander abgrenzen",
+          "Fehler erster und zweiter Art im Kontext eines Hypothesentests erläutern",
+          "den Einfluss des Stichprobenumfangs auf die Wahrscheinlichkeiten für den Fehler erster Art (das Risiko erster Art) und für den Fehler zweiter Art (das Risiko zweiter Art) angeben"
+        ],
+        "mit Normalverteilungen umgehen": [
+          "den Unterschied zwischen diskreten und stetigen Zufallsgrößen erläutern, insbesondere am Beispiel binomial‑ und normalverteilter Zufallsgrößen",
+          "die Dichtefunktion einer normalverteilten Zufallsgröße mithilfe von Erwartungswert und Standardabweichung angeben und die zugehörige Glockenkurve skizzieren",
+          "stochastische Situationen untersuchen, die zu annähernd normalverteilten Zufallsgrößen gehören, und Wahrscheinlichkeiten berechnen"
+        ]
+      }
+    },
+    "Basisfach": {
+      "3.5.1 Leitidee Zahl – Variable – Operation": {
+        "den natürlichen Logarithmus nutzen": [
+          "den natürlichen Logarithmus einer Zahl als Lösung einer Exponentialgleichung verwenden"
+        ],
+        "weitere Ableitungsregeln anwenden": [
+          "die Produktregel zum Ableiten von Funktionstermen verwenden",
+          "die Kettenregel zum Ableiten von Funktionstermen verwenden, bei denen die innere Funktion eine lineare Funktion ist"
+        ],
+        "Integrationsregeln verwenden und Integrale berechnen": [
+          "die Potenzregel, die Regel für konstanten Faktor, die Summenregel sowie das Verfahren der linearen Substitution für die Bestimmung einer Stammfunktion verwenden",
+          "Stammfunktionsterme zu den Funktionstermen sin(x), cos(x), e^x, 1/x angeben",
+          "den Hauptsatz der Differential‑ und Integralrechnung zur Berechnung von bestimmten Integralen nutzen"
+        ],
+        "Produkte von Vektoren bilden": [
+          "das Skalarprodukt berechnen und bei Berechnungen nutzen",
+          "das Vektorprodukt berechnen und bei Berechnungen nutzen"
+        ],
+        "lineare Gleichungssysteme untersuchen": [
+          "das Gaußverfahren, auch in Matrixschreibweise, auf lineare Gleichungssysteme ohne Parameter bis zur Stufenform anwenden",
+          "die Lösungsvielfalt linearer Gleichungssysteme ohne Parameter angeben und im Falle eindeutiger Lösbarkeit deren Lösung bestimmen"
+        ]
+      },
+      "3.5.2 Leitidee Messen": {
+        "Winkelweiten, Abstände und Flächeninhalte in kartesischen Koordinatensystemen berechnen": [
+          "die Orthogonalität zweier Vektoren mithilfe des Skalarprodukts überprüfen",
+          "Winkelweiten mithilfe des Skalarprodukts bestimmen",
+          "Schnittwinkel zwischen geometrischen Objekten (Geraden und Ebenen) bestimmen",
+          "den Abstand zwischen den geometrischen Objekten Punkt und Ebene ermitteln",
+          "das Vektorprodukt zum Ermitteln von Flächeninhalten anwenden"
+        ],
+        "das Integral nutzen": [
+          "das bestimmte Integral mithilfe eines Grenzprozesses anschaulich beschreiben und geometrisch deuten",
+          "Flächeninhalte zwischen Graph und x‑Achse und zwischen zwei Graphen bestimmen"
+        ]
+      },
+      "3.5.3 Leitidee Raum und Form": {
+        "Produkte von Vektoren geometrisch nutzen": [
+          "das Skalarprodukt und das Vektorprodukt geometrisch deuten",
+          "einen gemeinsamen orthogonalen Vektor zu zwei Vektoren bestimmen"
+        ],
+        "vektorielle Darstellungen zur Beschreibung des Anschauungsraumes verwenden": [
+          "Ebenen mithilfe von Spurpunkten und Spurgeraden im Schrägbild eines Koordinatensystems veranschaulichen",
+          "Ebenen mithilfe einer Parameterdarstellung und einer Koordinatengleichung analytisch beschreiben",
+          "eine Parameterdarstellung einer Ebene in eine Koordinatengleichung umrechnen",
+          "die Lagebeziehung zwischen einer Geraden und einer Ebene untersuchen und gegebenenfalls deren Schnittpunkt rechnerisch bestimmen",
+          "die Lagebeziehung zwischen zwei Ebenen erkennen und begründen",
+          "Problemstellungen, wie z. B. Spiegelung eines Punktes an einer Ebene, Flächeninhalts‑ und Volumenberechnungen bearbeiten, sowie geradlinige Bewegungen untersuchen"
+        ]
+      },
+      "3.5.4 Leitidee Funktionaler Zusammenhang": {
+        "mit der natürlichen Exponentialfunktion umgehen": [
+          "die besondere Bedeutung der Basis e bei Exponentialfunktionen beschreiben",
+          "charakteristische Eigenschaften der Funktion f mit f(x)=e^x beschreiben und deren Graph mit dessen waagrechter Asymptote skizzieren",
+          "die Ableitungsfunktion und eine Stammfunktion der Funktion f mit f(x)=e^x angeben"
+        ],
+        "mit zusammengesetzten Funktionen umgehen": [
+          "Verkettungen von Funktionen erkennen, falls die innere Funktion eine lineare Funktion ist",
+          "Graphen von zusammengesetzten Funktionen (Summe, Produkt, Verkettung mit linearer innerer Funktion) untersuchen"
+        ],
+        "Differentialrechnung anwenden": [
+          "Extremwerte auch in außermathematischen Sachzusammenhängen bestimmen",
+          "einen Funktionsterm ermitteln, falls dieser durch die Eigenschaften eines Graphen eindeutig festgelegt ist"
+        ],
+        "die Grundidee der Integralrechnung verstehen und mit Integralen umgehen": [
+          "den Wert des bestimmten Integrals als orientierten Flächeninhalt und als Bestandsveränderung deuten",
+          "Funktionen aus ihren Änderungsraten rekonstruieren",
+          "den Bestand aus Anfangsbestand und Änderungsraten bestimmen",
+          "den Hauptsatz der Differential‑ und Integralrechnung anwenden",
+          "vom Graphen der Funktion auf den Graphen einer Stammfunktion schließen und umgekehrt",
+          "die Linearität des Integrals anschaulich begründen und rechenökonomisch nutzen"
+        ]
+      },
+      "3.5.5 Leitidee Daten und Zufall": {
+        "mit Normalverteilungen umgehen": [
+          "den Unterschied zwischen diskreten und stetigen Zufallsgrößen am Beispiel binomial‑ und normalverteilter Zufallsgrößen beschreiben",
+          "den Zusammenhang der Kenngrößen Erwartungswert und Standardabweichung einer Normalverteilung und der zugehörigen Glockenkurve beschreiben",
+          "stochastische Situationen untersuchen, die zu annähernd normalverteilten Zufallsgrößen gehören, und Wahrscheinlichkeiten berechnen"
+        ]
+      }
+    }
+  }
+}

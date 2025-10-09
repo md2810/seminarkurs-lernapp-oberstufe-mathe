@@ -5,6 +5,8 @@ import Login from './components/Login'
 import Settings from './components/Settings'
 import StatsPopover from './components/StatsPopover'
 import ParticleExplosion from './components/ParticleExplosion'
+import LearningPlan from './components/LearningPlan'
+import { logTask } from './utils/taskLogger'
 
 // Dummy-Daten
 const topics = [
@@ -63,8 +65,11 @@ const defaultSettings = {
   aiModel: {
     detailLevel: 70,
     temperature: 0.7,
-    helpfulness: 80
-  }
+    helpfulness: 80,
+    autoMode: false
+  },
+  gradeLevel: 'Klassen_11_12',
+  courseType: 'Leistungsfach'
 }
 
 function App() {
@@ -86,6 +91,9 @@ function App() {
   // Popover State
   const [statsPopoverOpen, setStatsPopoverOpen] = useState(false)
   const statsRef = useRef(null)
+
+  // Learning Plan State
+  const [learningPlanOpen, setLearningPlanOpen] = useState(false)
 
   // Gamification State
   const [userStats, setUserStats] = useState({
@@ -187,6 +195,21 @@ function App() {
                      userAnswer.toLowerCase().includes('5,85') ||
                      userAnswer.toLowerCase().includes('5.85')
 
+    // Log task performance
+    const taskStartTime = Date.now() // In real app, track when task started
+    logTask({
+      taskId: sampleTask.id,
+      topicId: selectedTopic?.id,
+      difficulty: sampleTask.difficulty,
+      correct: isCorrect,
+      timeSpent: 0, // Would track actual time in real app
+      hintsUsed: unlockedHints.length,
+      xpEarned: isCorrect ? sampleTask.xpReward : 0,
+      userAnswer: userAnswer,
+      gradeLevel: settings.gradeLevel,
+      courseType: settings.courseType
+    })
+
     if (isCorrect) {
       setFeedback({
         type: 'success',
@@ -251,6 +274,25 @@ function App() {
           >
             <span className="stats-level">Level {userStats.level}</span>
             <span className="stats-streak">🔥 {userStats.streak}</span>
+          </motion.button>
+          <motion.button
+            className="icon-btn"
+            onClick={() => setLearningPlanOpen(true)}
+            title="Lernplan"
+            whileHover={{
+              scale: 1.05,
+              y: -2,
+              transition: {
+                type: "spring",
+                stiffness: 300,
+                damping: 25
+              }
+            }}
+            whileTap={{
+              scale: 0.95
+            }}
+          >
+            📚
           </motion.button>
           <motion.button
             className="icon-btn"
@@ -646,6 +688,12 @@ function App() {
         onClose={() => setStatsPopoverOpen(false)}
         userStats={userStats}
         anchorRef={statsRef}
+      />
+
+      <LearningPlan
+        isOpen={learningPlanOpen}
+        onClose={() => setLearningPlanOpen(false)}
+        userSettings={settings}
       />
 
       <ParticleExplosion
