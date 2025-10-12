@@ -1,0 +1,8 @@
+name = "seminarkurs-lernapp"
+compatibility_date = "2024-01-01"
+
+# Note: pages_build_output_dir is specified when deploying
+# For local development, Wrangler will proxy to the dev server
+
+# Cloudflare Pages Functions configuration
+# Functions will be available at /api/* routes

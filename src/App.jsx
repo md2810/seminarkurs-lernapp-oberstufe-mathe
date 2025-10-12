@@ -10,6 +10,7 @@ import AccountSettings from './components/AccountSettings'
 import StatsPopover from './components/StatsPopover'
 import ParticleExplosion from './components/ParticleExplosion'
 import LearningPlan from './components/LearningPlan'
+import QuestionSession from './components/QuestionSession'
 import { logTask } from './utils/taskLogger'
 import {
   initializeUserProfile,
@@ -17,7 +18,8 @@ import {
   updateUserSettings,
   addTaskToHistory,
   subscribeToUserData,
-  updateStreak
+  updateStreak,
+  getAllTopicsWithProgress
 } from './firebase/firestore'
 import {
   BookOpenText,
@@ -43,39 +45,13 @@ import {
   UserCircle
 } from '@phosphor-icons/react'
 
-// Dummy-Daten
-const topics = [
-  {
-    id: 1,
-    title: 'Analysis',
-    icon: TrendUp,
-    description: 'Ableitungen, Kurvendiskussion, Integrale und Extremwertprobleme',
-    progress: 65,
-    completed: 13,
-    total: 20,
-    level: 'AFB II-III'
-  },
-  {
-    id: 2,
-    title: 'Analytische Geometrie',
-    icon: Ruler,
-    description: 'Vektoren, Geraden, Ebenen und Lagebeziehungen im Raum',
-    progress: 40,
-    completed: 8,
-    total: 20,
-    level: 'AFB II'
-  },
-  {
-    id: 3,
-    title: 'Stochastik',
-    icon: DiceSix,
-    description: 'Wahrscheinlichkeiten, Binomial- und Normalverteilung',
-    progress: 25,
-    completed: 5,
-    total: 20,
-    level: 'AFB I-II'
-  }
-]
+// Icon mapping for topic types
+const topicIconMap = {
+  'Analysis': TrendUp,
+  'Analytische Geometrie': Ruler,
+  'Stochastik': DiceSix,
+  'default': Star
+}
 
 const sampleTask = {
   id: 1,
@@ -131,6 +107,13 @@ function App() {
 
   // Learning Plan State
   const [learningPlanOpen, setLearningPlanOpen] = useState(false)
+
+  // Question Session State
+  const [questionSessionId, setQuestionSessionId] = useState(null)
+
+  // Topics from Firestore
+  const [topics, setTopics] = useState([])
+  const [loadingTopics, setLoadingTopics] = useState(true)
 
   // Navigation Dropdown State
   const [navDropdownOpen, setNavDropdownOpen] = useState(false)
@@ -202,6 +185,9 @@ function App() {
         // Update streak
         await updateStreak(currentUser.uid)
 
+        // Load topics with progress
+        loadTopicsWithProgress()
+
         // Subscribe to real-time updates
         unsubscribe = subscribeToUserData(currentUser.uid, (userData) => {
           if (userData) {
@@ -241,6 +227,47 @@ function App() {
     }
   }, [currentUser])
 
+  // Load topics with progress from Firestore
+  const loadTopicsWithProgress = async () => {
+    try {
+      setLoadingTopics(true)
+      const topicsData = await getAllTopicsWithProgress(currentUser.uid)
+
+      // Transform Firestore data to match UI format
+      const transformedTopics = topicsData.map((topic, index) => {
+        // Parse topicKey: "Analysis|Ableitungen|Potenzregel"
+        const [mainTopic, subtopic, subsubtopic] = topic.topicKey.split('|')
+
+        const progress = topic.totalQuestions > 0
+          ? Math.round((topic.questionsCompleted / topic.totalQuestions) * 100)
+          : 0
+
+        return {
+          id: topic.id,
+          topicKey: topic.topicKey,
+          title: subtopic || mainTopic,
+          mainTopic,
+          subtopic,
+          icon: topicIconMap[mainTopic] || topicIconMap.default,
+          description: subsubtopic || subtopic || '',
+          progress,
+          completed: topic.questionsCompleted,
+          total: topic.totalQuestions,
+          needsMoreQuestions: topic.needsMoreQuestions,
+          lastSessionId: topic.lastSessionId,
+          avgAccuracy: Math.round(topic.avgAccuracy || 0),
+          level: `Ø ${Math.round(topic.avgAccuracy || 0)}%`
+        }
+      })
+
+      setTopics(transformedTopics)
+      setLoadingTopics(false)
+    } catch (error) {
+      console.error('Error loading topics:', error)
+      setLoadingTopics(false)
+    }
+  }
+
   const handleLogout = async () => {
     try {
       await logout()
@@ -268,11 +295,18 @@ function App() {
   }
 
   const handleTopicClick = (topic) => {
-    setSelectedTopic(topic)
-    setCurrentView('task')
-    setUserAnswer('')
-    setUnlockedHints([])
-    setFeedback(null)
+    // Open the existing session for this topic
+    if (topic.lastSessionId) {
+      setQuestionSessionId(topic.lastSessionId)
+    } else {
+      alert('Keine Fragen für dieses Thema gefunden. Bitte generiere zuerst Fragen im Lernplan.')
+    }
+  }
+
+  const handleGenerateMoreQuestions = (topic) => {
+    // Open learning plan and prepare for generating more questions
+    setLearningPlanOpen(true)
+    // Could add logic here to auto-select this topic in the learning plan
   }
 
   const handleBackToDashboard = () => {
@@ -706,8 +740,30 @@ function App() {
                 mass: 0.8
               }}
             >
-              <AnimatePresence>
-                {topics.map((topic, index) => (
+              {loadingTopics ? (
+                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px' }}>
+                  <div className="spinner-large"></div>
+                  <p style={{ marginTop: '20px', color: 'var(--text-secondary)' }}>Lade Themen...</p>
+                </div>
+              ) : topics.length === 0 ? (
+                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px 20px' }}>
+                  <Books weight="bold" size={64} style={{ color: 'var(--text-secondary)', opacity: 0.3, marginBottom: '20px' }} />
+                  <h3 style={{ marginBottom: '10px' }}>Noch keine Themen</h3>
+                  <p style={{ color: 'var(--text-secondary)', marginBottom: '30px' }}>
+                    Füge Themen zu deinem Lernplan hinzu und generiere Fragen!
+                  </p>
+                  <motion.button
+                    className="btn btn-primary"
+                    onClick={() => setLearningPlanOpen(true)}
+                    whileHover={{ scale: 1.05, y: -3 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    Lernplan öffnen
+                  </motion.button>
+                </div>
+              ) : (
+                <AnimatePresence>
+                  {topics.map((topic, index) => (
                   <motion.div
                     key={topic.id}
                     className="card topic-card"
@@ -785,9 +841,28 @@ function App() {
                         {topic.completed} von {topic.total} abgeschlossen
                       </div>
                     </div>
+
+                    {topic.needsMoreQuestions && topic.completed >= topic.total && (
+                      <motion.button
+                        className="btn btn-secondary"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleGenerateMoreQuestions(topic)
+                        }}
+                        style={{ marginTop: '12px', width: '100%', fontSize: '14px' }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.15 + 0.5 }}
+                      >
+                        Weitere Fragen generieren
+                      </motion.button>
+                    )}
                   </motion.div>
-                ))}
-              </AnimatePresence>
+                  ))}
+                </AnimatePresence>
+              )}
             </motion.div>
           </>
         ) : (
@@ -1139,7 +1214,30 @@ function App() {
         isOpen={learningPlanOpen}
         onClose={() => setLearningPlanOpen(false)}
         userSettings={settings}
+        onStartSession={(sessionId) => {
+          setQuestionSessionId(sessionId)
+          setLearningPlanOpen(false)
+          // Reload topics after generation
+          setTimeout(() => {
+            if (currentUser) {
+              loadTopicsWithProgress()
+            }
+          }, 1000)
+        }}
       />
+
+      {questionSessionId && (
+        <QuestionSession
+          sessionId={questionSessionId}
+          onClose={() => {
+            setQuestionSessionId(null)
+            // Reload topics after session completes
+            if (currentUser) {
+              loadTopicsWithProgress()
+            }
+          }}
+        />
+      )}
 
       <ParticleExplosion
         trigger={showParticleExplosion}

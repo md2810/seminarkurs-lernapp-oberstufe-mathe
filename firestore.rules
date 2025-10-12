@@ -1,0 +1,51 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Users collection - main document
+    match /users/{userId} {
+      // Allow users to read and write their own data
+      allow read, write: if isOwner(userId);
+
+      // Generated Questions subcollection
+      match /generatedQuestions/{sessionId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Question Progress subcollection
+      match /questionProgress/{questionId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // AUTO Mode Assessments subcollection
+      match /autoModeAssessments/{assessmentId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Learning Sessions subcollection
+      match /learningSessions/{sessionId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Topic Progress subcollection
+      match /topicProgress/{topicId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Spaced Repetition Reviews subcollection
+      match /reviews/{reviewId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+  }
+}

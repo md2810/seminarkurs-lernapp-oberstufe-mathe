@@ -8,7 +8,11 @@ import {
   Books,
   Palette,
   Robot,
-  Lightbulb
+  Lightbulb,
+  Bug,
+  Key,
+  Eye,
+  Trash
 } from '@phosphor-icons/react'
 
 const colorPresets = [
@@ -131,6 +135,39 @@ function Settings({ isOpen, onClose, settings, onSettingsChange }) {
     setLocalSettings(newSettings)
     setAutoMode(true)
     onSettingsChange(newSettings)
+  }
+
+  const handleApiKeyChange = (apiKey) => {
+    const newSettings = {
+      ...localSettings,
+      anthropicApiKey: apiKey
+    }
+    setLocalSettings(newSettings)
+    onSettingsChange(newSettings)
+  }
+
+  const handleDebugToggle = (key, value) => {
+    const newSettings = {
+      ...localSettings,
+      [key]: value
+    }
+    setLocalSettings(newSettings)
+    onSettingsChange(newSettings)
+  }
+
+  const handleClearCache = () => {
+    // Clear various caches
+    const keysToKeep = ['userSettings', 'userData', 'taskLog']
+    const allKeys = Object.keys(localStorage)
+
+    allKeys.forEach(key => {
+      if (!keysToKeep.includes(key)) {
+        localStorage.removeItem(key)
+      }
+    })
+
+    alert('Cache geleert! Die App wird neu geladen.')
+    window.location.reload()
   }
 
   if (!isOpen) return null
@@ -469,6 +506,82 @@ function Settings({ isOpen, onClose, settings, onSettingsChange }) {
               <div className="settings-info">
                 <Lightbulb weight="bold" /> Deine Einstellungen werden lokal gespeichert und bleiben erhalten.
               </div>
+            </motion.section>
+
+            {/* Debugging Section */}
+            <motion.section
+              className="settings-section"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                type: "spring",
+                stiffness: 260,
+                damping: 26,
+                delay: 0.5
+              }}
+            >
+              <h3><Bug weight="bold" /> Debugging</h3>
+              <p className="section-description">
+                Entwickler-Einstellungen für API und Debugging
+              </p>
+
+              {/* API Key Input */}
+              <div className="api-key-container">
+                <label className="setting-label">
+                  <Key weight="bold" /> Anthropic API Key
+                </label>
+                <input
+                  type="password"
+                  placeholder="sk-ant-..."
+                  value={localSettings.anthropicApiKey || ''}
+                  onChange={(e) => handleApiKeyChange(e.target.value)}
+                  className="api-key-input"
+                />
+                <p className="input-hint">
+                  Wird nur lokal gespeichert, nie an unsere Server gesendet. Benötigt für KI-Funktionen.
+                </p>
+              </div>
+
+              {/* Debug Options */}
+              <div className="debug-options">
+                <label className="debug-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={localSettings.showAiAssessments || false}
+                    onChange={(e) => handleDebugToggle('showAiAssessments', e.target.checked)}
+                  />
+                  <span className="checkbox-icon">
+                    <Eye weight="bold" />
+                  </span>
+                  <span>AUTO-Modus Einschätzungen anzeigen (für Debugging)</span>
+                </label>
+
+                <label className="debug-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={localSettings.logApiCalls || false}
+                    onChange={(e) => handleDebugToggle('logApiCalls', e.target.checked)}
+                  />
+                  <span className="checkbox-icon">
+                    <Eye weight="bold" />
+                  </span>
+                  <span>API-Calls in Console loggen</span>
+                </label>
+              </div>
+
+              {/* Clear Cache Button */}
+              <motion.button
+                className="btn btn-secondary clear-cache-btn"
+                onClick={handleClearCache}
+                whileHover={{
+                  scale: 1.05,
+                  y: -2,
+                  transition: { type: "spring", stiffness: 400, damping: 18 }
+                }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Trash weight="bold" /> Cache leeren
+              </motion.button>
             </motion.section>
           </div>
         </motion.div>

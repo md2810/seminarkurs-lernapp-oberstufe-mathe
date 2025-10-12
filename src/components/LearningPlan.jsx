@@ -13,7 +13,17 @@ import {
   CaretDown
 } from '@phosphor-icons/react'
 
-function LearningPlan({ isOpen, onClose, userSettings }) {
+import { useAuth } from '../contexts/AuthContext'
+import {
+  saveGeneratedQuestions,
+  createLearningSession,
+  getMemories,
+  getRecentPerformance,
+  getLatestAutoModeAssessment
+} from '../firebase/firestore'
+
+function LearningPlan({ isOpen, onClose, userSettings, onStartSession }) {
+  const { currentUser } = useAuth()
   const [learningPlan, setLearningPlan] = useState([])
   const [showThemeSelector, setShowThemeSelector] = useState(false)
   const [selectedThemes, setSelectedThemes] = useState([])
@@ -21,6 +31,12 @@ function LearningPlan({ isOpen, onClose, userSettings }) {
   const [examTitle, setExamTitle] = useState('')
   const [showImageUpload, setShowImageUpload] = useState(false)
   const [openLeitidee, setOpenLeitidee] = useState(null)
+  const [uploadedImage, setUploadedImage] = useState(null)
+  const [analyzingImage, setAnalyzingImage] = useState(false)
+  const [extractedTopics, setExtractedTopics] = useState([])
+  const [imageError, setImageError] = useState(null)
+  const [generatingQuestions, setGeneratingQuestions] = useState(null)
+  const [generationProgress, setGenerationProgress] = useState(0)
 
   // Get themes based on user settings
   const getAvailableThemes = () => {
@@ -63,6 +79,80 @@ function LearningPlan({ isOpen, onClose, userSettings }) {
     }).length
   }
 
+  const handleImageUpload = async (event) => {
+    const file = event.target.files[0]
+    if (!file) return
+
+    // Check if image
+    if (!file.type.startsWith('image/')) {
+      setImageError('Bitte wähle eine Bilddatei aus')
+      return
+    }
+
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setImageError('Bild ist zu groß (max. 5MB)')
+      return
+    }
+
+    setImageError(null)
+    setAnalyzingImage(true)
+
+    try {
+      // Convert to base64
+      const reader = new FileReader()
+      reader.onload = async (e) => {
+        const base64 = e.target.result.split(',')[1]
+        setUploadedImage(e.target.result)
+
+        // Get API key from userSettings prop
+        const apiKey = userSettings.anthropicApiKey
+
+        if (!apiKey) {
+          setImageError('Bitte gib deinen API-Key in den Einstellungen ein (Settings → Debugging → API Key)')
+          setAnalyzingImage(false)
+          return
+        }
+
+        // Call analyze-image API
+        const response = await fetch('/api/analyze-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            apiKey,
+            image: base64,
+            gradeLevel: userSettings.gradeLevel || 'Klasse_11',
+            courseType: userSettings.courseType || 'Leistungsfach'
+          })
+        })
+
+        const data = await response.json()
+
+        if (data.success) {
+          setExtractedTopics(data.extractedTopics)
+
+          // Auto-select all extracted topics
+          const topicIds = data.extractedTopics.map(t =>
+            `${t.leitidee}|${t.thema}|${t.unterthema}`
+          )
+          setSelectedThemes(topicIds)
+
+          setAnalyzingImage(false)
+          setShowImageUpload(false)
+        } else {
+          setImageError(`Fehler: ${data.error}`)
+          setAnalyzingImage(false)
+        }
+      }
+
+      reader.readAsDataURL(file)
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      setImageError('Fehler beim Hochladen des Bildes')
+      setAnalyzingImage(false)
+    }
+  }
+
   const addToPlan = () => {
     if (selectedThemes.length === 0) return
 
@@ -75,7 +165,8 @@ function LearningPlan({ isOpen, onClose, userSettings }) {
       examDate: examDate || null,
       examTitle: examTitle || 'Lernziel',
       addedAt: new Date().toISOString(),
-      completed: false
+      completed: false,
+      fromImage: uploadedImage ? true : false
     }
 
     setLearningPlan([...learningPlan, newPlanItem])
@@ -83,9 +174,112 @@ function LearningPlan({ isOpen, onClose, userSettings }) {
     setExamDate('')
     setExamTitle('')
     setShowThemeSelector(false)
+    setUploadedImage(null)
+    setExtractedTopics([])
 
     // Save to localStorage
     localStorage.setItem('learningPlan', JSON.stringify([...learningPlan, newPlanItem]))
+  }
+
+  const handleStartLearning = async (planItem) => {
+    if (!currentUser) return
+
+    setGeneratingQuestions(planItem.id)
+    setGenerationProgress(0)
+
+    try {
+      // Get API key from userSettings prop (which is already loaded from Firestore/localStorage)
+      const apiKey = userSettings.anthropicApiKey
+
+      if (!apiKey) {
+        alert('Bitte gib deinen API-Key in den Einstellungen ein (Settings → Debugging → API Key)')
+        setGeneratingQuestions(null)
+        setGenerationProgress(0)
+        return
+      }
+
+      // Simulate progress: Start at 10% while fetching context
+      setGenerationProgress(10)
+
+      // Get user context
+      const recentMemories = await getMemories(currentUser.uid, { limit: 5, importance: 5 })
+      const recentPerformance = await getRecentPerformance(currentUser.uid, 10)
+      const autoModeAssessment = userSettings.aiModel?.autoMode
+        ? await getLatestAutoModeAssessment(currentUser.uid)
+        : null
+
+      // Progress to 20% after context fetched
+      setGenerationProgress(20)
+
+      // Simulate gradual progress during API call (slower and stops at 85%)
+      const progressInterval = setInterval(() => {
+        setGenerationProgress(prev => {
+          if (prev < 85) {
+            // Slow down as we approach 85%
+            const increment = prev < 60 ? 3 : prev < 75 ? 2 : 1
+            return Math.min(prev + increment, 85)
+          }
+          return prev
+        })
+      }, 1500)
+
+      // Call generate-questions API
+      const response = await fetch('/api/generate-questions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apiKey,
+          userId: currentUser.uid,
+          learningPlanItemId: planItem.id,
+          topics: planItem.themes,
+          userContext: {
+            gradeLevel: userSettings.gradeLevel || 'Klasse_11',
+            courseType: userSettings.courseType || 'Leistungsfach',
+            autoModeAssessment,
+            recentMemories: recentMemories.map(m => m.content),
+            recentPerformance
+          }
+        })
+      })
+
+      clearInterval(progressInterval)
+
+      const data = await response.json()
+
+      if (data.success) {
+        setGenerationProgress(90)
+
+        // Save to Firestore
+        await saveGeneratedQuestions(currentUser.uid, data)
+
+        setGenerationProgress(95)
+
+        // Create learning session
+        await createLearningSession(currentUser.uid, {
+          sessionId: data.sessionId,
+          learningPlanItemId: planItem.id,
+          generatedQuestionsId: data.sessionId,
+          questionsTotal: data.totalQuestions
+        })
+
+        setGenerationProgress(100)
+
+        // Start session
+        onStartSession(data.sessionId)
+        setGeneratingQuestions(null)
+        setGenerationProgress(0)
+      } else {
+        clearInterval(progressInterval)
+        alert(`Fehler: ${data.error}`)
+        setGeneratingQuestions(null)
+        setGenerationProgress(0)
+      }
+    } catch (error) {
+      console.error('Error generating questions:', error)
+      alert('Fehler beim Generieren der Fragen')
+      setGeneratingQuestions(null)
+      setGenerationProgress(0)
+    }
   }
 
   const removePlanItem = (itemId) => {
@@ -228,18 +422,58 @@ function LearningPlan({ isOpen, onClose, userSettings }) {
                           </div>
                         ))}
                       </div>
-                      <motion.button
-                        className="remove-btn"
-                        onClick={() => removePlanItem(item.id)}
-                        whileHover={{
-                          scale: 1.05,
-                          x: 4,
-                          transition: { type: "spring", stiffness: 400, damping: 20 }
-                        }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <Trash weight="bold" /> Entfernen
-                      </motion.button>
+                      <div className="plan-actions">
+                        <div style={{ flex: 1 }}>
+                          <motion.button
+                            className="btn btn-primary start-btn"
+                            onClick={() => handleStartLearning(item)}
+                            disabled={generatingQuestions === item.id}
+                            style={{ width: '100%' }}
+                            whileHover={{
+                              scale: generatingQuestions !== item.id ? 1.05 : 1,
+                              y: generatingQuestions !== item.id ? -2 : 0,
+                              transition: { type: "spring", stiffness: 400, damping: 20 }
+                            }}
+                            whileTap={{ scale: generatingQuestions !== item.id ? 0.95 : 1 }}
+                          >
+                            {generatingQuestions === item.id ? `Generiere... ${generationProgress}%` : 'Generierung starten'}
+                          </motion.button>
+                          {generatingQuestions === item.id && (
+                            <div style={{
+                              width: '100%',
+                              height: '4px',
+                              background: 'rgba(249, 115, 22, 0.2)',
+                              borderRadius: '2px',
+                              marginTop: '8px',
+                              overflow: 'hidden'
+                            }}>
+                              <motion.div
+                                initial={{ width: '0%' }}
+                                animate={{ width: `${generationProgress}%` }}
+                                transition={{ duration: 0.3 }}
+                                style={{
+                                  height: '100%',
+                                  background: 'linear-gradient(90deg, #f97316, #fb923c)',
+                                  borderRadius: '2px'
+                                }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                        <motion.button
+                          className="remove-btn"
+                          onClick={() => removePlanItem(item.id)}
+                          disabled={generatingQuestions === item.id}
+                          whileHover={{
+                            scale: generatingQuestions !== item.id ? 1.05 : 1,
+                            x: generatingQuestions !== item.id ? 4 : 0,
+                            transition: { type: "spring", stiffness: 400, damping: 20 }
+                          }}
+                          whileTap={{ scale: generatingQuestions !== item.id ? 0.95 : 1 }}
+                        >
+                          <Trash weight="bold" /> Entfernen
+                        </motion.button>
+                      </div>
                     </motion.div>
                   ))
                 )}
@@ -307,17 +541,46 @@ function LearningPlan({ isOpen, onClose, userSettings }) {
                       />
                     </div>
 
-                    {/* Image Upload Option (Future Feature) */}
+                    {/* Image Upload Option */}
                     <div className="upload-option">
+                      <input
+                        type="file"
+                        id="theme-image-upload"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={handleImageUpload}
+                      />
                       <button
                         className="btn btn-secondary"
-                        onClick={() => setShowImageUpload(!showImageUpload)}
-                        title="Kommt bald: Lade ein Foto deiner Themenliste hoch"
-                        disabled
+                        onClick={() => document.getElementById('theme-image-upload').click()}
+                        disabled={analyzingImage}
                       >
-                        <Camera weight="bold" /> Themenliste hochladen (Bald verfügbar)
+                        <Camera weight="bold" />
+                        {analyzingImage ? 'Analysiere Bild...' : 'Themenliste hochladen (KI-gestützt)'}
                       </button>
                     </div>
+
+                    {/* Image Analysis Status */}
+                    {analyzingImage && (
+                      <div className="analyzing-status">
+                        <div className="spinner"></div>
+                        <p>Claude analysiert dein Bild...</p>
+                      </div>
+                    )}
+
+                    {imageError && (
+                      <div className="image-error">
+                        {imageError}
+                      </div>
+                    )}
+
+                    {extractedTopics.length > 0 && (
+                      <div className="extracted-topics-preview">
+                        <p className="success-message">
+                          ✓ {extractedTopics.length} Themen erkannt und ausgewählt!
+                        </p>
+                      </div>
+                    )}
 
                     {/* Manual Theme Selection */}
                     <div className="themes-tree">

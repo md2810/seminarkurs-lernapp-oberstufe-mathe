@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "wrangler pages dev --proxy 8788 -- vite --port 8788",
+    "dev:vite": "vite",
     "build": "vite build",
     "preview": "vite preview"
   },
@@ -12,6 +13,7 @@
     "@phosphor-icons/react": "^2.1.10",
     "firebase": "^12.4.0",
     "framer-motion": "^12.23.22",
+    "katex": "^0.16.23",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
