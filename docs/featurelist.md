@@ -74,6 +74,7 @@ Eine interaktive Mathematik-Lernapp für die Oberstufe (K1) mit KI-gestützter F
 ### 3.4 Memory-System
 - Speicherung wichtiger Lernkontext-Informationen
 - Verwendung bei Fragengeneration für bessere Personalisierung
+- Fragenkatalog aus Altklausuren
 
 **Git-Referenz:** `dc847c2` - AI features powered by claude
 
@@ -100,12 +101,17 @@ Eine interaktive Mathematik-Lernapp für die Oberstufe (K1) mit KI-gestützter F
 - Automatisches Update bei App-Nutzung
 - Streak-Visualisierung mit Feuer-Icon
 - Motivationsfaktor für regelmäßiges Lernen
+- Nach 3, 5, 10, usw. Tagen extra Belohnung
+- Abzeichen
+- Freundschaftssystem 
 
 ### 4.4 Visuelle Belohnungen
 - **Partikel-Explosion** bei korrekten Antworten
 - **Animierte Feedback-Messages**
 - **Erfolgs-Popups** mit XP-Anzeige
 
+### 4.5 Freundschaftssystem
+- gemeinsame Streak (extra Abzeichen) 
 **Git-Referenz:**
 - `cc65b6d` - XP progression path
 - `5db3ccc` - Dashboard stats
