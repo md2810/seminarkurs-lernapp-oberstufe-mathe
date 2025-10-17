@@ -35,6 +35,7 @@ sketch
 # Ignore all local history of files
 .history
 .ionide
+.claude
 
 # End of https://www.toptal.com/developers/gitignore/api/react,visualstudiocode
 .claude/settings.local.json
