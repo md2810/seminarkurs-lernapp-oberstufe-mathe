@@ -1,4 +1,4 @@
-# Seminarkurs Lernapp Mathematik Oberstufe 
+# 📱 Seminarkurs Lernapp Mathematik Oberstufe
 
 ## 👥 Teammitglieder
 
@@ -10,8 +10,19 @@
 
 ---
 
-## Das Projekt
+## 📚 Dokumentation
 
+Weitere detaillierte Informationen findest du in diesen Dokumenten:
+
+- [📋 Feature-Liste](./feature-liste.md) - Vollständige Übersicht aller Features und Funktionen
+- [🤖 KI-Integration Konzept](./ai-konzept.md) - Detailliertes Konzept der Claude AI Integration
+- [🔥 Firestore Setup](./firestore-setup.md) - Anleitung zur Firestore-Konfiguration
+- [🚀 Firestore Deployment](./firestore-deployment.md) - Deployment-Guide für Firestore Rules
+- [🧠 Lerntheorien](./lerntheorien.md) - Theoretische Grundlagen des Gamification-Systems
+
+---
+
+## 📝 Das Projekt
 
 **Fach & Klassenstufe:** Mathematik, Kursstufe (K1)
 
@@ -69,6 +80,10 @@
 
 ## 🔗 Nützliche Links
 
-- GeoGebra GitHub: https://github.com/geogebra
-- GeoGebra Apps (Embedding/JS-API): https://www.geogebra.org/documents
-- Bildungsplan Baden-Württemberg: https://www.bildungsplaene-bw.de/
+- [GeoGebra GitHub](https://github.com/geogebra)
+- [GeoGebra Apps (Embedding/JS-API)](https://www.geogebra.org/documents)
+- [Bildungsplan Baden-Württemberg](https://www.bildungsplaene-bw.de/)
+
+---
+
+*Letzte Aktualisierung: 2025-10-17*

@@ -1,6 +1,6 @@
-# Feature-Liste - MatheLernApp Oberstufe
+# 📋 Feature-Liste - MatheLernApp Oberstufe
 
-## Übersicht
+## 🎯 Übersicht
 Eine interaktive Mathematik-Lernapp für die Oberstufe (K1) mit KI-gestützter Fragengeneration, Gamification und Cloud-Synchronisation.
 
 **Entwickelt von:** Marco Duzevic, Joel Dürr, Emmi Lang, Luisa Schulze, Hatice Erdogan
@@ -373,7 +373,7 @@ Eine interaktive Mathematik-Lernapp für die Oberstufe (K1) mit KI-gestützter F
 
 ---
 
-## Zusammenfassung
+## 📌 Zusammenfassung
 
 Die MatheLernApp bietet eine moderne, KI-gestützte Lernplattform speziell für Mathematik in der Oberstufe. Mit Gamification, adaptiver Fragengeneration, und ultra-smooth Animationen wird das Lernen zu einem angenehmen und effektiven Erlebnis.
 
@@ -388,4 +388,5 @@ Die MatheLernApp bietet eine moderne, KI-gestützte Lernplattform speziell für 
 ---
 
 *Erstellt am: 2025-10-15*
+*Letzte Aktualisierung: 2025-10-17*
 *Basierend auf Git-Commits bis: dc847c2*

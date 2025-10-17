@@ -18,7 +18,10 @@
       "Bash(firebase projects:list:*)",
       "Bash(firebase use:*)",
       "Bash(git log:*)",
-      "Bash(if not exist \"docs\" mkdir \"docs\")"
+      "Bash(if not exist \"docs\" mkdir \"docs\")",
+      "Bash(ren:*)",
+      "Bash(ren \"FIRESTORE_DEPLOYMENT.md\" \"firestore-deployment.md\")",
+      "Bash(mv:*)"
     ],
     "deny": [],
     "ask": []

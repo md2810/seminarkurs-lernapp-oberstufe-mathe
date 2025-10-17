@@ -1,9 +1,9 @@
-# Firestore Regeln und Indexes deployen
+# 🚀 Firestore Deployment
 
-## Problem
+## ⚠️ Problem
 Die App zeigt "Missing or insufficient permissions" Fehler, weil die Firestore Sicherheitsregeln noch nicht deployed wurden.
 
-## Lösung
+## ✅ Lösung
 
 ### 1. Firebase CLI installieren (falls noch nicht installiert)
 ```bash
@@ -48,7 +48,7 @@ Du kannst den Status in der Firebase Console überprüfen:
 ### 6. App neu laden
 Sobald die Indexes fertig sind, lade die App neu und versuche erneut "Starten" zu klicken.
 
-## Was die Regeln erlauben
+## 🔒 Was die Regeln erlauben
 - ✅ Benutzer können ihre eigenen Daten lesen und schreiben (`users/{userId}`)
 - ✅ Benutzer können ihre eigenen Subcollections verwenden:
   - `generatedQuestions` - Generierte Fragen
@@ -57,7 +57,7 @@ Sobald die Indexes fertig sind, lade die App neu und versuche erneut "Starten" z
   - `learningSessions` - Lern-Sessions
 - ❌ Benutzer können NICHT die Daten anderer Benutzer sehen
 
-## Troubleshooting
+## 🔧 Troubleshooting
 
 ### "No project active"
 ```bash
@@ -72,3 +72,7 @@ Das ist OK - bedeutet der Index wurde bereits erstellt.
 1. Überprüfe in Firebase Console → Firestore Database → Rules ob die neuen Regeln aktiv sind
 2. Überprüfe ob du angemeldet bist (schaue in der App oben rechts)
 3. Lösche den Browser-Cache und lade neu
+
+---
+
+*Letzte Aktualisierung: 2025-10-17*
