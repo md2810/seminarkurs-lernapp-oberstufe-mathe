@@ -37,6 +37,9 @@ const courseTypes = [
 function Settings({ isOpen, onClose, settings, onSettingsChange }) {
   const [localSettings, setLocalSettings] = useState(settings)
   const [autoMode, setAutoMode] = useState(false)
+  const [availableModels, setAvailableModels] = useState([])
+  const [loadingModels, setLoadingModels] = useState(false)
+  const [modelsError, setModelsError] = useState(null)
 
   useEffect(() => {
     setLocalSettings(settings)
@@ -168,6 +171,51 @@ function Settings({ isOpen, onClose, settings, onSettingsChange }) {
 
     alert('Cache geleert! Die App wird neu geladen.')
     window.location.reload()
+  }
+
+  const fetchAvailableModels = async () => {
+    const apiKey = localSettings.anthropicApiKey
+    if (!apiKey) {
+      setModelsError('Bitte gib zuerst einen API-Key ein')
+      return
+    }
+
+    setLoadingModels(true)
+    setModelsError(null)
+
+    try {
+      const response = await fetch('/api/get-models', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setAvailableModels(data.models)
+        // If no model is selected, select the first one
+        if (!localSettings.selectedModel && data.models.length > 0) {
+          handleModelChange(data.models[0].id)
+        }
+      } else {
+        setModelsError(data.error || 'Fehler beim Laden der Modelle')
+      }
+    } catch (error) {
+      console.error('Error fetching models:', error)
+      setModelsError('Fehler beim Laden der Modelle')
+    } finally {
+      setLoadingModels(false)
+    }
+  }
+
+  const handleModelChange = (modelId) => {
+    const newSettings = {
+      ...localSettings,
+      selectedModel: modelId
+    }
+    setLocalSettings(newSettings)
+    onSettingsChange(newSettings)
   }
 
   if (!isOpen) return null
@@ -335,11 +383,10 @@ function Settings({ isOpen, onClose, settings, onSettingsChange }) {
                   }`}
                   onClick={() => handleColorChange(preset)}
                   whileHover={{
-                    scale: 1.1,
                     y: -4,
                     transition: { type: "spring", stiffness: 400, damping: 18 }
                   }}
-                  whileTap={{ scale: 0.9 }}
+                  whileTap={{ scale: 0.95 }}
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{
@@ -353,7 +400,7 @@ function Settings({ isOpen, onClose, settings, onSettingsChange }) {
                     className="color-preview"
                     style={{ background: preset.primary }}
                     whileHover={{
-                      scale: 1.2,
+                      scale: 1.15,
                       rotate: 180,
                       transition: { type: "spring", stiffness: 300, damping: 20 }
                     }}
@@ -539,6 +586,84 @@ function Settings({ isOpen, onClose, settings, onSettingsChange }) {
                 />
                 <p className="input-hint">
                   Wird nur lokal gespeichert, nie an unsere Server gesendet. Benötigt für KI-Funktionen.
+                </p>
+              </div>
+
+              {/* Model Selector */}
+              <div className="model-selector-container" style={{ marginTop: '20px' }}>
+                <label className="setting-label">
+                  <Robot weight="bold" /> Claude Modell
+                </label>
+                {availableModels.length === 0 ? (
+                  <motion.button
+                    className="btn btn-secondary"
+                    onClick={fetchAvailableModels}
+                    disabled={loadingModels || !localSettings.anthropicApiKey}
+                    style={{ width: '100%' }}
+                    whileHover={{
+                      scale: localSettings.anthropicApiKey && !loadingModels ? 1.02 : 1,
+                      y: localSettings.anthropicApiKey && !loadingModels ? -2 : 0,
+                      transition: { type: "spring", stiffness: 400, damping: 18 }
+                    }}
+                    whileTap={{ scale: localSettings.anthropicApiKey && !loadingModels ? 0.98 : 1 }}
+                  >
+                    {loadingModels ? 'Lade Modelle...' : 'Verfügbare Modelle laden'}
+                  </motion.button>
+                ) : (
+                  <div>
+                    <select
+                      value={localSettings.selectedModel || ''}
+                      onChange={(e) => handleModelChange(e.target.value)}
+                      className="model-select"
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        borderRadius: '12px',
+                        border: '2px solid rgba(249, 115, 22, 0.2)',
+                        background: 'var(--bg-secondary)',
+                        color: 'var(--text-primary)',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        outline: 'none',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      {availableModels.map((model) => (
+                        <option key={model.id} value={model.id}>
+                          {model.name} - {model.description}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={fetchAvailableModels}
+                      style={{
+                        marginTop: '8px',
+                        padding: '6px 12px',
+                        background: 'transparent',
+                        border: '1px solid rgba(249, 115, 22, 0.3)',
+                        borderRadius: '8px',
+                        color: 'var(--text-secondary)',
+                        fontSize: '12px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      Modelle aktualisieren
+                    </button>
+                  </div>
+                )}
+                {modelsError && (
+                  <p style={{
+                    marginTop: '8px',
+                    color: '#ef4444',
+                    fontSize: '12px'
+                  }}>
+                    {modelsError}
+                  </p>
+                )}
+                <p className="input-hint">
+                  Wähle das Claude-Modell, das für die Fragengenerierung verwendet werden soll.
                 </p>
               </div>
 

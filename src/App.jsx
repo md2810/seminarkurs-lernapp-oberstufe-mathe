@@ -838,7 +838,7 @@ function App() {
                         />
                       </div>
                       <div className="progress-text">
-                        {topic.completed} von {topic.total} abgeschlossen
+                        {topic.completed} von 20 abgeschlossen
                       </div>
                     </div>
 
