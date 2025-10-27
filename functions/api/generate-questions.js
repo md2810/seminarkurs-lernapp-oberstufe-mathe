@@ -7,7 +7,7 @@ import promptTemplate from '../../data/prompts/generate-questions.js'
 export async function onRequestPost(context) {
   try {
     const body = await context.request.json()
-    const { apiKey, userId, learningPlanItemId, topics, userContext } = body
+    const { apiKey, userId, learningPlanItemId, topics, userContext, selectedModel } = body
 
     // Validate required fields
     if (!apiKey || !userId || !topics || !userContext) {
@@ -19,6 +19,9 @@ export async function onRequestPost(context) {
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       )
     }
+
+    // Use selected model or default to claude-sonnet-4-5
+    const model = selectedModel || 'claude-sonnet-4-5-20250929'
 
     // Get curriculum context
     const curriculum = curriculumData.Klassen_11_12[userContext.courseType]
@@ -64,7 +67,7 @@ Interne Begründung: "${userContext.autoModeAssessment.currentAssessment.reasoni
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5-20250929',
+        model: model,
         max_tokens: 16000,
         temperature: 0.7,
         messages: [

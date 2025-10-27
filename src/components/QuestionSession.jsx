@@ -55,7 +55,18 @@ function QuestionSession({ sessionId, onClose }) {
     try {
       const questionsData = await getGeneratedQuestions(currentUser.uid, sessionId)
       if (questionsData) {
-        setQuestions(questionsData.questions)
+        // Filter out already completed questions to avoid duplicates
+        const { getSessionProgress } = await import('../firebase/firestore')
+        const completedProgress = await getSessionProgress(currentUser.uid, sessionId)
+        const completedQuestionIds = completedProgress
+          .filter(p => p.status === 'completed')
+          .map(p => p.questionId)
+
+        const uncompletedQuestions = questionsData.questions.filter(
+          q => !completedQuestionIds.includes(q.id)
+        )
+
+        setQuestions(uncompletedQuestions.length > 0 ? uncompletedQuestions : questionsData.questions)
         setLoading(false)
       }
     } catch (error) {
@@ -189,11 +200,17 @@ function QuestionSession({ sessionId, onClose }) {
         // Update topic progress
         const topicKey = `${currentQuestion.topic}|${currentQuestion.subtopic}`
         const topicProgress = await getTopicProgress(currentUser.uid, topicKey)
+
+        // Get the total questions count from the generated questions session
+        const questionsData = await getGeneratedQuestions(currentUser.uid, sessionId)
+        const sessionTotalQuestions = questionsData?.totalQuestions || questionsData?.questions?.length || 20
+
         await updateTopicProgress(currentUser.uid, topicKey, {
           questionsCompleted: topicProgress.questionsCompleted + 1,
-          totalQuestions: Math.max(topicProgress.totalQuestions, topicProgress.questionsCompleted + 1),
+          // Use session's total questions, or keep existing if already set
+          totalQuestions: topicProgress.totalQuestions > 0 ? topicProgress.totalQuestions : sessionTotalQuestions,
           lastSessionId: sessionId,
-          needsMoreQuestions: topicProgress.questionsCompleted + 1 >= 20 ? true : false,
+          needsMoreQuestions: topicProgress.questionsCompleted + 1 >= sessionTotalQuestions ? true : false,
           avgAccuracy: ((topicProgress.avgAccuracy * topicProgress.questionsCompleted) + (data.isCorrect ? 100 : 0)) / (topicProgress.questionsCompleted + 1)
         })
 

@@ -232,6 +232,7 @@ function LearningPlan({ isOpen, onClose, userSettings, onStartSession }) {
           userId: currentUser.uid,
           learningPlanItemId: planItem.id,
           topics: planItem.themes,
+          selectedModel: userSettings.selectedModel,
           userContext: {
             gradeLevel: userSettings.gradeLevel || 'Klasse_11',
             courseType: userSettings.courseType || 'Leistungsfach',
@@ -439,24 +440,74 @@ function LearningPlan({ isOpen, onClose, userSettings, onStartSession }) {
                             {generatingQuestions === item.id ? `Generiere... ${generationProgress}%` : 'Generierung starten'}
                           </motion.button>
                           {generatingQuestions === item.id && (
-                            <div style={{
-                              width: '100%',
-                              height: '4px',
-                              background: 'rgba(249, 115, 22, 0.2)',
-                              borderRadius: '2px',
-                              marginTop: '8px',
-                              overflow: 'hidden'
-                            }}>
-                              <motion.div
-                                initial={{ width: '0%' }}
-                                animate={{ width: `${generationProgress}%` }}
-                                transition={{ duration: 0.3 }}
-                                style={{
-                                  height: '100%',
-                                  background: 'linear-gradient(90deg, #f97316, #fb923c)',
-                                  borderRadius: '2px'
-                                }}
-                              />
+                            <div style={{ width: '100%', marginTop: '12px' }}>
+                              {/* Progress Label */}
+                              <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                marginBottom: '6px',
+                                fontSize: '12px',
+                                color: 'var(--text-secondary)'
+                              }}>
+                                <span>
+                                  {generationProgress < 20 ? 'Lade Kontext...' :
+                                   generationProgress < 85 ? 'Generiere Fragen...' :
+                                   generationProgress < 95 ? 'Speichere...' :
+                                   'Fast fertig...'}
+                                </span>
+                                <span style={{ fontWeight: '600', color: 'var(--primary)' }}>
+                                  {generationProgress}%
+                                </span>
+                              </div>
+                              {/* Progress Bar */}
+                              <div style={{
+                                width: '100%',
+                                height: '6px',
+                                background: 'rgba(249, 115, 22, 0.15)',
+                                borderRadius: '3px',
+                                overflow: 'hidden',
+                                position: 'relative'
+                              }}>
+                                <motion.div
+                                  initial={{ width: '0%' }}
+                                  animate={{
+                                    width: `${generationProgress}%`
+                                  }}
+                                  transition={{
+                                    duration: 0.5,
+                                    ease: [0.4, 0.0, 0.2, 1] // Smooth easing
+                                  }}
+                                  style={{
+                                    height: '100%',
+                                    background: 'linear-gradient(90deg, #f97316, #fb923c, #fdba74)',
+                                    borderRadius: '3px',
+                                    position: 'relative',
+                                    overflow: 'hidden'
+                                  }}
+                                >
+                                  {/* Animated shimmer effect */}
+                                  <motion.div
+                                    animate={{
+                                      x: ['-100%', '200%']
+                                    }}
+                                    transition={{
+                                      duration: 1.5,
+                                      repeat: Infinity,
+                                      ease: 'linear'
+                                    }}
+                                    style={{
+                                      position: 'absolute',
+                                      top: 0,
+                                      left: 0,
+                                      right: 0,
+                                      bottom: 0,
+                                      background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
+                                      width: '50%'
+                                    }}
+                                  />
+                                </motion.div>
+                              </div>
                             </div>
                           )}
                         </div>
