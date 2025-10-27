@@ -9,10 +9,12 @@ import {
   ArrowRight,
   Question,
   Trophy,
-  Fire
+  Fire,
+  Eye
 } from '@phosphor-icons/react'
 import { useAuth } from '../contexts/AuthContext'
 import LaTeX from './LaTeX'
+import GeoGebraVisualization from './GeoGebraVisualization'
 import {
   getGeneratedQuestions,
   saveQuestionProgress,
@@ -46,6 +48,9 @@ function QuestionSession({ sessionId, onClose }) {
     correct: 0,
     totalXp: 0
   })
+  const [showGeoGebra, setShowGeoGebra] = useState(false)
+  const [geogebraData, setGeogebraData] = useState(null)
+  const [loadingGeoGebra, setLoadingGeoGebra] = useState(false)
 
   useEffect(() => {
     loadQuestions()
@@ -317,9 +322,54 @@ function QuestionSession({ sessionId, onClose }) {
       setShowFeedback(false)
       setFeedback(null)
       setStartTime(Date.now())
+      setShowGeoGebra(false)
+      setGeogebraData(null)
     } else {
       // Session complete
       onClose()
+    }
+  }
+
+  const handleGeoGebraVisualization = async () => {
+    // If we already have geogebra data from the question, use it
+    if (currentQuestion.geogebra?.commands && currentQuestion.geogebra?.description) {
+      setGeogebraData({
+        commands: currentQuestion.geogebra.commands,
+        explanation: currentQuestion.geogebra.description,
+        interactionTips: currentQuestion.geogebra.interactionTips || null
+      })
+      setShowGeoGebra(true)
+      return
+    }
+
+    // Otherwise, generate it via API
+    setLoadingGeoGebra(true)
+    try {
+      const settings = JSON.parse(localStorage.getItem('userSettings') || '{}')
+      const apiKey = settings.anthropicApiKey
+
+      const response = await fetch('/api/generate-geogebra', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apiKey,
+          userId: currentUser.uid,
+          questionData: currentQuestion,
+          selectedModel: settings.selectedModel
+        })
+      })
+
+      const data = await response.json()
+      if (data.success) {
+        setGeogebraData(data.geogebra)
+        setShowGeoGebra(true)
+      } else {
+        console.error('Error generating GeoGebra visualization:', data.error)
+      }
+    } catch (error) {
+      console.error('Error loading GeoGebra visualization:', error)
+    } finally {
+      setLoadingGeoGebra(false)
     }
   }
 
@@ -379,6 +429,20 @@ function QuestionSession({ sessionId, onClose }) {
         <h2 className="question-text">
           <LaTeX>{currentQuestion.question}</LaTeX>
         </h2>
+
+        {/* GeoGebra Visualization Button */}
+        {currentQuestion.hasGeoGebraVisualization && (
+          <motion.button
+            className="btn-geogebra"
+            onClick={handleGeoGebraVisualization}
+            disabled={loadingGeoGebra}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <Eye weight="bold" />
+            {loadingGeoGebra ? 'Lade Visualisierung...' : 'Mit GeoGebra visualisieren'}
+          </motion.button>
+        )}
 
         {/* Multiple Choice */}
         {currentQuestion.type === 'multiple-choice' && (
@@ -557,6 +621,15 @@ function QuestionSession({ sessionId, onClose }) {
           )}
         </div>
       </div>
+
+      {/* GeoGebra Visualization Panel */}
+      <GeoGebraVisualization
+        isOpen={showGeoGebra}
+        onClose={() => setShowGeoGebra(false)}
+        geogebraData={geogebraData}
+        questionData={currentQuestion}
+        userSettings={JSON.parse(localStorage.getItem('userSettings') || '{}')}
+      />
     </div>
   )
 }

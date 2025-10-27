@@ -1,0 +1,263 @@
+/* GeoGebra Visualization Styles */
+
+.geogebra-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+}
+
+.geogebra-panel {
+  position: fixed;
+  z-index: 1000;
+  background: rgba(30, 30, 35, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Desktop: Right half of screen */
+.geogebra-panel.desktop {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 50%;
+  max-width: 900px;
+  border-left: 2px solid var(--primary, #f97316);
+  border-radius: 16px 0 0 16px;
+}
+
+/* Mobile: Bottom half of screen */
+.geogebra-panel.mobile {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 60%;
+  border-top: 2px solid var(--primary, #f97316);
+  border-radius: 16px 16px 0 0;
+}
+
+/* Header */
+.geogebra-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(20, 20, 25, 0.5);
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-title svg {
+  color: var(--primary, #f97316);
+}
+
+.header-title h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.geogebra-header .close-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.geogebra-header .close-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--primary, #f97316);
+}
+
+/* Content */
+.geogebra-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Loading state */
+.geogebra-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 16px;
+}
+
+.geogebra-loading .spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(249, 115, 22, 0.2);
+  border-top-color: var(--primary, #f97316);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.geogebra-loading p {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  margin: 0;
+}
+
+/* Error state */
+.geogebra-error {
+  padding: 20px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  color: #fca5a5;
+  text-align: center;
+}
+
+/* GeoGebra applet container */
+.geogebra-applet-container {
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Explanation section */
+.geogebra-explanation {
+  background: rgba(249, 115, 22, 0.1);
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+
+.geogebra-explanation h4 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--primary, #f97316);
+}
+
+.geogebra-explanation p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.interaction-tips {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(249, 115, 22, 0.2);
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.interaction-tips strong {
+  color: var(--primary, #f97316);
+  font-weight: 600;
+}
+
+/* Attribution */
+.geogebra-attribution {
+  text-align: center;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  padding: 12px 0 4px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.geogebra-attribution a {
+  color: rgba(255, 255, 255, 0.6);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.geogebra-attribution a:hover {
+  color: var(--primary, #f97316);
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .geogebra-panel.mobile {
+    height: 70%;
+  }
+
+  .geogebra-header {
+    padding: 16px 20px;
+  }
+
+  .header-title h3 {
+    font-size: 16px;
+  }
+
+  .geogebra-content {
+    padding: 16px;
+  }
+
+  .geogebra-explanation {
+    padding: 12px 16px;
+  }
+
+  .geogebra-explanation h4 {
+    font-size: 14px;
+  }
+
+  .geogebra-explanation p {
+    font-size: 13px;
+  }
+}
+
+/* Small mobile screens */
+@media (max-width: 480px) {
+  .geogebra-panel.mobile {
+    height: 75%;
+  }
+
+  .geogebra-applet-container {
+    min-height: 300px;
+  }
+}
+
+/* Scrollbar styling */
+.geogebra-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.geogebra-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.geogebra-content::-webkit-scrollbar-thumb {
+  background: rgba(249, 115, 22, 0.3);
+  border-radius: 4px;
+}
+
+.geogebra-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(249, 115, 22, 0.5);
+}

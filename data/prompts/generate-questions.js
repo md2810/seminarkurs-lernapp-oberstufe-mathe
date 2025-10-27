@@ -36,12 +36,21 @@ WICHTIGE ANFORDERUNGEN:
    - Hint 2: Konkreter Tipp zur Methode/Formel, aber keine vollständige Rechnung
    - Hint 3: Detaillierter Lösungsweg, aber Schüler muss selbst die finalen Schritte ausführen
 
-4. GEOGEBRA (wenn geometrisch/visuell sinnvoll):
-   - Bei Analysis: Funktionsgraphen, Ableitungen, Integrale
-   - Bei Geometrie: Vektoren, Ebenen, Geraden
-   - Gib konkrete GeoGebra-Befehle an
-   - Beispiele: ["f(x) = x^2 + 2*x - 3", "Derivative(f)", "Integral(f, -2, 3)"]
-   - Bei Vektoren: ["A = (1, 2, 3)", "B = (4, 5, 6)", "Vector(A, B)"]
+4. GEOGEBRA-VISUALISIERUNG (automatische Bewertung):
+   - Für JEDE Frage: Entscheide, ob eine visuelle Darstellung hilfreich ist
+   - Setze hasGeoGebraVisualization auf true WENN:
+     * Bei Analysis: Funktionsgraphen, Ableitungen, Integrale, Kurvendiskussion
+     * Bei Geometrie: Vektoren, Ebenen, Geraden, geometrische Figuren
+     * Bei Stochastik: Verteilungen, Wahrscheinlichkeitsflächen
+     * Generell: Wenn grafische Darstellung das Verständnis fördert
+   - Setze hasGeoGebraVisualization auf false WENN:
+     * Reine Rechenaufgaben (z.B. "Berechne 5x + 3")
+     * Gleichungen lösen ohne geometrischen Kontext
+     * Reine algebraische Umformungen
+   - Wenn hasGeoGebraVisualization = true, gib GeoGebra-Befehle an:
+     * Analysis-Beispiele: ["f(x) = x^2 + 2*x - 3", "Derivative(f)", "Integral(f, -2, 3)"]
+     * Vektoren-Beispiele: ["A = (1, 2, 3)", "B = (4, 5, 6)", "Vector(A, B)"]
+     * Geraden-Beispiele: ["g: X = (1, 2, 3) + t*(2, 1, -1)"]
 
 5. PERSONALISIERUNG:
    - Passe Schwierigkeit an bisherige Performance an
@@ -80,9 +89,10 @@ Gib deine Antwort als JSON zurück (NUR das JSON, keine weiteren Erklärungen):
       ],
       "solution": "A",
       "explanation": "Mit der Potenzregel erhalten wir: $f'(x) = 3 \\cdot 2x^{2-1} + 2 \\cdot 1x^{1-1} - 0 = 6x + 2$",
+      "hasGeoGebraVisualization": true,
       "geogebra": {
-        "appletId": null,
-        "commands": ["f(x) = 3*x^2 + 2*x - 5", "f'(x)"]
+        "commands": ["f(x) = 3*x^2 + 2*x - 5", "f'(x)"],
+        "description": "Zeigt die Funktion f(x) und ihre Ableitung f'(x) im Graphen"
       }
     },
     {
@@ -119,9 +129,10 @@ Gib deine Antwort als JSON zurück (NUR das JSON, keine weiteren Erklärungen):
       ],
       "solution": "Nullstellen: $x_1 \\approx -0.73$, $x_2 = 1$, $x_3 \\approx 2.73$; Maximum bei $(0, 2)$; Minimum bei $(2, -2)$",
       "explanation": "Durch Ableitung und Nullstellensuche der Ableitung finden wir die Extremstellen. Die zweite Ableitung entscheidet über Art der Extremstelle.",
+      "hasGeoGebraVisualization": true,
       "geogebra": {
-        "appletId": null,
-        "commands": ["f(x) = x^3 - 3*x^2 + 2", "Derivative(f)", "Extremum(f)"]
+        "commands": ["f(x) = x^3 - 3*x^2 + 2", "Derivative(f)", "Extremum(f)"],
+        "description": "Visualisiert die kubische Funktion mit Extrempunkten und Ableitung"
       }
     }
   ]
