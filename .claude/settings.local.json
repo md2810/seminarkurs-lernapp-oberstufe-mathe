@@ -21,7 +21,8 @@
       "Bash(if not exist \"docs\" mkdir \"docs\")",
       "Bash(ren:*)",
       "Bash(ren \"FIRESTORE_DEPLOYMENT.md\" \"firestore-deployment.md\")",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

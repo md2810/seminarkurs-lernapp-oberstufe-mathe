@@ -362,6 +362,32 @@ Eine interaktive Mathematik-Lernapp für die Oberstufe (K1) mit KI-gestützter F
 
 *(Basierend auf Code-Kommentaren und TODOs)*
 
+### 13.1 Adaptives Lernsystem
+- **Einführungstest nach Lernplan-Erstellung**
+  - Feststellung der Kenntnisse zu jedem gewählten Thema
+  - Basierend auf Selbsteinschätzung (ähnlich Duolingo bei neuer Sprache)
+  - KI-gestützte Auswertung für personalisierte Lernerfahrung
+
+- **Intelligenter "Lernen"-Button**
+  - Keine manuelle Themenauswahl mehr erforderlich (wird optional)
+  - KI wählt automatisch Themen, Anzahl und Schwierigkeitsgrad der Aufgaben
+  - Basierend auf Nutzerverhalten und Einführungstest-Ergebnissen
+  - Mehrere Themen gleichzeitig zum abwechslungsreichen Lernen
+
+- **Progressive Aufgabenkomplexität**
+  - Automatischer Übergang von Schritt-für-Schritt-Aufgaben zu komplett selbstständigen Aufgaben
+  - KI-Modell entscheidet basierend auf Lernfortschritt
+  - Adaptive Anpassung der Hilfestellungen
+
+### 13.2 Multimediale Lerninhalte
+- **Intelligente Erklärungen**
+  - Multimediale Erklärungen zu Themen/Aufgaben
+  - Automatische Erkennung durch KI, wenn Lernende Schwierigkeiten haben
+  - KI-Generierung von Animationen (optional)
+  - Automatisches Raussuchen relevanter YouTube-Videos mit Google Gemini
+  - Verschiedene Erklärungsformate basierend auf Lerntyp
+
+### 13.3 Weitere Features
 - Erweiterte Statistiken und Analytics
 - Mehr Theme-Optionen
 - Export von Lernfortschritt
