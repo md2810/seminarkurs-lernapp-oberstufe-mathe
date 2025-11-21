@@ -46,6 +46,11 @@ service cloud.firestore {
       match /reviews/{reviewId} {
         allow read, write: if isOwner(userId);
       }
+
+      // Initial Knowledge Assessment subcollection
+      match /initialKnowledge/{assessmentId} {
+        allow read, write: if isOwner(userId);
+      }
     }
   }
 }

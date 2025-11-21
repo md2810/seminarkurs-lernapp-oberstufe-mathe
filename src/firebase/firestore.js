@@ -988,3 +988,43 @@ export async function getReviewStats(userId) {
     throw error
   }
 }
+
+// ==================== INITIAL KNOWLEDGE ASSESSMENT ====================
+
+/**
+ * Save initial knowledge assessment for a learning plan item
+ * @param {string} userId
+ * @param {object} assessmentData - { planItemId, responses: {themeKey: level}, assessedAt }
+ */
+export async function saveInitialKnowledge(userId, assessmentData) {
+  try {
+    const assessmentRef = doc(db, 'users', userId, 'initialKnowledge', assessmentData.planItemId.toString())
+    await setDoc(assessmentRef, {
+      ...assessmentData,
+      assessedAt: serverTimestamp()
+    })
+  } catch (error) {
+    console.error('Error saving initial knowledge:', error)
+    throw error
+  }
+}
+
+/**
+ * Get initial knowledge assessment for a learning plan item
+ * @param {string} userId
+ * @param {string} planItemId
+ */
+export async function getInitialKnowledge(userId, planItemId) {
+  try {
+    const assessmentRef = doc(db, 'users', userId, 'initialKnowledge', planItemId.toString())
+    const assessmentSnap = await getDoc(assessmentRef)
+
+    if (assessmentSnap.exists()) {
+      return assessmentSnap.data()
+    }
+    return null
+  } catch (error) {
+    console.error('Error getting initial knowledge:', error)
+    throw error
+  }
+}

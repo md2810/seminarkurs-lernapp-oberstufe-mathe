@@ -37,6 +37,9 @@ function LearningPlan({ isOpen, onClose, userSettings, onStartSession }) {
   const [imageError, setImageError] = useState(null)
   const [generatingQuestions, setGeneratingQuestions] = useState(null)
   const [generationProgress, setGenerationProgress] = useState(0)
+  const [showIntroTest, setShowIntroTest] = useState(false)
+  const [introTestPlanItem, setIntroTestPlanItem] = useState(null)
+  const [introTestResponses, setIntroTestResponses] = useState({})
 
   // Get themes based on user settings
   const getAvailableThemes = () => {
@@ -166,7 +169,8 @@ function LearningPlan({ isOpen, onClose, userSettings, onStartSession }) {
       examTitle: examTitle || 'Lernziel',
       addedAt: new Date().toISOString(),
       completed: false,
-      fromImage: uploadedImage ? true : false
+      fromImage: uploadedImage ? true : false,
+      initialKnowledgeAssessed: false
     }
 
     setLearningPlan([...learningPlan, newPlanItem])
@@ -179,6 +183,181 @@ function LearningPlan({ isOpen, onClose, userSettings, onStartSession }) {
 
     // Save to localStorage
     localStorage.setItem('learningPlan', JSON.stringify([...learningPlan, newPlanItem]))
+
+    // Show introductory assessment test
+    setIntroTestPlanItem(newPlanItem)
+    setShowIntroTest(true)
+    setIntroTestResponses({})
+  }
+
+  const handleIntroTestSubmit = async () => {
+    if (!currentUser || !introTestPlanItem) return
+
+    try {
+      // Save initial knowledge assessment to Firestore
+      const { saveInitialKnowledge } = await import('../firebase/firestore')
+      await saveInitialKnowledge(currentUser.uid, {
+        planItemId: introTestPlanItem.id,
+        responses: introTestResponses,
+        assessedAt: new Date()
+      })
+
+      // Update plan item
+      const updatedPlan = learningPlan.map(item =>
+        item.id === introTestPlanItem.id
+          ? { ...item, initialKnowledgeAssessed: true }
+          : item
+      )
+      setLearningPlan(updatedPlan)
+      localStorage.setItem('learningPlan', JSON.stringify(updatedPlan))
+
+      // Close modal
+      setShowIntroTest(false)
+      setIntroTestPlanItem(null)
+      setIntroTestResponses({})
+    } catch (error) {
+      console.error('Error saving initial knowledge:', error)
+      alert('Fehler beim Speichern der Einschätzung')
+    }
+  }
+
+  const handleIntroTestSkip = () => {
+    setShowIntroTest(false)
+    setIntroTestPlanItem(null)
+    setIntroTestResponses({})
+  }
+
+  const handleSmartLearning = async (planItem) => {
+    if (!currentUser) return
+
+    setGeneratingQuestions(`smart_${planItem.id}`)
+    setGenerationProgress(0)
+
+    try {
+      // Get topic progress for all themes in the plan
+      const { getTopicProgress } = await import('../firebase/firestore')
+      const themesWithProgress = await Promise.all(
+        planItem.themes.map(async (theme) => {
+          const topicKey = `${theme.thema}|${theme.unterthema}`
+          const progress = await getTopicProgress(currentUser.uid, topicKey)
+          return {
+            ...theme,
+            avgAccuracy: progress.avgAccuracy || 0,
+            questionsCompleted: progress.questionsCompleted || 0,
+            lastAccessed: progress.lastAccessed || null
+          }
+        })
+      )
+
+      // Select 3-5 themes intelligently
+      // Priority: 1) Low accuracy 2) Not practiced recently 3) Never practiced
+      const sortedThemes = themesWithProgress.sort((a, b) => {
+        // Never practiced first
+        if (a.questionsCompleted === 0 && b.questionsCompleted > 0) return -1
+        if (b.questionsCompleted === 0 && a.questionsCompleted > 0) return 1
+
+        // Then by accuracy (lower = more practice needed)
+        if (a.avgAccuracy !== b.avgAccuracy) {
+          return a.avgAccuracy - b.avgAccuracy
+        }
+
+        // Then by how long ago it was practiced
+        if (!a.lastAccessed) return -1
+        if (!b.lastAccessed) return 1
+        return new Date(a.lastAccessed) - new Date(b.lastAccessed)
+      })
+
+      // Take top 3-5 themes (depending on total count)
+      const numThemes = Math.min(5, Math.max(3, Math.floor(planItem.themes.length / 2)))
+      const selectedThemes = sortedThemes.slice(0, numThemes).map(({ leitidee, thema, unterthema }) => ({
+        leitidee,
+        thema,
+        unterthema
+      }))
+
+      // Now generate questions with these selected themes
+      setGenerationProgress(10)
+
+      const apiKey = userSettings.anthropicApiKey
+
+      if (!apiKey) {
+        alert('Bitte gib deinen API-Key in den Einstellungen ein')
+        setGeneratingQuestions(null)
+        setGenerationProgress(0)
+        return
+      }
+
+      const recentMemories = await getMemories(currentUser.uid, { limit: 5, importance: 5 })
+      const recentPerformance = await getRecentPerformance(currentUser.uid, 10)
+      const autoModeAssessment = userSettings.aiModel?.autoMode
+        ? await getLatestAutoModeAssessment(currentUser.uid)
+        : null
+
+      setGenerationProgress(20)
+
+      const progressInterval = setInterval(() => {
+        setGenerationProgress(prev => {
+          if (prev < 85) {
+            const increment = prev < 60 ? 3 : prev < 75 ? 2 : 1
+            return Math.min(prev + increment, 85)
+          }
+          return prev
+        })
+      }, 1500)
+
+      const response = await fetch('/api/generate-questions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apiKey,
+          userId: currentUser.uid,
+          learningPlanItemId: `smart_${planItem.id}`,
+          topics: selectedThemes,
+          selectedModel: userSettings.selectedModel,
+          userContext: {
+            gradeLevel: userSettings.gradeLevel || 'Klasse_11',
+            courseType: userSettings.courseType || 'Leistungsfach',
+            autoModeAssessment,
+            recentMemories: recentMemories.map(m => m.content),
+            recentPerformance
+          }
+        })
+      })
+
+      clearInterval(progressInterval)
+
+      const data = await response.json()
+
+      if (data.success) {
+        setGenerationProgress(90)
+
+        await saveGeneratedQuestions(currentUser.uid, data)
+        setGenerationProgress(95)
+
+        await createLearningSession(currentUser.uid, {
+          sessionId: data.sessionId,
+          learningPlanItemId: `smart_${planItem.id}`,
+          generatedQuestionsId: data.sessionId,
+          questionsTotal: data.totalQuestions
+        })
+
+        setGenerationProgress(100)
+
+        onStartSession(data.sessionId)
+        setGeneratingQuestions(null)
+        setGenerationProgress(0)
+      } else {
+        clearInterval(progressInterval)
+        alert(`Fehler: ${data.error}`)
+        setGeneratingQuestions(null)
+        setGenerationProgress(0)
+      }
+    } catch (error) {
+      console.error('Error in smart learning:', error)
+      alert('Fehler beim intelligenten Lernen')
+      setGeneratingQuestions(null)
+      setGenerationProgress(0)
+    }
   }
 
   const handleStartLearning = async (planItem) => {
@@ -424,22 +603,37 @@ function LearningPlan({ isOpen, onClose, userSettings, onStartSession }) {
                         ))}
                       </div>
                       <div className="plan-actions">
-                        <div style={{ flex: 1 }}>
+                        <div style={{ flex: 1, display: 'flex', gap: '12px' }}>
+                          <motion.button
+                            className="btn btn-smart"
+                            onClick={() => handleSmartLearning(item)}
+                            disabled={generatingQuestions === `smart_${item.id}` || generatingQuestions === item.id}
+                            style={{ flex: 1 }}
+                            whileHover={{
+                              scale: !generatingQuestions ? 1.05 : 1,
+                              y: !generatingQuestions ? -2 : 0,
+                              transition: { type: "spring", stiffness: 400, damping: 20 }
+                            }}
+                            whileTap={{ scale: !generatingQuestions ? 0.95 : 1 }}
+                            title="KI wählt automatisch die wichtigsten Themen aus"
+                          >
+                            {generatingQuestions === `smart_${item.id}` ? `🤖 ${generationProgress}%` : '🤖 Intelligentes Lernen'}
+                          </motion.button>
                           <motion.button
                             className="btn btn-primary start-btn"
                             onClick={() => handleStartLearning(item)}
-                            disabled={generatingQuestions === item.id}
-                            style={{ width: '100%' }}
+                            disabled={generatingQuestions === item.id || generatingQuestions === `smart_${item.id}`}
+                            style={{ flex: 1 }}
                             whileHover={{
-                              scale: generatingQuestions !== item.id ? 1.05 : 1,
-                              y: generatingQuestions !== item.id ? -2 : 0,
+                              scale: !generatingQuestions ? 1.05 : 1,
+                              y: !generatingQuestions ? -2 : 0,
                               transition: { type: "spring", stiffness: 400, damping: 20 }
                             }}
-                            whileTap={{ scale: generatingQuestions !== item.id ? 0.95 : 1 }}
+                            whileTap={{ scale: !generatingQuestions ? 0.95 : 1 }}
                           >
-                            {generatingQuestions === item.id ? `Generiere... ${generationProgress}%` : 'Generierung starten'}
+                            {generatingQuestions === item.id ? `${generationProgress}%` : 'Alle Themen'}
                           </motion.button>
-                          {generatingQuestions === item.id && (
+                          {(generatingQuestions === item.id || generatingQuestions === `smart_${item.id}`) && (
                             <div style={{ width: '100%', marginTop: '12px' }}>
                               {/* Progress Label */}
                               <div style={{
@@ -514,15 +708,15 @@ function LearningPlan({ isOpen, onClose, userSettings, onStartSession }) {
                         <motion.button
                           className="remove-btn"
                           onClick={() => removePlanItem(item.id)}
-                          disabled={generatingQuestions === item.id}
+                          disabled={generatingQuestions === item.id || generatingQuestions === `smart_${item.id}`}
                           whileHover={{
-                            scale: generatingQuestions !== item.id ? 1.05 : 1,
-                            x: generatingQuestions !== item.id ? 4 : 0,
+                            scale: !generatingQuestions ? 1.05 : 1,
+                            x: !generatingQuestions ? 4 : 0,
                             transition: { type: "spring", stiffness: 400, damping: 20 }
                           }}
-                          whileTap={{ scale: generatingQuestions !== item.id ? 0.95 : 1 }}
+                          whileTap={{ scale: !generatingQuestions ? 0.95 : 1 }}
                         >
-                          <Trash weight="bold" /> Entfernen
+                          <Trash weight="bold" />
                         </motion.button>
                       </div>
                     </motion.div>
@@ -745,6 +939,88 @@ function LearningPlan({ isOpen, onClose, userSettings, onStartSession }) {
               </AnimatePresence>
             </div>
           </motion.div>
+
+          {/* Introductory Knowledge Assessment Modal */}
+          <AnimatePresence>
+            {showIntroTest && introTestPlanItem && (
+              <>
+                <motion.div
+                  className="modal-overlay"
+                  onClick={handleIntroTestSkip}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  style={{ zIndex: 3000 }}
+                />
+                <motion.div
+                  className="intro-test-modal"
+                  initial={{ opacity: 0, scale: 0.9, y: 40 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, y: 40 }}
+                  transition={{ type: "spring", stiffness: 280, damping: 28 }}
+                >
+                  <div className="modal-header">
+                    <h2>📊 Einführungstest</h2>
+                    <button className="close-btn" onClick={handleIntroTestSkip}>
+                      <X weight="bold" />
+                    </button>
+                  </div>
+                  <div className="modal-content">
+                    <p className="intro-test-description">
+                      Um dein Lernen optimal anzupassen, schätze bitte dein aktuelles Wissen für jedes Thema ein.
+                      Dies hilft uns, die Schwierigkeit der Aufgaben besser anzupassen.
+                    </p>
+                    <div className="intro-test-themes">
+                      {introTestPlanItem.themes.map((theme, idx) => {
+                        const themeKey = `${theme.leitidee}|${theme.thema}|${theme.unterthema}`
+                        return (
+                          <div key={idx} className="intro-test-theme">
+                            <div className="theme-info">
+                              <strong>{theme.thema}</strong>
+                              <span className="theme-detail">{theme.unterthema}</span>
+                            </div>
+                            <div className="knowledge-scale">
+                              <span className="scale-label">Wie gut kennst du dich aus?</span>
+                              <div className="scale-buttons">
+                                {[1, 2, 3, 4, 5].map(level => (
+                                  <button
+                                    key={level}
+                                    className={`scale-btn ${introTestResponses[themeKey] === level ? 'selected' : ''}`}
+                                    onClick={() => setIntroTestResponses({
+                                      ...introTestResponses,
+                                      [themeKey]: level
+                                    })}
+                                  >
+                                    {level}
+                                  </button>
+                                ))}
+                              </div>
+                              <div className="scale-labels">
+                                <span>Keine Ahnung</span>
+                                <span>Experte</span>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                    <div className="intro-test-actions">
+                      <button className="btn btn-secondary" onClick={handleIntroTestSkip}>
+                        Überspringen
+                      </button>
+                      <button
+                        className="btn btn-primary"
+                        onClick={handleIntroTestSubmit}
+                        disabled={Object.keys(introTestResponses).length !== introTestPlanItem.themes.length}
+                      >
+                        Einschätzung speichern
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
         </>
       )}
     </AnimatePresence>

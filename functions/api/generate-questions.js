@@ -2,7 +2,7 @@
 // Generates 20 questions per topic with hints, solutions, and GeoGebra commands
 
 import curriculumData from '../../data/bw_oberstufe_themen.json'
-import promptTemplate from '../../data/prompts/generate-questions.js'
+import { SYSTEM_PROMPT } from '../../data/prompts/generate-questions.js'
 
 export async function onRequestPost(context) {
   try {
@@ -50,13 +50,16 @@ Interne Begründung: "${userContext.autoModeAssessment.currentAssessment.reasoni
       : 'Keine spezifischen Informationen über Lernverhalten bekannt'
 
     // Build prompt from template with placeholders
-    const prompt = promptTemplate.prompt
+    const prompt = SYSTEM_PROMPT
       .replace('{{TOPICS_LIST}}', topicsList)
       .replace('{{GRADE_LEVEL}}', userContext.gradeLevel)
       .replace('{{COURSE_TYPE}}', userContext.courseType)
       .replace('{{STRUGGLING_TOPICS}}', strugglingTopicsText)
       .replace('{{MEMORIES}}', memoriesText)
       .replace('{{AUTO_MODE}}', autoModeText)
+
+    // Get temperature from AUTO mode if available, otherwise default to 0.7
+    const temperature = userContext.autoModeAssessment?.currentAssessment?.temperature || 0.7
 
     // Call Claude API
     const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
@@ -69,7 +72,7 @@ Interne Begründung: "${userContext.autoModeAssessment.currentAssessment.reasoni
       body: JSON.stringify({
         model: model,
         max_tokens: 16000,
-        temperature: 0.7,
+        temperature: temperature,
         messages: [
           {
             role: 'user',

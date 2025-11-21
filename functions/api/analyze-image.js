@@ -2,6 +2,7 @@
 // Analyzes uploaded images of topic lists using Claude 4.5 Sonnet
 
 import curriculumData from '../../data/bw_oberstufe_themen.json'
+import { SYSTEM_PROMPT } from '../../data/prompts/analyze-image.js'
 
 export async function onRequestPost(context) {
   try {
@@ -31,41 +32,11 @@ export async function onRequestPost(context) {
       )
     }
 
-    // Build prompt for Claude
-    const prompt = `Du bist ein Experte für den Baden-Württemberg Bildungsplan Mathematik Oberstufe.
-
-Der Nutzer hat ein Bild einer Themenliste hochgeladen (z.B. für eine Klausur).
-
-DEINE AUFGABE:
-1. Analysiere das Bild und extrahiere alle sichtbaren mathematischen Themen
-2. Mappe die Themen auf den offiziellen BW-Bildungsplan
-3. Gib die Themen im strukturierten Format zurück
-
-KONTEXT:
-- Klassenstufe: ${gradeLevel}
-- Kurstyp: ${courseType}
-
-BILDUNGSPLAN:
-${JSON.stringify(curriculum, null, 2)}
-
-WICHTIG:
-- Extrahiere nur Themen, die im Bild klar lesbar sind
-- Mappe sie auf die exakten Bezeichnungen aus dem Bildungsplan
-- Gib eine Confidence an (0-1), wie sicher du bei der Zuordnung bist
-- Wenn ein Thema nicht genau passt, gib Vorschläge
-
-Gib deine Antwort als JSON zurück (NUR das JSON, keine weiteren Erklärungen):
-{
-  "extractedTopics": [
-    {
-      "leitidee": "3.4.1 Leitidee Zahl – Variable – Operation",
-      "thema": "weitere Ableitungsregeln anwenden",
-      "unterthema": "die Produkt- und Kettenregel zum Ableiten von Funktionen verwenden",
-      "confidence": 0.95
-    }
-  ],
-  "suggestions": ["Falls Themen nicht klar zugeordnet werden konnten"]
-}`
+    // Build prompt from template
+    const prompt = SYSTEM_PROMPT
+      .replace('{{gradeLevel}}', gradeLevel)
+      .replace('{{courseType}}', courseType)
+      .replace('{{curriculum}}', JSON.stringify(curriculum, null, 2))
 
     // Call Claude API
     const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
@@ -76,7 +47,7 @@ Gib deine Antwort als JSON zurück (NUR das JSON, keine weiteren Erklärungen):
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-5-20250929',
         max_tokens: 4096,
         messages: [
           {

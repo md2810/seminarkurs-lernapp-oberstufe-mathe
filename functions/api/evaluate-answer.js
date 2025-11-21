@@ -4,7 +4,7 @@
 export async function onRequestPost(context) {
   try {
     const body = await context.request.json()
-    const { apiKey, userId, questionId, questionData, userAnswer, hintsUsed, timeSpent, skipped } = body
+    const { apiKey, userId, questionId, questionData, userAnswer, hintsUsed, timeSpent, skipped, correctStreak } = body
 
     // Validate required fields
     if (!questionData || userAnswer === undefined) {
@@ -132,6 +132,13 @@ export async function onRequestPost(context) {
       xp += timeBonus
     }
 
+    // Streak bonus (5+ correct answers in a row)
+    let streakBonus = 0
+    if (correctStreak && correctStreak >= 5) {
+      streakBonus = xp * 0.5 // +50% bonus
+      xp += streakBonus
+    }
+
     const totalXp = Math.round(xp)
 
     return new Response(
@@ -145,7 +152,8 @@ export async function onRequestPost(context) {
           base: baseXp,
           hintPenalty: -Math.round(hintPenalty),
           timePenalty: 0,
-          bonuses: Math.round(timeBonus),
+          timeBonus: Math.round(timeBonus),
+          streakBonus: Math.round(streakBonus),
           total: totalXp
         }
       }),

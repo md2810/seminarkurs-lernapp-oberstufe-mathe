@@ -15,6 +15,8 @@ import {
 import { useAuth } from '../contexts/AuthContext'
 import LaTeX from './LaTeX'
 import GeoGebraVisualization from './GeoGebraVisualization'
+import ParticleExplosion from './ParticleExplosion'
+import LevelPopover from './LevelPopover'
 import {
   getGeneratedQuestions,
   saveQuestionProgress,
@@ -46,11 +48,15 @@ function QuestionSession({ sessionId, onClose }) {
   const [sessionStats, setSessionStats] = useState({
     completed: 0,
     correct: 0,
-    totalXp: 0
+    totalXp: 0,
+    correctStreak: 0
   })
   const [showGeoGebra, setShowGeoGebra] = useState(false)
   const [geogebraData, setGeogebraData] = useState(null)
   const [loadingGeoGebra, setLoadingGeoGebra] = useState(false)
+  const [showParticles, setShowParticles] = useState(false)
+  const [showLevelUp, setShowLevelUp] = useState(false)
+  const [levelUpData, setLevelUpData] = useState(null)
 
   useEffect(() => {
     loadQuestions()
@@ -145,7 +151,8 @@ function QuestionSession({ sessionId, onClose }) {
           userAnswer: finalAnswer,
           hintsUsed: hintsUsed.length,
           timeSpent,
-          skipped: false
+          skipped: false,
+          correctStreak: sessionStats.correctStreak
         })
       })
 
@@ -153,6 +160,14 @@ function QuestionSession({ sessionId, onClose }) {
       if (data.success) {
         setFeedback(data)
         setShowFeedback(true)
+
+        // Trigger particle explosion on correct answer
+        if (data.isCorrect) {
+          setShowParticles(true)
+        }
+
+        // Update streak
+        const newCorrectStreak = data.isCorrect ? sessionStats.correctStreak + 1 : 0
 
         // Save progress to Firestore
         await saveQuestionProgress(currentUser.uid, {
@@ -183,7 +198,8 @@ function QuestionSession({ sessionId, onClose }) {
         setSessionStats(prev => ({
           completed: prev.completed + 1,
           correct: prev.correct + (data.isCorrect ? 1 : 0),
-          totalXp: prev.totalXp + data.xpEarned
+          totalXp: prev.totalXp + data.xpEarned,
+          correctStreak: newCorrectStreak
         }))
 
         // Schedule for spaced repetition if incorrect
@@ -221,6 +237,7 @@ function QuestionSession({ sessionId, onClose }) {
 
         // Update user XP
         const userStats = await getUserStats(currentUser.uid)
+        const oldLevel = userStats.level
         const newXp = userStats.xp + data.xpEarned
         const newTotalXp = userStats.totalXp + data.xpEarned
         let newLevel = userStats.level
@@ -239,6 +256,16 @@ function QuestionSession({ sessionId, onClose }) {
           level: newLevel,
           xpToNextLevel: newXpToNextLevel
         })
+
+        // Show level up popup if leveled up
+        if (newLevel > oldLevel) {
+          setLevelUpData({
+            oldLevel,
+            newLevel,
+            totalXp: newTotalXp
+          })
+          setShowLevelUp(true)
+        }
 
         // AUTO mode assessment (after every question)
         const settings2 = JSON.parse(localStorage.getItem('userSettings') || '{}')
@@ -324,6 +351,7 @@ function QuestionSession({ sessionId, onClose }) {
       setStartTime(Date.now())
       setShowGeoGebra(false)
       setGeogebraData(null)
+      setShowParticles(false)
     } else {
       // Session complete
       onClose()
@@ -586,9 +614,26 @@ function QuestionSession({ sessionId, onClose }) {
               {feedback.isCorrect && (
                 <div className="xp-earned">
                   <Trophy weight="bold" /> +{feedback.xpEarned} XP
-                  {hintsUsed.length > 0 && (
-                    <span className="xp-penalty">(-{feedback.xpBreakdown.hintPenalty} XP für {hintsUsed.length} Hinweise)</span>
-                  )}
+                  <div className="xp-breakdown">
+                    <div className="xp-breakdown-item">
+                      Basis: +{feedback.xpBreakdown.base} XP
+                    </div>
+                    {feedback.xpBreakdown.hintPenalty < 0 && (
+                      <div className="xp-breakdown-item penalty">
+                        Hinweise: {feedback.xpBreakdown.hintPenalty} XP
+                      </div>
+                    )}
+                    {feedback.xpBreakdown.timeBonus > 0 && (
+                      <div className="xp-breakdown-item bonus">
+                        Zeit-Bonus: +{feedback.xpBreakdown.timeBonus} XP
+                      </div>
+                    )}
+                    {feedback.xpBreakdown.streakBonus > 0 && (
+                      <div className="xp-breakdown-item bonus">
+                        🔥 Streak-Bonus: +{feedback.xpBreakdown.streakBonus} XP ({sessionStats.correctStreak} richtig!)
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </motion.div>
@@ -630,6 +675,41 @@ function QuestionSession({ sessionId, onClose }) {
         questionData={currentQuestion}
         userSettings={JSON.parse(localStorage.getItem('userSettings') || '{}')}
       />
+
+      {/* Particle Explosion on Correct Answer */}
+      <ParticleExplosion
+        trigger={showParticles}
+        onComplete={() => setShowParticles(false)}
+      />
+
+      {/* Level Up Modal */}
+      <AnimatePresence>
+        {showLevelUp && levelUpData && (
+          <motion.div
+            className="level-up-modal"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+          >
+            <div className="level-up-content">
+              <h2>🎉 Level Up! 🎉</h2>
+              <div className="level-info">
+                <div className="old-level">Level {levelUpData.oldLevel}</div>
+                <div className="level-arrow">→</div>
+                <div className="new-level">Level {levelUpData.newLevel}</div>
+              </div>
+              <p className="congrats-text">Herzlichen Glückwunsch! Du hast Level {levelUpData.newLevel} erreicht!</p>
+              <p className="total-xp">Gesamt-XP: {levelUpData.totalXp.toLocaleString()}</p>
+              <button
+                className="btn btn-primary"
+                onClick={() => setShowLevelUp(false)}
+              >
+                Weiter geht's! 🚀
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
