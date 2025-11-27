@@ -1,0 +1,35 @@
+/* Shell.css - Minimal styles (Tailwind handles most) */
+
+/* Ensure smooth filter transitions */
+.shell-content {
+  transition: filter 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Webkit backdrop filter support */
+.backdrop-blur-xl {
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+}
+
+/* Animation for scale/blur effect */
+@keyframes scaleDown {
+  from {
+    transform: scale(1);
+    filter: blur(0px);
+  }
+  to {
+    transform: scale(0.95);
+    filter: blur(8px);
+  }
+}
+
+/* Ensure no inherited styles from old layout */
+.shell-grid,
+.shell-sidebar,
+.shell-primary,
+.shell-secondary,
+.shell-header-mobile,
+.shell-mobile-content,
+.shell-mobile-toggle {
+  display: none !important;
+}

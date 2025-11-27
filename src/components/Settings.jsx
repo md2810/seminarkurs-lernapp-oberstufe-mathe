@@ -12,16 +12,62 @@ import {
   Bug,
   Key,
   Eye,
-  Trash
+  Trash,
+  Brain,
+  Lightning,
+  OpenAiLogo
 } from '@phosphor-icons/react'
+import { useAppStore } from '../stores/useAppStore'
 
 const colorPresets = [
-  { name: 'Orange', primary: '#f97316' },
-  { name: 'Blau', primary: '#3b82f6' },
-  { name: 'Lila', primary: '#8b5cf6' },
-  { name: 'Grün', primary: '#10b981' },
-  { name: 'Pink', primary: '#ec4899' },
-  { name: 'Rot', primary: '#ef4444' }
+  {
+    name: 'Sunset',
+    primary: '#f97316',
+    gradient: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+    gradientFrom: '#f97316',
+    gradientTo: '#ea580c',
+    glow: 'rgba(249, 115, 22, 0.4)'
+  },
+  {
+    name: 'Ocean',
+    primary: '#3b82f6',
+    gradient: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)',
+    gradientFrom: '#3b82f6',
+    gradientTo: '#06b6d4',
+    glow: 'rgba(59, 130, 246, 0.4)'
+  },
+  {
+    name: 'Aurora',
+    primary: '#8b5cf6',
+    gradient: 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)',
+    gradientFrom: '#8b5cf6',
+    gradientTo: '#ec4899',
+    glow: 'rgba(139, 92, 246, 0.4)'
+  },
+  {
+    name: 'Forest',
+    primary: '#10b981',
+    gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+    gradientFrom: '#10b981',
+    gradientTo: '#059669',
+    glow: 'rgba(16, 185, 129, 0.4)'
+  },
+  {
+    name: 'Sakura',
+    primary: '#ec4899',
+    gradient: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
+    gradientFrom: '#ec4899',
+    gradientTo: '#f472b6',
+    glow: 'rgba(236, 72, 153, 0.4)'
+  },
+  {
+    name: 'Crimson',
+    primary: '#ef4444',
+    gradient: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+    gradientFrom: '#ef4444',
+    gradientTo: '#dc2626',
+    glow: 'rgba(239, 68, 68, 0.4)'
+  }
 ]
 
 const gradeLevels = [
@@ -34,32 +80,115 @@ const courseTypes = [
   { value: 'Basisfach', label: 'Basisfach', icon: Books }
 ]
 
+// AI Provider configurations
+const AI_PROVIDERS = [
+  {
+    id: 'claude',
+    name: 'Anthropic Claude',
+    icon: Brain,
+    placeholder: 'sk-ant-...',
+    gradient: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+    color: '#f97316'
+  },
+  {
+    id: 'gemini',
+    name: 'Google Gemini',
+    icon: Lightning,
+    placeholder: 'AIza...',
+    gradient: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)',
+    color: '#3b82f6'
+  },
+  {
+    id: 'openai',
+    name: 'OpenAI GPT',
+    icon: OpenAiLogo,
+    placeholder: 'sk-...',
+    gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+    color: '#10b981'
+  }
+]
+
 function Settings({ isOpen, onClose, settings, onSettingsChange }) {
   const [localSettings, setLocalSettings] = useState(settings)
   const [autoMode, setAutoMode] = useState(false)
-  const [availableModels, setAvailableModels] = useState([])
-  const [loadingModels, setLoadingModels] = useState(false)
-  const [modelsError, setModelsError] = useState(null)
+
+  // Multi-provider state
+  const { aiProvider, setAiProvider, setSelectedModel, setApiKey: setStoreApiKey, selectedModels } = useAppStore()
+  const [providerModels, setProviderModels] = useState({
+    claude: [],
+    gemini: [],
+    openai: []
+  })
+  const [loadingModels, setLoadingModels] = useState({
+    claude: false,
+    gemini: false,
+    openai: false
+  })
+  const [modelsError, setModelsError] = useState({
+    claude: null,
+    gemini: null,
+    openai: null
+  })
 
   useEffect(() => {
     setLocalSettings(settings)
     // Check if AUTO mode was previously enabled
     setAutoMode(settings.aiModel?.autoMode || false)
+
+    // Sync API keys and models from settings to store on initial load
+    if (settings.claudeApiKey || settings.anthropicApiKey) {
+      setStoreApiKey('claude', settings.claudeApiKey || settings.anthropicApiKey)
+    }
+    if (settings.geminiApiKey) {
+      setStoreApiKey('gemini', settings.geminiApiKey)
+    }
+    if (settings.openaiApiKey) {
+      setStoreApiKey('openai', settings.openaiApiKey)
+    }
+
+    // Sync models
+    if (settings.claudeModel) {
+      setSelectedModel('claude', settings.claudeModel)
+    }
+    if (settings.geminiModel) {
+      setSelectedModel('gemini', settings.geminiModel)
+    }
+    if (settings.openaiModel) {
+      setSelectedModel('openai', settings.openaiModel)
+    }
   }, [settings])
 
   const handleColorChange = (preset) => {
+    // Helper to convert hex to rgba
+    const hexToRgba = (hex, alpha) => {
+      const r = parseInt(hex.slice(1, 3), 16)
+      const g = parseInt(hex.slice(3, 5), 16)
+      const b = parseInt(hex.slice(5, 7), 16)
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`
+    }
+
     const newSettings = {
       ...localSettings,
       theme: {
         name: preset.name,
-        primary: preset.primary
+        primary: preset.primary,
+        gradient: preset.gradient,
+        gradientFrom: preset.gradientFrom,
+        gradientTo: preset.gradientTo,
+        glow: preset.glow
       }
     }
     setLocalSettings(newSettings)
     onSettingsChange(newSettings)
 
-    // Apply primary color to CSS variable
+    // Apply theme CSS variables
     document.documentElement.style.setProperty('--primary', preset.primary)
+    document.documentElement.style.setProperty('--primary-gradient', preset.gradient)
+    document.documentElement.style.setProperty('--primary-from', preset.gradientFrom)
+    document.documentElement.style.setProperty('--primary-to', preset.gradientTo)
+    document.documentElement.style.setProperty('--primary-glow', preset.glow)
+    document.documentElement.style.setProperty('--primary-subtle', hexToRgba(preset.primary, 0.08))
+    document.documentElement.style.setProperty('--primary-hover', hexToRgba(preset.primary, 0.15))
   }
 
   const handleSliderChange = (key, value) => {
@@ -140,13 +269,25 @@ function Settings({ isOpen, onClose, settings, onSettingsChange }) {
     onSettingsChange(newSettings)
   }
 
-  const handleApiKeyChange = (apiKey) => {
+  const handleApiKeyChange = (provider, apiKey) => {
+    const keyField = `${provider}ApiKey`
     const newSettings = {
       ...localSettings,
-      anthropicApiKey: apiKey
+      [keyField]: apiKey
     }
     setLocalSettings(newSettings)
     onSettingsChange(newSettings)
+
+    // Also update the store's apiKeys
+    setStoreApiKey(provider, apiKey)
+  }
+
+  // Legacy support - map anthropicApiKey to claudeApiKey
+  const getApiKey = (provider) => {
+    if (provider === 'claude') {
+      return localSettings.claudeApiKey || localSettings.anthropicApiKey || ''
+    }
+    return localSettings[`${provider}ApiKey`] || ''
   }
 
   const handleDebugToggle = (key, value) => {
@@ -173,49 +314,214 @@ function Settings({ isOpen, onClose, settings, onSettingsChange }) {
     window.location.reload()
   }
 
-  const fetchAvailableModels = async () => {
-    const apiKey = localSettings.anthropicApiKey
+  const fetchAvailableModels = async (provider) => {
+    const apiKey = getApiKey(provider)
     if (!apiKey) {
-      setModelsError('Bitte gib zuerst einen API-Key ein')
+      setModelsError(prev => ({ ...prev, [provider]: 'Bitte gib zuerst einen API-Key ein' }))
       return
     }
 
-    setLoadingModels(true)
-    setModelsError(null)
+    setLoadingModels(prev => ({ ...prev, [provider]: true }))
+    setModelsError(prev => ({ ...prev, [provider]: null }))
 
     try {
-      const response = await fetch('/api/get-models', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey })
-      })
+      let models = []
 
-      const data = await response.json()
+      switch (provider) {
+        case 'claude':
+          models = await fetchClaudeModels(apiKey)
+          break
+        case 'gemini':
+          models = await fetchGeminiModels(apiKey)
+          break
+        case 'openai':
+          models = await fetchOpenAIModels(apiKey)
+          break
+        default:
+          throw new Error(`Unknown provider: ${provider}`)
+      }
 
-      if (data.success) {
-        setAvailableModels(data.models)
-        // If no model is selected, select the first one
-        if (!localSettings.selectedModel && data.models.length > 0) {
-          handleModelChange(data.models[0].id)
-        }
-      } else {
-        setModelsError(data.error || 'Fehler beim Laden der Modelle')
+      setProviderModels(prev => ({ ...prev, [provider]: models }))
+      // If no model is selected for this provider, select the first one
+      const modelField = `${provider}Model`
+      if (!localSettings[modelField] && models.length > 0) {
+        handleModelChange(provider, models[0].id)
       }
     } catch (error) {
-      console.error('Error fetching models:', error)
-      setModelsError('Fehler beim Laden der Modelle')
+      console.error(`Error fetching ${provider} models:`, error)
+      setModelsError(prev => ({ ...prev, [provider]: error.message || 'Fehler beim Laden der Modelle' }))
     } finally {
-      setLoadingModels(false)
+      setLoadingModels(prev => ({ ...prev, [provider]: false }))
     }
   }
 
-  const handleModelChange = (modelId) => {
+  // Direct API calls to providers
+  const fetchClaudeModels = async (apiKey) => {
+    const response = await fetch('https://api.anthropic.com/v1/models', {
+      method: 'GET',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      }
+    })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}))
+      throw new Error(error.error?.message || 'Fehler beim Abrufen der Claude Modelle')
+    }
+
+    const data = await response.json()
+    return (data.data || [])
+      .filter(model => model.id.includes('claude'))
+      .map(model => ({
+        id: model.id,
+        name: formatClaudeModelName(model.id)
+      }))
+      .sort((a, b) => {
+        const tierOrder = { 'sonnet': 1, 'haiku': 2, 'opus': 0 }
+        const aTier = Object.keys(tierOrder).find(t => a.id.includes(t)) || 'z'
+        const bTier = Object.keys(tierOrder).find(t => b.id.includes(t)) || 'z'
+        return (tierOrder[aTier] ?? 99) - (tierOrder[bTier] ?? 99)
+      })
+  }
+
+  const formatClaudeModelName = (modelId) => {
+    if (modelId.includes('sonnet')) {
+      const match = modelId.match(/claude-sonnet-(\d+)-(\d+)/)
+      if (match) return `Claude Sonnet ${match[1]}.${match[2]}`
+      return 'Claude Sonnet'
+    }
+    if (modelId.includes('opus')) {
+      const match = modelId.match(/claude-opus-(\d+)/)
+      if (match) return `Claude Opus ${match[1]}`
+      return 'Claude Opus'
+    }
+    if (modelId.includes('haiku')) {
+      const match = modelId.match(/claude-(\d+)-(\d+)-haiku/)
+      if (match) return `Claude ${match[1]}.${match[2]} Haiku`
+      return 'Claude Haiku'
+    }
+    return modelId
+  }
+
+  const fetchGeminiModels = async (apiKey) => {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`)
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}))
+      throw new Error(error.error?.message || 'Fehler beim Abrufen der Gemini Modelle')
+    }
+
+    const data = await response.json()
+    return (data.models || [])
+      .filter(model => {
+        const name = model.name || ''
+        return name.includes('gemini') && model.supportedGenerationMethods?.includes('generateContent')
+      })
+      .map(model => {
+        const modelId = model.name.replace('models/', '')
+        return {
+          id: modelId,
+          name: formatGeminiModelName(modelId)
+        }
+      })
+      .sort((a, b) => {
+        const tierOrder = { 'pro': 1, 'flash': 2, 'nano': 3 }
+        const aTier = Object.keys(tierOrder).find(t => a.id.includes(t)) || 'z'
+        const bTier = Object.keys(tierOrder).find(t => b.id.includes(t)) || 'z'
+        return (tierOrder[aTier] ?? 99) - (tierOrder[bTier] ?? 99)
+      })
+  }
+
+  const formatGeminiModelName = (modelId) => {
+    const parts = modelId.split('-')
+    let name = 'Gemini'
+    for (let i = 1; i < parts.length; i++) {
+      const part = parts[i]
+      if (part === 'exp' || part === 'experimental') name += ' (Exp)'
+      else if (part === 'latest') name += ' Latest'
+      else if (part === 'thinking') name += ' Thinking'
+      else if (/^\d/.test(part)) name += ` ${part}`
+      else name += ` ${part.charAt(0).toUpperCase() + part.slice(1)}`
+    }
+    return name
+  }
+
+  const fetchOpenAIModels = async (apiKey) => {
+    const response = await fetch('https://api.openai.com/v1/models', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`
+      }
+    })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}))
+      throw new Error(error.error?.message || 'Fehler beim Abrufen der OpenAI Modelle')
+    }
+
+    const data = await response.json()
+    return (data.data || [])
+      .filter(model => {
+        const id = model.id || ''
+        return (id.includes('gpt-4') || id.includes('gpt-3.5') || id.startsWith('o1') || id.startsWith('o3')) &&
+               !id.includes('vision') && !id.includes('instruct') && !id.includes('realtime') && !id.includes('audio')
+      })
+      .map(model => ({
+        id: model.id,
+        name: formatOpenAIModelName(model.id)
+      }))
+      .sort((a, b) => {
+        const tierOrder = { 'o3': 0, 'o1': 1, 'gpt-4o': 2, 'gpt-4-turbo': 3, 'gpt-4': 4, 'gpt-3.5': 5 }
+        const aTier = Object.keys(tierOrder).find(t => a.id.includes(t)) || 'z'
+        const bTier = Object.keys(tierOrder).find(t => b.id.includes(t)) || 'z'
+        return (tierOrder[aTier] ?? 99) - (tierOrder[bTier] ?? 99)
+      })
+  }
+
+  const formatOpenAIModelName = (modelId) => {
+    if (modelId.startsWith('o1') || modelId.startsWith('o3')) {
+      const parts = modelId.split('-')
+      let name = parts[0].toUpperCase()
+      if (parts[1] === 'preview') name += ' Preview'
+      else if (parts[1] === 'mini') name += ' Mini'
+      else if (parts[1]) name += ` ${parts[1]}`
+      return name
+    }
+    return modelId
+      .replace('gpt-4o', 'GPT-4o')
+      .replace('gpt-4-turbo', 'GPT-4 Turbo')
+      .replace('gpt-3.5-turbo', 'GPT-3.5 Turbo')
+      .replace(/-\d{4}-\d{2}-\d{2}$/, '')
+  }
+
+  const handleModelChange = (provider, modelId) => {
+    const modelField = `${provider}Model`
     const newSettings = {
       ...localSettings,
-      selectedModel: modelId
+      [modelField]: modelId,
+      // Also update the legacy selectedModel if this is the active provider
+      ...(provider === aiProvider ? { selectedModel: modelId } : {})
     }
     setLocalSettings(newSettings)
     onSettingsChange(newSettings)
+
+    // Also update the store's selectedModels
+    setSelectedModel(provider, modelId)
+  }
+
+  const handleProviderChange = (providerId) => {
+    setAiProvider(providerId)
+    // Update selectedModel to this provider's model
+    const modelField = `${providerId}Model`
+    if (localSettings[modelField]) {
+      const newSettings = {
+        ...localSettings,
+        selectedModel: localSettings[modelField]
+      }
+      setLocalSettings(newSettings)
+      onSettingsChange(newSettings)
+    }
   }
 
   if (!isOpen) return null
@@ -398,7 +704,7 @@ function Settings({ isOpen, onClose, settings, onSettingsChange }) {
                 >
                   <motion.div
                     className="color-preview"
-                    style={{ background: preset.primary }}
+                    style={{ background: preset.gradient }}
                     whileHover={{
                       scale: 1.15,
                       rotate: 180,
@@ -572,100 +878,141 @@ function Settings({ isOpen, onClose, settings, onSettingsChange }) {
                 Entwickler-Einstellungen für API und Debugging
               </p>
 
-              {/* API Key Input */}
-              <div className="api-key-container">
-                <label className="setting-label">
-                  <Key weight="bold" /> Anthropic API Key
+              {/* AI Provider Selection */}
+              <div className="provider-selection">
+                <label className="setting-label" style={{ marginBottom: '12px' }}>
+                  <Robot weight="bold" /> Aktiver AI-Anbieter
                 </label>
-                <input
-                  type="password"
-                  placeholder="sk-ant-..."
-                  value={localSettings.anthropicApiKey || ''}
-                  onChange={(e) => handleApiKeyChange(e.target.value)}
-                  className="api-key-input"
-                />
-                <p className="input-hint">
-                  Wird nur lokal gespeichert, nie an unsere Server gesendet. Benötigt für KI-Funktionen.
+                <div className="provider-buttons">
+                  {AI_PROVIDERS.map((provider) => {
+                    const Icon = provider.icon
+                    const isActive = aiProvider === provider.id
+                    return (
+                      <motion.button
+                        key={provider.id}
+                        className={`provider-btn ${isActive ? 'active' : ''}`}
+                        onClick={() => handleProviderChange(provider.id)}
+                        whileHover={{ scale: 1.02, y: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                        style={{
+                          '--provider-color': provider.color,
+                          '--provider-gradient': provider.gradient
+                        }}
+                      >
+                        <Icon weight="bold" className="provider-icon" />
+                        <span>{provider.name}</span>
+                        {isActive && (
+                          <motion.div
+                            className="active-indicator"
+                            layoutId="activeProvider"
+                            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                          />
+                        )}
+                      </motion.button>
+                    )
+                  })}
+                </div>
+                <p className="input-hint" style={{ marginTop: '8px' }}>
+                  Wähle den Anbieter, der für die KI-Funktionen verwendet werden soll.
                 </p>
               </div>
 
-              {/* Model Selector */}
-              <div className="model-selector-container" style={{ marginTop: '20px' }}>
-                <label className="setting-label">
-                  <Robot weight="bold" /> Claude Modell
-                </label>
-                {availableModels.length === 0 ? (
-                  <motion.button
-                    className="btn btn-secondary"
-                    onClick={fetchAvailableModels}
-                    disabled={loadingModels || !localSettings.anthropicApiKey}
-                    style={{ width: '100%' }}
-                    whileHover={{
-                      scale: localSettings.anthropicApiKey && !loadingModels ? 1.02 : 1,
-                      y: localSettings.anthropicApiKey && !loadingModels ? -2 : 0,
-                      transition: { type: "spring", stiffness: 400, damping: 18 }
-                    }}
-                    whileTap={{ scale: localSettings.anthropicApiKey && !loadingModels ? 0.98 : 1 }}
-                  >
-                    {loadingModels ? 'Lade Modelle...' : 'Verfügbare Modelle laden'}
-                  </motion.button>
-                ) : (
-                  <div>
-                    <select
-                      value={localSettings.selectedModel || ''}
-                      onChange={(e) => handleModelChange(e.target.value)}
-                      className="model-select"
-                      style={{
-                        width: '100%',
-                        padding: '12px 16px',
-                        borderRadius: '12px',
-                        border: '2px solid rgba(249, 115, 22, 0.2)',
-                        background: 'var(--bg-secondary)',
-                        color: 'var(--text-primary)',
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        cursor: 'pointer',
-                        outline: 'none',
-                        transition: 'all 0.2s ease'
-                      }}
+              {/* Provider API Keys & Models */}
+              <div className="provider-configs">
+                {AI_PROVIDERS.map((provider, index) => {
+                  const Icon = provider.icon
+                  const isActive = aiProvider === provider.id
+                  const apiKey = getApiKey(provider.id)
+                  const models = providerModels[provider.id] || []
+                  const isLoading = loadingModels[provider.id]
+                  const error = modelsError[provider.id]
+                  const selectedModel = localSettings[`${provider.id}Model`] || ''
+
+                  return (
+                    <motion.div
+                      key={provider.id}
+                      className={`provider-config ${isActive ? 'active' : ''}`}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 * index }}
+                      style={{ '--provider-color': provider.color }}
                     >
-                      {availableModels.map((model) => (
-                        <option key={model.id} value={model.id}>
-                          {model.name} - {model.description}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={fetchAvailableModels}
-                      style={{
-                        marginTop: '8px',
-                        padding: '6px 12px',
-                        background: 'transparent',
-                        border: '1px solid rgba(249, 115, 22, 0.3)',
-                        borderRadius: '8px',
-                        color: 'var(--text-secondary)',
-                        fontSize: '12px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease'
-                      }}
-                    >
-                      Modelle aktualisieren
-                    </button>
-                  </div>
-                )}
-                {modelsError && (
-                  <p style={{
-                    marginTop: '8px',
-                    color: '#ef4444',
-                    fontSize: '12px'
-                  }}>
-                    {modelsError}
-                  </p>
-                )}
-                <p className="input-hint">
-                  Wähle das Claude-Modell, das für die Fragengenerierung verwendet werden soll.
-                </p>
+                      <div className="provider-config-header">
+                        <div className="provider-config-icon" style={{ background: provider.gradient }}>
+                          <Icon weight="bold" />
+                        </div>
+                        <div className="provider-config-info">
+                          <h4>{provider.name}</h4>
+                          {isActive && <span className="active-badge">Aktiv</span>}
+                        </div>
+                      </div>
+
+                      {/* API Key Input */}
+                      <div className="api-key-container">
+                        <label className="setting-label-small">
+                          <Key weight="bold" /> API Key
+                        </label>
+                        <input
+                          type="password"
+                          placeholder={provider.placeholder}
+                          value={apiKey}
+                          onChange={(e) => handleApiKeyChange(provider.id, e.target.value)}
+                          className="api-key-input"
+                        />
+                      </div>
+
+                      {/* Model Selector */}
+                      <div className="model-selector-container">
+                        <label className="setting-label-small">
+                          <Robot weight="bold" /> Modell
+                        </label>
+                        {models.length === 0 ? (
+                          <motion.button
+                            className="btn btn-secondary btn-small"
+                            onClick={() => fetchAvailableModels(provider.id)}
+                            disabled={isLoading || !apiKey}
+                            whileHover={{
+                              scale: apiKey && !isLoading ? 1.02 : 1,
+                              y: apiKey && !isLoading ? -2 : 0
+                            }}
+                            whileTap={{ scale: apiKey && !isLoading ? 0.98 : 1 }}
+                          >
+                            {isLoading ? 'Lade...' : 'Modelle laden'}
+                          </motion.button>
+                        ) : (
+                          <div className="model-select-wrapper">
+                            <select
+                              value={selectedModel}
+                              onChange={(e) => handleModelChange(provider.id, e.target.value)}
+                              className="model-select"
+                            >
+                              {models.map((model) => (
+                                <option key={model.id} value={model.id}>
+                                  {model.name}
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              onClick={() => fetchAvailableModels(provider.id)}
+                              className="refresh-models-btn"
+                              disabled={isLoading}
+                            >
+                              {isLoading ? '...' : '↻'}
+                            </button>
+                          </div>
+                        )}
+                        {error && (
+                          <p className="error-text">{error}</p>
+                        )}
+                      </div>
+                    </motion.div>
+                  )
+                })}
               </div>
+
+              <p className="input-hint" style={{ marginTop: '16px' }}>
+                API-Keys werden nur lokal gespeichert und nie an unsere Server gesendet.
+              </p>
 
               {/* Debug Options */}
               <div className="debug-options">

@@ -14,16 +14,20 @@ import {
 } from '@phosphor-icons/react'
 
 import { useAuth } from '../contexts/AuthContext'
+import { useAppStore } from '../stores/useAppStore'
 import {
   saveGeneratedQuestions,
   createLearningSession,
   getMemories,
   getRecentPerformance,
-  getLatestAutoModeAssessment
+  getLatestAutoModeAssessment,
+  saveInitialKnowledge,
+  getTopicProgress
 } from '../firebase/firestore'
 
 function LearningPlan({ isOpen, onClose, userSettings, onStartSession }) {
   const { currentUser } = useAuth()
+  const { addTopicsToContext } = useAppStore()
   const [learningPlan, setLearningPlan] = useState([])
   const [showThemeSelector, setShowThemeSelector] = useState(false)
   const [selectedThemes, setSelectedThemes] = useState([])
@@ -159,12 +163,14 @@ function LearningPlan({ isOpen, onClose, userSettings, onStartSession }) {
   const addToPlan = () => {
     if (selectedThemes.length === 0) return
 
+    const themes = selectedThemes.map(themeId => {
+      const [leitidee, thema, unterthema] = themeId.split('|')
+      return { leitidee, thema, unterthema }
+    })
+
     const newPlanItem = {
       id: Date.now(),
-      themes: selectedThemes.map(themeId => {
-        const [leitidee, thema, unterthema] = themeId.split('|')
-        return { leitidee, thema, unterthema }
-      }),
+      themes,
       examDate: examDate || null,
       examTitle: examTitle || 'Lernziel',
       addedAt: new Date().toISOString(),
@@ -184,6 +190,9 @@ function LearningPlan({ isOpen, onClose, userSettings, onStartSession }) {
     // Save to localStorage
     localStorage.setItem('learningPlan', JSON.stringify([...learningPlan, newPlanItem]))
 
+    // Add topics to global context for LiveFeed
+    addTopicsToContext(themes)
+
     // Show introductory assessment test
     setIntroTestPlanItem(newPlanItem)
     setShowIntroTest(true)
@@ -195,7 +204,6 @@ function LearningPlan({ isOpen, onClose, userSettings, onStartSession }) {
 
     try {
       // Save initial knowledge assessment to Firestore
-      const { saveInitialKnowledge } = await import('../firebase/firestore')
       await saveInitialKnowledge(currentUser.uid, {
         planItemId: introTestPlanItem.id,
         responses: introTestResponses,
@@ -235,7 +243,6 @@ function LearningPlan({ isOpen, onClose, userSettings, onStartSession }) {
 
     try {
       // Get topic progress for all themes in the plan
-      const { getTopicProgress } = await import('../firebase/firestore')
       const themesWithProgress = await Promise.all(
         planItem.themes.map(async (theme) => {
           const topicKey = `${theme.thema}|${theme.unterthema}`
@@ -476,11 +483,18 @@ function LearningPlan({ isOpen, onClose, userSettings, onStartSession }) {
     localStorage.setItem('learningPlan', JSON.stringify(updatedPlan))
   }
 
-  // Load learning plan from localStorage
+  // Load learning plan from localStorage and sync to context
   useEffect(() => {
     const saved = localStorage.getItem('learningPlan')
     if (saved) {
-      setLearningPlan(JSON.parse(saved))
+      const savedPlan = JSON.parse(saved)
+      setLearningPlan(savedPlan)
+
+      // Sync all themes to the global context for LiveFeed
+      const allThemes = savedPlan.flatMap(item => item.themes || [])
+      if (allThemes.length > 0) {
+        addTopicsToContext(allThemes)
+      }
     }
   }, [])
 
@@ -528,7 +542,7 @@ function LearningPlan({ isOpen, onClose, userSettings, onStartSession }) {
                 delay: 0.05
               }}
             >
-              <h2><Books weight="bold" /> Mein Lernplan</h2>
+              <h2><Books weight="bold" /> Kontext</h2>
               <motion.button
                 className="close-btn"
                 onClick={onClose}

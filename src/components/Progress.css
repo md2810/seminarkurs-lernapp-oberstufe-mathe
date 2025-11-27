@@ -1,0 +1,323 @@
+/* ========================================
+   Progress.css - Vertical Progress Path
+   ======================================== */
+
+.progress-view {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+/* Header */
+.progress-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.progress-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.progress-title svg {
+  color: #fbbf24;
+}
+
+.progress-subtitle {
+  color: #64748b;
+  font-size: 1rem;
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+}
+
+.stat-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 1.25rem;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.stat-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stat-icon svg {
+  color: white;
+}
+
+.gradient-xp {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  box-shadow: 0 8px 20px -4px rgba(245, 158, 11, 0.3);
+}
+
+.gradient-streak {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  box-shadow: 0 8px 20px -4px rgba(239, 68, 68, 0.3);
+}
+
+.gradient-level {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  box-shadow: 0 8px 20px -4px rgba(139, 92, 246, 0.3);
+}
+
+.gradient-questions {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 8px 20px -4px rgba(16, 185, 129, 0.3);
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #f8fafc;
+  line-height: 1.2;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Level Section */
+.level-section {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+}
+
+.section-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #f8fafc;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+/* Progress Path - Vertical Layout */
+.progress-path {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+  padding-left: 3rem;
+}
+
+.milestone {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem 0;
+}
+
+.milestone:first-child {
+  padding-top: 0;
+}
+
+.milestone:last-child {
+  padding-bottom: 0;
+}
+
+/* Connecting line */
+.milestone-line {
+  position: absolute;
+  left: -2rem;
+  top: -1rem;
+  width: 2px;
+  height: calc(100% + 1rem);
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 1px;
+}
+
+.milestone:first-child .milestone-line {
+  display: none;
+}
+
+.milestone-line-fill {
+  width: 100%;
+  background: var(--primary-gradient, linear-gradient(180deg, #f97316, #ea580c));
+  border-radius: 1px;
+}
+
+/* Milestone node */
+.milestone-node {
+  position: absolute;
+  left: -3rem;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(30, 30, 35, 0.9);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  z-index: 2;
+  transition: all 0.3s ease;
+}
+
+.milestone.unlocked .milestone-node {
+  background: var(--primary-gradient, linear-gradient(135deg, #f97316, #ea580c));
+  border-color: transparent;
+  box-shadow: 0 4px 15px -2px var(--primary-glow, rgba(249, 115, 22, 0.4));
+}
+
+.milestone.unlocked .milestone-node svg {
+  color: white;
+}
+
+.milestone.locked .milestone-node svg {
+  color: #64748b;
+}
+
+.milestone.current .milestone-node {
+  transform: scale(1.1);
+}
+
+.milestone-glow {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: var(--primary-gradient, linear-gradient(135deg, #f97316, #ea580c));
+  z-index: -1;
+  filter: blur(8px);
+}
+
+/* Milestone info */
+.milestone-info {
+  flex: 1;
+  padding-top: 0.25rem;
+}
+
+.milestone-level {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  margin-bottom: 0.125rem;
+}
+
+.milestone.unlocked .milestone-level {
+  color: var(--primary, #f97316);
+}
+
+.milestone-title {
+  display: block;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+.milestone.locked .milestone-title {
+  color: #64748b;
+}
+
+.milestone-xp-needed {
+  display: block;
+  font-size: 0.875rem;
+  color: #475569;
+  margin-top: 0.25rem;
+}
+
+/* Progress bar for current milestone */
+.milestone-progress-bar {
+  margin-top: 0.75rem;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.milestone-progress-fill {
+  height: 100%;
+  background: var(--primary-gradient, linear-gradient(90deg, #f97316, #ea580c));
+  border-radius: 4px;
+  box-shadow: 0 0 10px var(--primary-glow, rgba(249, 115, 22, 0.4));
+}
+
+.milestone-progress-text {
+  position: absolute;
+  right: 0;
+  top: 12px;
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .progress-view {
+    padding: 0.75rem;
+  }
+
+  .progress-title {
+    font-size: 1.5rem;
+  }
+
+  .stats-grid {
+    gap: 0.75rem;
+  }
+
+  .stat-card {
+    padding: 1rem;
+  }
+
+  .stat-icon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .stat-value {
+    font-size: 1.25rem;
+  }
+
+  .progress-path {
+    padding-left: 2.5rem;
+  }
+
+  .milestone-node {
+    width: 38px;
+    height: 38px;
+    left: -2.5rem;
+  }
+
+  .milestone-line {
+    left: -1.5rem;
+  }
+}

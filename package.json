@@ -11,17 +11,26 @@
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
+    "@xyflow/react": "^12.9.3",
+    "clsx": "^2.1.1",
     "firebase": "^12.4.0",
-    "framer-motion": "^12.23.22",
+    "framer-motion": "^12.23.24",
     "katex": "^0.16.23",
+    "lucide-react": "^0.555.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^3.4.0",
+    "zustand": "^5.0.8"
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "*"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.17",
     "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.22",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.17",
     "vite": "^6.0.3",
     "wrangler": "^4.42.1"
   }
