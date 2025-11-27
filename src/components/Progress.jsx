@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
-import { Zap, Flame, Trophy, Star, Target, CheckCircle, Lock, Sparkles, TrendingUp } from 'lucide-react'
+import { Zap, Flame, Trophy, Star, Target, CheckCircle, Lock, Sparkles, TrendingUp, SkipForward } from 'lucide-react'
+import { useAppStore } from '../stores/useAppStore'
 import './Progress.css'
 
 // Progress milestones for the vertical path
@@ -9,6 +10,12 @@ const MILESTONES = [
   { level: 3, xpRequired: 300, title: 'Fortgeschritten', icon: TrendingUp },
   { level: 4, xpRequired: 600, title: 'Experte', icon: Sparkles },
   { level: 5, xpRequired: 1000, title: 'Meister', icon: Trophy },
+  { level: 6, xpRequired: 1500, title: 'Großmeister', icon: Flame },
+  { level: 7, xpRequired: 2100, title: 'Champion', icon: Zap },
+  { level: 8, xpRequired: 2800, title: 'Legende', icon: Star },
+  { level: 9, xpRequired: 3600, title: 'Mythisch', icon: Sparkles },
+  { level: 10, xpRequired: 4500, title: 'Göttlich', icon: Trophy },
+  { level: 11, xpRequired: 5500, title: 'Transzendent', icon: Flame },
 ]
 
 function ProgressPath({ userStats }) {
@@ -132,12 +139,19 @@ function StatCard({ icon: Icon, label, value, gradient, delay = 0 }) {
   )
 }
 
-export default function Progress({ userStats = {} }) {
-  const totalXp = userStats.totalXp || userStats.xp || 0
+export default function Progress() {
+  // Get user stats from the store
+  const { getUserStats } = useAppStore()
+  const userStats = getUserStats()
+
+  const totalXp = userStats.totalXp || 0
   const streak = userStats.streak || 0
   const level = userStats.level || 1
   const xpToNextLevel = userStats.xpToNextLevel || 100
   const questionsAnswered = userStats.questionsAnswered || 0
+  const correctAnswers = userStats.correctAnswers || 0
+  const skippedQuestions = userStats.skippedQuestions || 0
+  const accuracy = userStats.accuracy || 0
 
   return (
     <div className="progress-view">
@@ -169,7 +183,7 @@ export default function Progress({ userStats = {} }) {
         <StatCard
           icon={Flame}
           label="Streak"
-          value={`${streak} Tage`}
+          value={`${streak} Fragen`}
           gradient="gradient-streak"
           delay={0.15}
         />
@@ -182,19 +196,56 @@ export default function Progress({ userStats = {} }) {
         />
         <StatCard
           icon={CheckCircle}
-          label="Fragen"
-          value={questionsAnswered}
+          label="Richtig"
+          value={`${correctAnswers}/${questionsAnswered}`}
           gradient="gradient-questions"
           delay={0.25}
         />
+        <StatCard
+          icon={Target}
+          label="Genauigkeit"
+          value={`${accuracy}%`}
+          gradient="gradient-accuracy"
+          delay={0.3}
+        />
+        <StatCard
+          icon={SkipForward}
+          label="Übersprungen"
+          value={skippedQuestions}
+          gradient="gradient-skipped"
+          delay={0.35}
+        />
       </div>
+
+      {/* XP to Next Level */}
+      {xpToNextLevel > 0 && (
+        <motion.div
+          className="xp-to-next"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <div className="xp-info">
+            <span className="xp-current">Level {level}</span>
+            <span className="xp-needed">{xpToNextLevel} XP bis Level {level + 1}</span>
+          </div>
+          <div className="xp-bar">
+            <motion.div
+              className="xp-fill"
+              initial={{ width: 0 }}
+              animate={{ width: `${userStats.progressPercent || 0}%` }}
+              transition={{ delay: 0.6, duration: 0.8 }}
+            />
+          </div>
+        </motion.div>
+      )}
 
       {/* Level Progress Section */}
       <motion.div
         className="level-section"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
+        transition={{ delay: 0.5 }}
       >
         <h2 className="section-title">Level-Fortschritt</h2>
         <ProgressPath userStats={userStats} />

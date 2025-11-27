@@ -1,6 +1,6 @@
 /**
  * InteractiveCanvas Component
- * Interactive whiteboard with step-by-step solution visualizations
+ * Interactive whiteboard with GeoGebra-powered step-by-step solution visualizations
  */
 
 import { useState, useRef, useEffect, useCallback } from 'react'
@@ -21,58 +21,24 @@ import {
   X,
   Eye,
   EyeSlash,
-  Download,
-  Palette,
-  Circle,
-  Square,
-  LineSegment,
-  TextT,
-  Function as FunctionIcon,
   CaretRight,
   CaretLeft,
   MagicWand,
-  BookOpen
+  BookOpen,
+  Cube,
+  Function as FunctionIcon,
+  ArrowsOutCardinal
 } from '@phosphor-icons/react'
 import './InteractiveCanvas.css'
 
-// Drawing tools
-const TOOLS = {
-  PEN: 'pen',
-  ERASER: 'eraser',
-  LINE: 'line',
-  CIRCLE: 'circle',
-  RECTANGLE: 'rectangle',
-  TEXT: 'text'
-}
-
-// Colors for drawing
-const COLORS = [
-  '#ffffff',
-  '#f97316',
-  '#22c55e',
-  '#3b82f6',
-  '#a855f7',
-  '#ef4444',
-  '#fbbf24'
-]
-
-// Stroke widths
-const STROKE_WIDTHS = [2, 4, 6, 8]
+// GeoGebra App configuration
+const GEOGEBRA_APP_ID = 'ggbApplet'
 
 function InteractiveCanvas({ wrongQuestions = [], userSettings = {}, onOpenContext }) {
   const { currentUser } = useAuth()
-  const { aiProvider, apiKeys } = useAppStore()
-  const canvasRef = useRef(null)
-  const contextRef = useRef(null)
-
-  // Drawing state
-  const [isDrawing, setIsDrawing] = useState(false)
-  const [currentTool, setCurrentTool] = useState(TOOLS.PEN)
-  const [currentColor, setCurrentColor] = useState(COLORS[0])
-  const [strokeWidth, setStrokeWidth] = useState(4)
-  const [paths, setPaths] = useState([])
-  const [undoStack, setUndoStack] = useState([])
-  const [redoStack, setRedoStack] = useState([])
+  const { aiProvider, apiKeys, selectedModels } = useAppStore()
+  const geogebraContainerRef = useRef(null)
+  const geogebraAppRef = useRef(null)
 
   // Solution visualization state
   const [selectedQuestion, setSelectedQuestion] = useState(null)
@@ -80,321 +46,93 @@ function InteractiveCanvas({ wrongQuestions = [], userSettings = {}, onOpenConte
   const [currentStep, setCurrentStep] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
-  const [showVisualization, setShowVisualization] = useState(true)
+  const [geogebraReady, setGeogebraReady] = useState(false)
+  const [geogebraLoading, setGeogebraLoading] = useState(true)
 
   // Sidebar state
   const [showSidebar, setShowSidebar] = useState(true)
 
-  // Initialize canvas
+  // Visualization cache for background generation
+  const [visualizationCache, setVisualizationCache] = useState({})
+
+  // Initialize GeoGebra
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    // Set canvas size to full available area
-    const resizeCanvas = () => {
-      const container = canvas.parentElement
-      const dpr = window.devicePixelRatio || 1
-      canvas.width = container.clientWidth * dpr
-      canvas.height = container.clientHeight * dpr
-      canvas.style.width = `${container.clientWidth}px`
-      canvas.style.height = `${container.clientHeight}px`
-
-      const ctx = canvas.getContext('2d')
-      ctx.scale(dpr, dpr)
-      ctx.lineCap = 'round'
-      ctx.lineJoin = 'round'
-      contextRef.current = ctx
-
-      // Redraw all paths
-      redrawCanvas()
+    // Load GeoGebra script if not already loaded
+    if (!window.GGBApplet) {
+      const script = document.createElement('script')
+      script.src = 'https://www.geogebra.org/apps/deployggb.js'
+      script.async = true
+      script.onload = () => {
+        initGeoGebra()
+      }
+      document.head.appendChild(script)
+    } else {
+      initGeoGebra()
     }
 
-    resizeCanvas()
-    window.addEventListener('resize', resizeCanvas)
-    return () => window.removeEventListener('resize', resizeCanvas)
+    return () => {
+      // Cleanup
+      if (geogebraAppRef.current) {
+        try {
+          geogebraAppRef.current.remove()
+        } catch (e) {
+          // Ignore cleanup errors
+        }
+      }
+    }
   }, [])
 
-  // Redraw canvas with all paths
-  const redrawCanvas = useCallback(() => {
-    const ctx = contextRef.current
-    const canvas = canvasRef.current
-    if (!ctx || !canvas) return
+  const initGeoGebra = () => {
+    if (!geogebraContainerRef.current || !window.GGBApplet) return
 
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    const params = {
+      appName: 'graphing',
+      width: geogebraContainerRef.current.clientWidth,
+      height: geogebraContainerRef.current.clientHeight,
+      showToolBar: false,
+      showAlgebraInput: false,
+      showMenuBar: false,
+      enableLabelDrags: false,
+      enableShiftDragZoom: true,
+      enableRightClick: false,
+      showResetIcon: true,
+      language: 'de',
+      borderColor: '#1a1a1f',
+      preventFocus: true,
+      appletOnLoad: () => {
+        setGeogebraReady(true)
+        setGeogebraLoading(false)
 
-    // Draw background grid
-    drawGrid(ctx, canvas)
-
-    // Draw all saved paths
-    paths.forEach(path => {
-      if (path.type === 'path') {
-        ctx.beginPath()
-        ctx.strokeStyle = path.color
-        ctx.lineWidth = path.width
-        path.points.forEach((point, index) => {
-          if (index === 0) {
-            ctx.moveTo(point.x, point.y)
-          } else {
-            ctx.lineTo(point.x, point.y)
-          }
-        })
-        ctx.stroke()
-      } else if (path.type === 'line') {
-        ctx.beginPath()
-        ctx.strokeStyle = path.color
-        ctx.lineWidth = path.width
-        ctx.moveTo(path.start.x, path.start.y)
-        ctx.lineTo(path.end.x, path.end.y)
-        ctx.stroke()
-      } else if (path.type === 'circle') {
-        ctx.beginPath()
-        ctx.strokeStyle = path.color
-        ctx.lineWidth = path.width
-        const radius = Math.sqrt(
-          Math.pow(path.end.x - path.start.x, 2) +
-          Math.pow(path.end.y - path.start.y, 2)
-        )
-        ctx.arc(path.start.x, path.start.y, radius, 0, 2 * Math.PI)
-        ctx.stroke()
-      } else if (path.type === 'rectangle') {
-        ctx.beginPath()
-        ctx.strokeStyle = path.color
-        ctx.lineWidth = path.width
-        ctx.rect(
-          path.start.x,
-          path.start.y,
-          path.end.x - path.start.x,
-          path.end.y - path.start.y
-        )
-        ctx.stroke()
+        // Apply dark theme styling
+        const api = geogebraAppRef.current?.getAPI?.()
+        if (api) {
+          api.setAxesVisible(true, true)
+          api.setGridVisible(true)
+          api.setCoordSystem(-10, 10, -10, 10)
+        }
       }
-    })
-
-    // Draw visualization elements if active
-    if (showVisualization && visualizationSteps.length > 0 && currentStep < visualizationSteps.length) {
-      drawVisualizationStep(ctx, visualizationSteps[currentStep])
-    }
-  }, [paths, visualizationSteps, currentStep, showVisualization])
-
-  // Draw grid background
-  const drawGrid = (ctx, canvas) => {
-    const gridSize = 40
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)'
-    ctx.lineWidth = 1
-
-    for (let x = 0; x <= canvas.width; x += gridSize) {
-      ctx.beginPath()
-      ctx.moveTo(x, 0)
-      ctx.lineTo(x, canvas.height)
-      ctx.stroke()
     }
 
-    for (let y = 0; y <= canvas.height; y += gridSize) {
-      ctx.beginPath()
-      ctx.moveTo(0, y)
-      ctx.lineTo(canvas.width, y)
-      ctx.stroke()
-    }
+    const applet = new window.GGBApplet(params, true)
+    applet.inject(geogebraContainerRef.current)
+    geogebraAppRef.current = applet
   }
 
-  // Draw visualization step elements
-  const drawVisualizationStep = (ctx, step) => {
-    if (!step || !step.visualElements) return
-
-    step.visualElements.forEach(element => {
-      ctx.save()
-
-      if (element.type === 'function') {
-        // Draw mathematical function
-        ctx.strokeStyle = element.color || '#22c55e'
-        ctx.lineWidth = 3
-        ctx.beginPath()
-
-        const canvas = canvasRef.current
-        const centerX = canvas.clientWidth / 2
-        const centerY = canvas.clientHeight / 2
-        const scale = 30
-
-        // Simple function plotting (for demonstration)
-        for (let px = 0; px < canvas.clientWidth; px++) {
-          const x = (px - centerX) / scale
-          // Parse simple functions like "x^2"
-          let y = 0
-          try {
-            y = eval(element.definition.replace(/\^/g, '**').replace(/x/g, `(${x})`))
-          } catch {
-            y = 0
-          }
-
-          const screenY = centerY - (y * scale)
-          if (px === 0) {
-            ctx.moveTo(px, screenY)
-          } else {
-            ctx.lineTo(px, screenY)
-          }
-        }
-        ctx.stroke()
-
-        // Add label
-        if (element.label) {
-          ctx.fillStyle = element.color || '#22c55e'
-          ctx.font = '14px Inter, sans-serif'
-          ctx.fillText(element.label, centerX + 10, centerY - 60)
-        }
-      } else if (element.type === 'point') {
-        ctx.fillStyle = element.color || '#f97316'
-        ctx.beginPath()
-        const canvas = canvasRef.current
-        const x = canvas.clientWidth / 2 + (element.x || 0) * 30
-        const y = canvas.clientHeight / 2 - (element.y || 0) * 30
-        ctx.arc(x, y, 6, 0, 2 * Math.PI)
-        ctx.fill()
-
-        if (element.label) {
-          ctx.fillStyle = 'white'
-          ctx.font = '12px Inter, sans-serif'
-          ctx.fillText(element.label, x + 10, y - 10)
-        }
-      } else if (element.type === 'text') {
-        ctx.fillStyle = element.color || 'white'
-        ctx.font = `${element.size || 16}px Inter, sans-serif`
-        ctx.fillText(element.text, element.x || 50, element.y || 50)
-      } else if (element.type === 'arrow') {
-        ctx.strokeStyle = element.color || '#3b82f6'
-        ctx.lineWidth = 2
-        ctx.beginPath()
-        ctx.moveTo(element.start?.x || 0, element.start?.y || 0)
-        ctx.lineTo(element.end?.x || 100, element.end?.y || 100)
-        ctx.stroke()
-
-        // Arrow head
-        const angle = Math.atan2(
-          (element.end?.y || 0) - (element.start?.y || 0),
-          (element.end?.x || 0) - (element.start?.x || 0)
-        )
-        const headSize = 10
-        ctx.beginPath()
-        ctx.moveTo(element.end?.x || 100, element.end?.y || 100)
-        ctx.lineTo(
-          (element.end?.x || 100) - headSize * Math.cos(angle - Math.PI / 6),
-          (element.end?.y || 100) - headSize * Math.sin(angle - Math.PI / 6)
-        )
-        ctx.moveTo(element.end?.x || 100, element.end?.y || 100)
-        ctx.lineTo(
-          (element.end?.x || 100) - headSize * Math.cos(angle + Math.PI / 6),
-          (element.end?.y || 100) - headSize * Math.sin(angle + Math.PI / 6)
-        )
-        ctx.stroke()
-      }
-
-      ctx.restore()
-    })
-  }
-
-  // Redraw when paths or visualization changes
+  // Handle window resize
   useEffect(() => {
-    redrawCanvas()
-  }, [redrawCanvas])
-
-  // Get mouse position relative to canvas
-  const getMousePos = (e) => {
-    const canvas = canvasRef.current
-    const rect = canvas.getBoundingClientRect()
-    return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
-    }
-  }
-
-  // Start drawing
-  const startDrawing = (e) => {
-    const pos = getMousePos(e)
-    setIsDrawing(true)
-
-    if (currentTool === TOOLS.PEN) {
-      setPaths(prev => [...prev, {
-        type: 'path',
-        color: currentColor,
-        width: strokeWidth,
-        points: [pos]
-      }])
-    } else if (currentTool === TOOLS.ERASER) {
-      setPaths(prev => [...prev, {
-        type: 'path',
-        color: '#02040a', // Background color
-        width: strokeWidth * 4,
-        points: [pos]
-      }])
-    } else if ([TOOLS.LINE, TOOLS.CIRCLE, TOOLS.RECTANGLE].includes(currentTool)) {
-      setPaths(prev => [...prev, {
-        type: currentTool,
-        color: currentColor,
-        width: strokeWidth,
-        start: pos,
-        end: pos
-      }])
-    }
-
-    // Save to undo stack
-    setUndoStack(prev => [...prev, paths])
-    setRedoStack([])
-  }
-
-  // Draw
-  const draw = (e) => {
-    if (!isDrawing) return
-
-    const pos = getMousePos(e)
-
-    if (currentTool === TOOLS.PEN || currentTool === TOOLS.ERASER) {
-      setPaths(prev => {
-        const newPaths = [...prev]
-        const lastPath = newPaths[newPaths.length - 1]
-        if (lastPath && lastPath.points) {
-          lastPath.points.push(pos)
+    const handleResize = () => {
+      if (geogebraAppRef.current && geogebraContainerRef.current) {
+        const api = geogebraAppRef.current.getAPI?.()
+        if (api) {
+          api.setWidth(geogebraContainerRef.current.clientWidth)
+          api.setHeight(geogebraContainerRef.current.clientHeight)
         }
-        return newPaths
-      })
-    } else if ([TOOLS.LINE, TOOLS.CIRCLE, TOOLS.RECTANGLE].includes(currentTool)) {
-      setPaths(prev => {
-        const newPaths = [...prev]
-        const lastPath = newPaths[newPaths.length - 1]
-        if (lastPath) {
-          lastPath.end = pos
-        }
-        return newPaths
-      })
+      }
     }
-  }
 
-  // Stop drawing
-  const stopDrawing = () => {
-    setIsDrawing(false)
-  }
-
-  // Undo
-  const handleUndo = () => {
-    if (undoStack.length === 0) return
-    setRedoStack(prev => [...prev, paths])
-    setPaths(undoStack[undoStack.length - 1])
-    setUndoStack(prev => prev.slice(0, -1))
-  }
-
-  // Redo
-  const handleRedo = () => {
-    if (redoStack.length === 0) return
-    setUndoStack(prev => [...prev, paths])
-    setPaths(redoStack[redoStack.length - 1])
-    setRedoStack(prev => prev.slice(0, -1))
-  }
-
-  // Clear canvas
-  const handleClear = () => {
-    setUndoStack(prev => [...prev, paths])
-    setPaths([])
-    setRedoStack([])
-  }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [geogebraReady])
 
   // Get API key for current provider
   const getApiKey = useCallback(() => {
@@ -409,6 +147,15 @@ function InteractiveCanvas({ wrongQuestions = [], userSettings = {}, onOpenConte
 
   // Generate visualization for a question
   const generateVisualization = async (question) => {
+    // Check cache first
+    if (visualizationCache[question.id]) {
+      setVisualizationSteps(visualizationCache[question.id])
+      setSelectedQuestion(question)
+      setCurrentStep(0)
+      applyVisualizationStep(visualizationCache[question.id][0])
+      return
+    }
+
     const apiKey = getApiKey()
     if (!apiKey) return
 
@@ -422,7 +169,7 @@ function InteractiveCanvas({ wrongQuestions = [], userSettings = {}, onOpenConte
         body: JSON.stringify({
           provider: aiProvider,
           apiKey,
-          model: userSettings.selectedModel,
+          model: selectedModels[aiProvider] || userSettings.selectedModel,
           question: question.question,
           solution: question.solution
         })
@@ -430,8 +177,25 @@ function InteractiveCanvas({ wrongQuestions = [], userSettings = {}, onOpenConte
 
       const data = await response.json()
       if (data.success && data.steps) {
-        setVisualizationSteps(data.steps)
+        // Enrich steps with GeoGebra commands
+        const enrichedSteps = data.steps.map(step => ({
+          ...step,
+          geogebraCommands: generateGeoGebraCommands(step)
+        }))
+
+        setVisualizationSteps(enrichedSteps)
         setCurrentStep(0)
+
+        // Cache the result
+        setVisualizationCache(prev => ({
+          ...prev,
+          [question.id]: enrichedSteps
+        }))
+
+        // Apply first step
+        if (enrichedSteps.length > 0) {
+          applyVisualizationStep(enrichedSteps[0])
+        }
       }
     } catch (error) {
       console.error('Error generating visualization:', error)
@@ -439,6 +203,160 @@ function InteractiveCanvas({ wrongQuestions = [], userSettings = {}, onOpenConte
       setIsGenerating(false)
     }
   }
+
+  // Generate GeoGebra commands from visualization step
+  const generateGeoGebraCommands = (step) => {
+    if (!step.visualElements) return []
+
+    const commands = []
+
+    step.visualElements.forEach((element, index) => {
+      const name = `elem_${index}`
+      const color = element.color || '#22c55e'
+
+      switch (element.type) {
+        case 'function':
+          // Parse function definition and create GeoGebra command
+          const funcDef = element.definition
+            ?.replace(/\^/g, '^')
+            ?.replace(/\*/g, '*') || 'x^2'
+          commands.push({
+            type: 'function',
+            command: `f_${index}(x) = ${funcDef}`,
+            color,
+            label: element.label
+          })
+          break
+
+        case 'point':
+          commands.push({
+            type: 'point',
+            command: `P_${index} = (${element.x || 0}, ${element.y || 0})`,
+            color,
+            label: element.label || `P${index}`
+          })
+          break
+
+        case 'line':
+          if (element.equation) {
+            commands.push({
+              type: 'line',
+              command: element.equation,
+              color,
+              label: element.label
+            })
+          } else if (element.start && element.end) {
+            commands.push({
+              type: 'segment',
+              command: `Segment((${element.start.x}, ${element.start.y}), (${element.end.x}, ${element.end.y}))`,
+              color,
+              label: element.label
+            })
+          }
+          break
+
+        case 'area':
+          if (element.function && element.from !== undefined && element.to !== undefined) {
+            commands.push({
+              type: 'integral',
+              command: `Integral(${element.function}, ${element.from}, ${element.to})`,
+              color,
+              label: element.label
+            })
+          }
+          break
+
+        case 'text':
+          commands.push({
+            type: 'text',
+            command: `Text("${element.text || ''}", (${element.x || 0}, ${element.y || 0}))`,
+            color
+          })
+          break
+
+        case 'circle':
+          if (element.center && element.radius) {
+            commands.push({
+              type: 'circle',
+              command: `Circle((${element.center.x}, ${element.center.y}), ${element.radius})`,
+              color,
+              label: element.label
+            })
+          }
+          break
+
+        case 'vector':
+        case 'arrow':
+          if (element.start && element.end) {
+            commands.push({
+              type: 'vector',
+              command: `Vector((${element.start.x || 0}, ${element.start.y || 0}), (${element.end.x || 0}, ${element.end.y || 0}))`,
+              color,
+              label: element.label
+            })
+          }
+          break
+      }
+    })
+
+    return commands
+  }
+
+  // Apply visualization step to GeoGebra
+  const applyVisualizationStep = (step) => {
+    if (!geogebraReady || !geogebraAppRef.current) return
+
+    const api = geogebraAppRef.current.getAPI?.()
+    if (!api) return
+
+    // Clear previous objects (keep axes and grid)
+    api.reset()
+    api.setAxesVisible(true, true)
+    api.setGridVisible(true)
+
+    if (!step?.geogebraCommands) return
+
+    // Apply each command
+    step.geogebraCommands.forEach((cmd, index) => {
+      try {
+        const result = api.evalCommand(cmd.command)
+        if (result) {
+          // Set color
+          const objName = api.getObjectName(api.getObjectNumber() - 1)
+          if (objName && cmd.color) {
+            // Convert hex to RGB
+            const hex = cmd.color.replace('#', '')
+            const r = parseInt(hex.substr(0, 2), 16)
+            const g = parseInt(hex.substr(2, 2), 16)
+            const b = parseInt(hex.substr(4, 2), 16)
+            api.setColor(objName, r, g, b)
+
+            // Set line thickness for functions
+            if (cmd.type === 'function' || cmd.type === 'line') {
+              api.setLineThickness(objName, 3)
+            }
+
+            // Set point size
+            if (cmd.type === 'point') {
+              api.setPointSize(objName, 5)
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('GeoGebra command error:', cmd.command, e)
+      }
+    })
+
+    // Auto-zoom to show all objects
+    api.setCoordSystem(-10, 10, -10, 10)
+  }
+
+  // Apply step when current step changes
+  useEffect(() => {
+    if (visualizationSteps.length > 0 && currentStep < visualizationSteps.length) {
+      applyVisualizationStep(visualizationSteps[currentStep])
+    }
+  }, [currentStep, visualizationSteps, geogebraReady])
 
   // Play/pause visualization
   useEffect(() => {
@@ -452,10 +370,27 @@ function InteractiveCanvas({ wrongQuestions = [], userSettings = {}, onOpenConte
         }
         return prev + 1
       })
-    }, 2000) // 2 seconds per step
+    }, 3000) // 3 seconds per step
 
     return () => clearInterval(interval)
   }, [isPlaying, visualizationSteps.length])
+
+  // Background pre-generation for other wrong questions
+  useEffect(() => {
+    if (wrongQuestions.length === 0) return
+
+    // Pre-generate visualization for the first question if not selected
+    const firstQuestion = wrongQuestions[0]
+    if (!selectedQuestion && !visualizationCache[firstQuestion.id] && !isGenerating) {
+      // Delay to not interfere with initial load
+      const timeout = setTimeout(() => {
+        if (!visualizationCache[firstQuestion.id]) {
+          generateVisualization(firstQuestion)
+        }
+      }, 2000)
+      return () => clearTimeout(timeout)
+    }
+  }, [wrongQuestions, selectedQuestion, visualizationCache, isGenerating])
 
   // Navigation
   const prevStep = () => {
@@ -466,6 +401,20 @@ function InteractiveCanvas({ wrongQuestions = [], userSettings = {}, onOpenConte
   const nextStep = () => {
     setCurrentStep(prev => Math.min(visualizationSteps.length - 1, prev + 1))
     setIsPlaying(false)
+  }
+
+  // Clear visualization
+  const clearVisualization = () => {
+    if (geogebraReady && geogebraAppRef.current) {
+      const api = geogebraAppRef.current.getAPI?.()
+      if (api) {
+        api.reset()
+        api.setAxesVisible(true, true)
+        api.setGridVisible(true)
+      }
+    }
+    setVisualizationSteps([])
+    setCurrentStep(0)
   }
 
   // No wrong questions
@@ -525,8 +474,15 @@ function InteractiveCanvas({ wrongQuestions = [], userSettings = {}, onOpenConte
                     <span className="question-text-preview">
                       {q.question?.substring(0, 50)}...
                     </span>
+                    {q.skipped && (
+                      <span className="skipped-badge">Übersprungen</span>
+                    )}
                   </div>
-                  <MagicWand weight="bold" className="visualize-icon" />
+                  {visualizationCache[q.id] ? (
+                    <Cube weight="fill" className="cached-icon" />
+                  ) : (
+                    <MagicWand weight="bold" className="visualize-icon" />
+                  )}
                 </motion.button>
               ))}
             </div>
@@ -544,142 +500,51 @@ function InteractiveCanvas({ wrongQuestions = [], userSettings = {}, onOpenConte
 
       {/* Main canvas area */}
       <div className="canvas-main">
-        {/* Toolbar */}
+        {/* GeoGebra toolbar */}
         <div className="canvas-toolbar">
-          {/* Drawing tools */}
-          <div className="tool-group">
-            <button
-              className={`tool-btn ${currentTool === TOOLS.PEN ? 'active' : ''}`}
-              onClick={() => setCurrentTool(TOOLS.PEN)}
-              title="Stift"
-            >
-              <PencilSimple weight="bold" />
-            </button>
-            <button
-              className={`tool-btn ${currentTool === TOOLS.ERASER ? 'active' : ''}`}
-              onClick={() => setCurrentTool(TOOLS.ERASER)}
-              title="Radierer"
-            >
-              <Eraser weight="bold" />
-            </button>
-            <button
-              className={`tool-btn ${currentTool === TOOLS.LINE ? 'active' : ''}`}
-              onClick={() => setCurrentTool(TOOLS.LINE)}
-              title="Linie"
-            >
-              <LineSegment weight="bold" />
-            </button>
-            <button
-              className={`tool-btn ${currentTool === TOOLS.CIRCLE ? 'active' : ''}`}
-              onClick={() => setCurrentTool(TOOLS.CIRCLE)}
-              title="Kreis"
-            >
-              <Circle weight="bold" />
-            </button>
-            <button
-              className={`tool-btn ${currentTool === TOOLS.RECTANGLE ? 'active' : ''}`}
-              onClick={() => setCurrentTool(TOOLS.RECTANGLE)}
-              title="Rechteck"
-            >
-              <Square weight="bold" />
-            </button>
+          <div className="tool-group geogebra-label">
+            <FunctionIcon weight="bold" />
+            <span>Powered by GeoGebra</span>
           </div>
 
-          {/* Colors */}
-          <div className="tool-group colors">
-            {COLORS.map(color => (
-              <button
-                key={color}
-                className={`color-btn ${currentColor === color ? 'active' : ''}`}
-                style={{ backgroundColor: color }}
-                onClick={() => setCurrentColor(color)}
-              />
-            ))}
-          </div>
-
-          {/* Stroke width */}
-          <div className="tool-group strokes">
-            {STROKE_WIDTHS.map(width => (
-              <button
-                key={width}
-                className={`stroke-btn ${strokeWidth === width ? 'active' : ''}`}
-                onClick={() => setStrokeWidth(width)}
-              >
-                <div className="stroke-preview" style={{ width: width * 2, height: width * 2 }} />
-              </button>
-            ))}
-          </div>
-
-          {/* Undo/Redo */}
           <div className="tool-group">
             <button
               className="tool-btn"
-              onClick={handleUndo}
-              disabled={undoStack.length === 0}
-              title="Rückgängig"
-            >
-              <ArrowCounterClockwise weight="bold" />
-            </button>
-            <button
-              className="tool-btn"
-              onClick={handleRedo}
-              disabled={redoStack.length === 0}
-              title="Wiederherstellen"
-            >
-              <ArrowClockwise weight="bold" />
-            </button>
-            <button
-              className="tool-btn danger"
-              onClick={handleClear}
-              title="Alles löschen"
+              onClick={clearVisualization}
+              title="Visualisierung zurücksetzen"
             >
               <Trash weight="bold" />
             </button>
+            <button
+              className="tool-btn"
+              onClick={() => {
+                const api = geogebraAppRef.current?.getAPI?.()
+                if (api) api.setCoordSystem(-10, 10, -10, 10)
+              }}
+              title="Ansicht zurücksetzen"
+            >
+              <ArrowsOutCardinal weight="bold" />
+            </button>
           </div>
-
-          {/* Visualization toggle */}
-          {visualizationSteps.length > 0 && (
-            <div className="tool-group">
-              <button
-                className={`tool-btn ${showVisualization ? 'active' : ''}`}
-                onClick={() => setShowVisualization(!showVisualization)}
-                title={showVisualization ? 'Visualisierung ausblenden' : 'Visualisierung einblenden'}
-              >
-                {showVisualization ? <Eye weight="bold" /> : <EyeSlash weight="bold" />}
-              </button>
-            </div>
-          )}
         </div>
 
-        {/* Canvas */}
-        <div className="canvas-container">
-          <canvas
-            ref={canvasRef}
-            onMouseDown={startDrawing}
-            onMouseMove={draw}
-            onMouseUp={stopDrawing}
-            onMouseLeave={stopDrawing}
-            onTouchStart={(e) => {
-              e.preventDefault()
-              const touch = e.touches[0]
-              startDrawing({ clientX: touch.clientX, clientY: touch.clientY })
-            }}
-            onTouchMove={(e) => {
-              e.preventDefault()
-              const touch = e.touches[0]
-              draw({ clientX: touch.clientX, clientY: touch.clientY })
-            }}
-            onTouchEnd={stopDrawing}
-          />
-
-          {/* Loading overlay */}
-          {isGenerating && (
-            <div className="canvas-loading">
+        {/* GeoGebra Container */}
+        <div className="geogebra-container" ref={geogebraContainerRef}>
+          {geogebraLoading && (
+            <div className="geogebra-loading">
               <div className="loading-spinner" />
-              <p>Generiere Visualisierung...</p>
+              <p>GeoGebra wird geladen...</p>
             </div>
           )}
         </div>
+
+        {/* Loading overlay for visualization generation */}
+        {isGenerating && (
+          <div className="canvas-loading">
+            <div className="loading-spinner" />
+            <p>Generiere Visualisierung...</p>
+          </div>
+        )}
 
         {/* Visualization controls */}
         {visualizationSteps.length > 0 && (
@@ -718,7 +583,7 @@ function InteractiveCanvas({ wrongQuestions = [], userSettings = {}, onOpenConte
           </div>
         )}
 
-        {/* Question detail panel */}
+        {/* Question detail panel when no visualization */}
         {selectedQuestion && !visualizationSteps.length && !isGenerating && (
           <div className="question-detail">
             <h4>Ausgewählte Aufgabe</h4>
@@ -731,6 +596,14 @@ function InteractiveCanvas({ wrongQuestions = [], userSettings = {}, onOpenConte
                 <LaTeX>{selectedQuestion.solution}</LaTeX>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Empty state when no question selected */}
+        {!selectedQuestion && !isGenerating && (
+          <div className="canvas-hint">
+            <MagicWand weight="duotone" size={48} />
+            <p>Wähle eine Aufgabe aus der Liste, um eine Visualisierung zu generieren</p>
           </div>
         )}
       </div>

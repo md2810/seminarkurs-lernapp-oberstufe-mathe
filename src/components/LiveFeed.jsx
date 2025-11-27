@@ -1,6 +1,6 @@
 /**
  * LiveFeed Component
- * Real-time question feed with adaptive difficulty and buffer system
+ * Real-time question feed with adaptive difficulty, caching, and buffer system
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react'
@@ -20,15 +20,11 @@ import {
   Target,
   Sparkle,
   Warning,
-  BookOpen
+  BookOpen,
+  Question,
+  SkipForward
 } from '@phosphor-icons/react'
 import './LiveFeed.css'
-
-// Import CSS variable helper (for getting primary-rgb)
-const getPrimaryRGB = () => {
-  // Default orange RGB
-  return '249, 115, 22'
-}
 
 // Difficulty labels for display
 const DIFFICULTY_LABELS = {
@@ -46,77 +42,78 @@ const DIFFICULTY_LABELS = {
 
 const BUFFER_SIZE = 5
 const WRONG_ANSWERS_TO_ADJUST = 3
+const BACKGROUND_REFILL_THRESHOLD = 3
 
 function LiveFeed({ topics = [], userSettings = {}, onOpenContext }) {
   const { currentUser } = useAuth()
-  const { aiProvider, apiKeys, addWrongQuestion, selectedModels } = useAppStore()
+  const {
+    aiProvider,
+    apiKeys,
+    selectedModels,
+    addWrongQuestion,
+    questionCache,
+    setQuestionCache,
+    addQuestionsToCache,
+    clearQuestionCache,
+    recordCorrectAnswer,
+    recordWrongAnswer,
+    recordSkippedQuestion,
+    getUserStats,
+    isBackgroundGenerating,
+    setBackgroundGenerating
+  } = useAppStore()
 
-  // Question state
-  const [questionBuffer, setQuestionBuffer] = useState([])
-  const [currentQuestion, setCurrentQuestion] = useState(null)
-  const [pendingQuestions, setPendingQuestions] = useState([]) // Questions waiting after buffer depletes
-
-  // Answer state
+  // Local state for UI
   const [selectedAnswer, setSelectedAnswer] = useState(null)
   const [stepAnswers, setStepAnswers] = useState({})
   const [showResult, setShowResult] = useState(false)
   const [isCorrect, setIsCorrect] = useState(false)
   const [feedback, setFeedback] = useState(null)
-
-  // Hints
   const [hintsUsed, setHintsUsed] = useState([])
   const [showHints, setShowHints] = useState(false)
-
-  // Difficulty tracking
-  const [difficultyLevel, setDifficultyLevel] = useState(5)
-  const [consecutiveWrong, setConsecutiveWrong] = useState(0)
-  const [consecutiveCorrect, setConsecutiveCorrect] = useState(0)
-
-  // Session stats
-  const [sessionStats, setSessionStats] = useState({
-    totalAnswered: 0,
-    correct: 0,
-    xpEarned: 0,
-    streak: 0
-  })
-
-  // Loading states
-  const [isGenerating, setIsGenerating] = useState(false)
   const [isEvaluating, setIsEvaluating] = useState(false)
-
-  // Particles
   const [showParticles, setShowParticles] = useState(false)
+  const [xpGained, setXpGained] = useState(0)
+  const [showXpPopup, setShowXpPopup] = useState(false)
 
-  // Ref for tracking if initial load happened
+  // Get user stats
+  const userStats = getUserStats()
+
+  // Refs
   const initialLoadRef = useRef(false)
+  const backgroundGenerationRef = useRef(false)
+
+  // Compute topics hash for cache invalidation
+  const topicsHash = JSON.stringify(topics.map(t => `${t.thema}-${t.unterthema}`).sort())
+
+  // Get current question from cache
+  const currentQuestion = questionCache.questions[questionCache.currentIndex] || null
+  const remainingQuestions = questionCache.questions.length - questionCache.currentIndex + questionCache.pendingQuestions.length
 
   // Get API key for current provider
   const getApiKey = useCallback(() => {
-    // First check the store
     if (apiKeys[aiProvider]) return apiKeys[aiProvider]
-
-    // Fallback to userSettings
     switch (aiProvider) {
-      case 'claude':
-        return userSettings.anthropicApiKey
-      case 'gemini':
-        return userSettings.geminiApiKey
-      case 'openai':
-        return userSettings.openaiApiKey
-      default:
-        return userSettings.anthropicApiKey
+      case 'claude': return userSettings.anthropicApiKey
+      case 'gemini': return userSettings.geminiApiKey
+      case 'openai': return userSettings.openaiApiKey
+      default: return userSettings.anthropicApiKey
     }
   }, [aiProvider, apiKeys, userSettings])
 
   // Generate questions from API
-  const generateQuestions = useCallback(async (count = BUFFER_SIZE, adjustedDifficulty = null) => {
+  const generateQuestions = useCallback(async (count = BUFFER_SIZE, adjustedDifficulty = null, isBackground = false) => {
     const apiKey = getApiKey()
     if (!apiKey || topics.length === 0) return []
 
-    // Get the selected model for the current provider
     const model = selectedModels[aiProvider] || userSettings.selectedModel
 
-    setIsGenerating(true)
+    if (!isBackground) {
+      setQuestionCache({ isGenerating: true })
+    } else {
+      setBackgroundGenerating(true)
+    }
+
     try {
       const response = await fetch('/api/generate-adaptive-questions', {
         method: 'POST',
@@ -127,7 +124,7 @@ function LiveFeed({ topics = [], userSettings = {}, onOpenContext }) {
           model,
           userId: currentUser?.uid,
           topics,
-          difficultyLevel: adjustedDifficulty ?? difficultyLevel,
+          difficultyLevel: adjustedDifficulty ?? questionCache.difficultyLevel,
           questionCount: count,
           userContext: {
             gradeLevel: userSettings.gradeLevel || 'Klasse_11',
@@ -145,89 +142,61 @@ function LiveFeed({ topics = [], userSettings = {}, onOpenContext }) {
       console.error('Error generating questions:', error)
       return []
     } finally {
-      setIsGenerating(false)
+      if (!isBackground) {
+        setQuestionCache({ isGenerating: false })
+      } else {
+        setBackgroundGenerating(false)
+      }
     }
-  }, [aiProvider, getApiKey, topics, difficultyLevel, userSettings, currentUser, selectedModels])
+  }, [aiProvider, getApiKey, topics, questionCache.difficultyLevel, userSettings, currentUser, selectedModels, setQuestionCache, setBackgroundGenerating])
 
-  // Initialize buffer when topics change
+  // Initialize cache when topics change
   useEffect(() => {
-    if (topics.length > 0 && !initialLoadRef.current) {
-      initialLoadRef.current = true
-      initializeBuffer()
-    }
-  }, [topics])
+    if (topics.length === 0) return
 
-  // Reset when topics change
-  useEffect(() => {
-    if (topics.length > 0) {
+    // Check if topics changed
+    if (topicsHash !== questionCache.lastTopicsHash) {
+      clearQuestionCache()
+      setQuestionCache({ lastTopicsHash: topicsHash })
       initialLoadRef.current = false
-      setQuestionBuffer([])
-      setCurrentQuestion(null)
-      setPendingQuestions([])
-      setDifficultyLevel(5)
-      setConsecutiveWrong(0)
-      setConsecutiveCorrect(0)
-      setSessionStats({ totalAnswered: 0, correct: 0, xpEarned: 0, streak: 0 })
     }
-  }, [JSON.stringify(topics)])
 
-  const initializeBuffer = async () => {
-    const questions = await generateQuestions(BUFFER_SIZE)
-    if (questions.length > 0) {
-      setCurrentQuestion(questions[0])
-      setQuestionBuffer(questions.slice(1))
+    // Initial load
+    if (!initialLoadRef.current && questionCache.questions.length === 0) {
+      initialLoadRef.current = true
+      const loadInitialQuestions = async () => {
+        const questions = await generateQuestions(BUFFER_SIZE)
+        if (questions.length > 0) {
+          addQuestionsToCache(questions)
+        }
+      }
+      loadInitialQuestions()
     }
-  }
+  }, [topics, topicsHash, questionCache.lastTopicsHash, questionCache.questions.length, clearQuestionCache, setQuestionCache, generateQuestions, addQuestionsToCache])
 
-  // Refill buffer when it gets low (but not during wrong answer sequence)
+  // Background refill when buffer gets low
   useEffect(() => {
     if (
-      questionBuffer.length < 2 &&
-      !isGenerating &&
+      remainingQuestions <= BACKGROUND_REFILL_THRESHOLD &&
+      !questionCache.isGenerating &&
+      !isBackgroundGenerating &&
+      !backgroundGenerationRef.current &&
       topics.length > 0 &&
-      consecutiveWrong < WRONG_ANSWERS_TO_ADJUST &&
-      pendingQuestions.length === 0
+      questionCache.consecutiveWrong < WRONG_ANSWERS_TO_ADJUST
     ) {
-      const refillBuffer = async () => {
-        const newQuestions = await generateQuestions(BUFFER_SIZE - questionBuffer.length)
-        setQuestionBuffer(prev => [...prev, ...newQuestions])
+      backgroundGenerationRef.current = true
+
+      const refillInBackground = async () => {
+        const newQuestions = await generateQuestions(BUFFER_SIZE, null, true)
+        if (newQuestions.length > 0) {
+          addQuestionsToCache(newQuestions)
+        }
+        backgroundGenerationRef.current = false
       }
-      refillBuffer()
+
+      refillInBackground()
     }
-  }, [questionBuffer.length, isGenerating, topics, consecutiveWrong, pendingQuestions.length])
-
-  // Evaluate answer using AI
-  const evaluateAnswer = async (answer) => {
-    const apiKey = getApiKey()
-    if (!apiKey || !currentQuestion) return null
-
-    setIsEvaluating(true)
-    try {
-      const response = await fetch('/api/evaluate-answer', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          apiKey,
-          userId: currentUser?.uid,
-          questionId: currentQuestion.id,
-          questionData: currentQuestion,
-          userAnswer: answer,
-          hintsUsed: hintsUsed.length,
-          timeSpent: 0,
-          skipped: false,
-          correctStreak: sessionStats.streak
-        })
-      })
-
-      const data = await response.json()
-      return data.success ? data : null
-    } catch (error) {
-      console.error('Error evaluating answer:', error)
-      return null
-    } finally {
-      setIsEvaluating(false)
-    }
-  }
+  }, [remainingQuestions, questionCache.isGenerating, isBackgroundGenerating, topics, questionCache.consecutiveWrong, generateQuestions, addQuestionsToCache])
 
   // Handle answer submission
   const handleSubmitAnswer = async () => {
@@ -245,41 +214,47 @@ function LiveFeed({ topics = [], userSettings = {}, onOpenContext }) {
       correct = correctOption?.id === answer
     }
 
-    // Also evaluate with AI for detailed feedback
-    const evaluation = await evaluateAnswer(answer)
-    if (evaluation) {
-      correct = evaluation.isCorrect
-      setFeedback(evaluation.feedback)
-    }
-
     setIsCorrect(correct)
     setShowResult(true)
 
     if (correct) {
       // Correct answer
       setShowParticles(true)
-      setConsecutiveCorrect(prev => prev + 1)
-      setConsecutiveWrong(0)
+      const newConsecutiveCorrect = questionCache.consecutiveCorrect + 1
+      setQuestionCache({
+        consecutiveCorrect: newConsecutiveCorrect,
+        consecutiveWrong: 0
+      })
+
+      // Calculate XP with streak bonus
+      const difficulty = currentQuestion.difficulty || questionCache.difficultyLevel
+      const streakBonus = userStats.streak >= 5 ? 5 : userStats.streak >= 3 ? 3 : 0
+      const earnedXp = Math.max(5, 10 + difficulty * 2 - hintsUsed.length * 5) + streakBonus
+
+      setXpGained(earnedXp)
+      setShowXpPopup(true)
+      setTimeout(() => setShowXpPopup(false), 2000)
+
+      // Record in global stats
+      recordCorrectAnswer(difficulty, hintsUsed.length, streakBonus)
 
       // Increase difficulty after 3 correct in a row
-      if (consecutiveCorrect >= 2 && difficultyLevel < 10) {
-        setDifficultyLevel(prev => Math.min(10, prev + 1))
-        setConsecutiveCorrect(0)
+      if (newConsecutiveCorrect >= 3 && questionCache.difficultyLevel < 10) {
+        setQuestionCache({
+          difficultyLevel: Math.min(10, questionCache.difficultyLevel + 1),
+          consecutiveCorrect: 0
+        })
       }
-
-      // Update stats
-      const xp = evaluation?.xpEarned || (10 + difficultyLevel * 2)
-      setSessionStats(prev => ({
-        totalAnswered: prev.totalAnswered + 1,
-        correct: prev.correct + 1,
-        xpEarned: prev.xpEarned + xp,
-        streak: prev.streak + 1
-      }))
     } else {
       // Wrong answer
-      const newConsecutiveWrong = consecutiveWrong + 1
-      setConsecutiveWrong(newConsecutiveWrong)
-      setConsecutiveCorrect(0)
+      const newConsecutiveWrong = questionCache.consecutiveWrong + 1
+      setQuestionCache({
+        consecutiveWrong: newConsecutiveWrong,
+        consecutiveCorrect: 0
+      })
+
+      // Record in global stats
+      recordWrongAnswer()
 
       // Add to wrong questions for Canvas visualization
       addWrongQuestion({
@@ -288,23 +263,38 @@ function LiveFeed({ topics = [], userSettings = {}, onOpenContext }) {
         userAnswer: answer
       })
 
-      setSessionStats(prev => ({
-        ...prev,
-        totalAnswered: prev.totalAnswered + 1,
-        streak: 0
-      }))
-
       // After 3 wrong answers, adjust difficulty and queue new questions
       if (newConsecutiveWrong >= WRONG_ANSWERS_TO_ADJUST) {
-        const newDifficulty = Math.max(1, difficultyLevel - 2)
-        setDifficultyLevel(newDifficulty)
-        setConsecutiveWrong(0)
+        const newDifficulty = Math.max(1, questionCache.difficultyLevel - 2)
+        setQuestionCache({
+          difficultyLevel: newDifficulty,
+          consecutiveWrong: 0
+        })
 
         // Generate easier questions and add to pending
         const easierQuestions = await generateQuestions(5, newDifficulty)
-        setPendingQuestions(easierQuestions)
+        setQuestionCache({
+          pendingQuestions: easierQuestions
+        })
       }
     }
+  }
+
+  // Handle skip / "Keine Ahnung"
+  const handleSkipQuestion = () => {
+    // Add to wrong questions for review (without penalty to streak)
+    addWrongQuestion({
+      ...currentQuestion,
+      answeredAt: new Date().toISOString(),
+      userAnswer: null,
+      skipped: true
+    })
+
+    // Record skipped question
+    recordSkippedQuestion()
+
+    // Move to next question
+    handleNextQuestion()
   }
 
   // Move to next question
@@ -318,16 +308,22 @@ function LiveFeed({ topics = [], userSettings = {}, onOpenContext }) {
     setShowParticles(false)
 
     // Check if we have pending easier questions
-    if (pendingQuestions.length > 0) {
-      setCurrentQuestion(pendingQuestions[0])
-      setPendingQuestions(prev => prev.slice(1))
-    } else if (questionBuffer.length > 0) {
-      setCurrentQuestion(questionBuffer[0])
-      setQuestionBuffer(prev => prev.slice(1))
+    if (questionCache.pendingQuestions.length > 0) {
+      const [nextQuestion, ...rest] = questionCache.pendingQuestions
+      // Insert pending question at current position
+      setQuestionCache({
+        questions: [
+          ...questionCache.questions.slice(0, questionCache.currentIndex),
+          nextQuestion,
+          ...questionCache.questions.slice(questionCache.currentIndex)
+        ],
+        pendingQuestions: rest
+      })
     } else {
-      // Buffer empty, show loading state
-      setCurrentQuestion(null)
-      initializeBuffer()
+      // Move to next question in cache
+      setQuestionCache({
+        currentIndex: questionCache.currentIndex + 1
+      })
     }
   }
 
@@ -362,7 +358,7 @@ function LiveFeed({ topics = [], userSettings = {}, onOpenContext }) {
   }
 
   // Loading initial questions
-  if (!currentQuestion && isGenerating) {
+  if (!currentQuestion && questionCache.isGenerating) {
     return (
       <div className="live-feed">
         <div className="live-feed-loading">
@@ -391,32 +387,43 @@ function LiveFeed({ topics = [], userSettings = {}, onOpenContext }) {
       <div className="feed-header">
         <div className="difficulty-indicator">
           <Target weight="bold" />
-          <span className="difficulty-value">{difficultyLevel}/10</span>
-          <span className="difficulty-label">{DIFFICULTY_LABELS[difficultyLevel]}</span>
+          <span className="difficulty-value">{questionCache.difficultyLevel}/10</span>
+          <span className="difficulty-label">{DIFFICULTY_LABELS[questionCache.difficultyLevel]}</span>
         </div>
 
         <div className="session-stats">
           <div className="stat">
             <Trophy weight="bold" />
-            <span>{sessionStats.xpEarned} XP</span>
+            <span>{userStats.totalXp} XP</span>
           </div>
           <div className="stat">
             <Fire weight="bold" />
-            <span>{sessionStats.streak}</span>
+            <span>{userStats.streak}</span>
           </div>
           <div className="stat accuracy">
             <Brain weight="bold" />
-            <span>
-              {sessionStats.totalAnswered > 0
-                ? Math.round((sessionStats.correct / sessionStats.totalAnswered) * 100)
-                : 0}%
-            </span>
+            <span>{userStats.accuracy}%</span>
           </div>
         </div>
       </div>
 
+      {/* XP Popup */}
+      <AnimatePresence>
+        {showXpPopup && (
+          <motion.div
+            className="xp-popup"
+            initial={{ opacity: 0, y: 20, scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.8 }}
+          >
+            <Trophy weight="bold" />
+            +{xpGained} XP
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Wrong answer warning */}
-      {consecutiveWrong > 0 && consecutiveWrong < WRONG_ANSWERS_TO_ADJUST && (
+      {questionCache.consecutiveWrong > 0 && questionCache.consecutiveWrong < WRONG_ANSWERS_TO_ADJUST && (
         <motion.div
           className="wrong-warning"
           initial={{ opacity: 0, y: -10 }}
@@ -424,7 +431,7 @@ function LiveFeed({ topics = [], userSettings = {}, onOpenContext }) {
         >
           <Warning weight="bold" />
           <span>
-            {WRONG_ANSWERS_TO_ADJUST - consecutiveWrong} weitere falsche Antworten senken das Niveau
+            {WRONG_ANSWERS_TO_ADJUST - questionCache.consecutiveWrong} weitere falsche Antworten senken das Niveau
           </span>
         </motion.div>
       )}
@@ -599,19 +606,31 @@ function LiveFeed({ topics = [], userSettings = {}, onOpenContext }) {
           {/* Action Buttons */}
           <div className="question-actions">
             {!showResult ? (
-              <motion.button
-                className="btn-primary btn-submit"
-                onClick={handleSubmitAnswer}
-                disabled={
-                  isEvaluating ||
-                  (currentQuestion.type === 'multiple-choice' && !selectedAnswer) ||
-                  (currentQuestion.type === 'step-by-step' && Object.keys(stepAnswers).length === 0)
-                }
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                {isEvaluating ? 'Prüfe...' : 'Antworten'}
-              </motion.button>
+              <>
+                <motion.button
+                  className="btn-secondary btn-skip"
+                  onClick={handleSkipQuestion}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  title="Frage überspringen"
+                >
+                  <Question weight="bold" />
+                  Keine Ahnung
+                </motion.button>
+                <motion.button
+                  className="btn-primary btn-submit"
+                  onClick={handleSubmitAnswer}
+                  disabled={
+                    isEvaluating ||
+                    (currentQuestion.type === 'multiple-choice' && !selectedAnswer) ||
+                    (currentQuestion.type === 'step-by-step' && Object.keys(stepAnswers).length === 0)
+                  }
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {isEvaluating ? 'Prüfe...' : 'Antworten'}
+                </motion.button>
+              </>
             ) : (
               <motion.button
                 className="btn-primary btn-next"
@@ -629,8 +648,10 @@ function LiveFeed({ topics = [], userSettings = {}, onOpenContext }) {
 
       {/* Buffer indicator */}
       <div className="buffer-indicator">
-        <span>{questionBuffer.length + pendingQuestions.length} Fragen geladen</span>
-        {isGenerating && <span className="generating-badge">Generiere...</span>}
+        <span>{remainingQuestions} Fragen geladen</span>
+        {(questionCache.isGenerating || isBackgroundGenerating) && (
+          <span className="generating-badge">Generiere...</span>
+        )}
       </div>
 
       {/* Particle explosion */}

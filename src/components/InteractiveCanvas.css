@@ -157,6 +157,23 @@
   opacity: 1;
 }
 
+.cached-icon {
+  color: #22c55e;
+  flex-shrink: 0;
+}
+
+.skipped-badge {
+  display: inline-block;
+  margin-top: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  background: rgba(100, 116, 139, 0.2);
+  border-radius: 9999px;
+  font-size: 0.625rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
 /* Sidebar Toggle */
 .sidebar-toggle {
   position: absolute;
@@ -312,7 +329,90 @@
   border-radius: 50%;
 }
 
-/* Canvas Container */
+/* GeoGebra Label */
+.geogebra-label {
+  gap: 0.5rem !important;
+  padding: 0.5rem 1rem !important;
+  background: rgba(34, 197, 94, 0.1) !important;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.geogebra-label svg {
+  color: #22c55e;
+}
+
+.geogebra-label span {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #22c55e;
+  letter-spacing: 0.02em;
+}
+
+/* GeoGebra Container */
+.geogebra-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: #1a1a1f;
+  min-height: 400px;
+}
+
+.geogebra-container > div {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.geogebra-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(26, 26, 31, 0.95);
+  gap: 1rem;
+  z-index: 5;
+}
+
+.geogebra-loading .loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #22c55e;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.geogebra-loading p {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.875rem;
+}
+
+/* Canvas Hint */
+.canvas-hint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  background: rgba(26, 26, 31, 0.7);
+  pointer-events: none;
+}
+
+.canvas-hint svg {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+.canvas-hint p {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.9375rem;
+  text-align: center;
+  max-width: 300px;
+}
+
+/* Legacy Canvas Container - for backward compatibility */
 .canvas-container {
   flex: 1;
   position: relative;
