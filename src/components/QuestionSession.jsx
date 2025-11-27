@@ -10,7 +10,13 @@ import {
   Question,
   Trophy,
   Fire,
-  Eye
+  Eye,
+  Share,
+  Snowflake,
+  Swords,
+  Copy,
+  Check as CheckIcon,
+  Users
 } from '@phosphor-icons/react'
 import { useAuth } from '../contexts/AuthContext'
 import LaTeX from './LaTeX'
@@ -27,7 +33,13 @@ import {
   getUserStats,
   scheduleQuestionReview,
   updateTopicProgress,
-  getTopicProgress
+  getTopicProgress,
+  // Phase 4: Social Gamification
+  createShareableSession,
+  checkStreakStatus,
+  useStreakFreeze,
+  getUserInventory,
+  awardStreakFreeze
 } from '../firebase/firestore'
 
 function QuestionSession({ sessionId, onClose }) {
@@ -58,9 +70,79 @@ function QuestionSession({ sessionId, onClose }) {
   const [showLevelUp, setShowLevelUp] = useState(false)
   const [levelUpData, setLevelUpData] = useState(null)
 
+  // Phase 4: Social Gamification State
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [shareLink, setShareLink] = useState('')
+  const [shareCopied, setShareCopied] = useState(false)
+  const [showStreakWarning, setShowStreakWarning] = useState(false)
+  const [streakStatus, setStreakStatus] = useState(null)
+  const [inventory, setInventory] = useState(null)
+  const [usingStreakFreeze, setUsingStreakFreeze] = useState(false)
+
   useEffect(() => {
     loadQuestions()
+    checkUserStreakStatus()
   }, [sessionId])
+
+  // Check if user's streak is at risk
+  const checkUserStreakStatus = async () => {
+    try {
+      const status = await checkStreakStatus(currentUser.uid)
+      setStreakStatus(status)
+
+      if (status.atRisk) {
+        const inv = await getUserInventory(currentUser.uid)
+        setInventory(inv)
+        setShowStreakWarning(true)
+      }
+    } catch (error) {
+      console.error('Error checking streak status:', error)
+    }
+  }
+
+  // Handle streak freeze usage
+  const handleUseStreakFreeze = async () => {
+    setUsingStreakFreeze(true)
+    try {
+      const result = await useStreakFreeze(currentUser.uid)
+      if (result.success) {
+        setShowStreakWarning(false)
+        // Show success notification
+        alert(result.message)
+      } else {
+        alert(result.message)
+      }
+    } catch (error) {
+      console.error('Error using streak freeze:', error)
+      alert('Fehler beim Verwenden des Streak Freeze')
+    } finally {
+      setUsingStreakFreeze(false)
+    }
+  }
+
+  // Handle session sharing
+  const handleShareSession = async () => {
+    try {
+      const shareId = await createShareableSession(currentUser.uid, sessionId)
+      const shareUrl = `${window.location.origin}/share/${shareId}`
+      setShareLink(shareUrl)
+      setShowShareModal(true)
+    } catch (error) {
+      console.error('Error creating shareable session:', error)
+      alert('Fehler beim Erstellen des Share-Links')
+    }
+  }
+
+  // Copy share link to clipboard
+  const handleCopyShareLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareLink)
+      setShareCopied(true)
+      setTimeout(() => setShareCopied(false), 2000)
+    } catch (error) {
+      console.error('Error copying to clipboard:', error)
+    }
+  }
 
   const loadQuestions = async () => {
     try {
@@ -444,9 +526,18 @@ function QuestionSession({ sessionId, onClose }) {
             <Fire weight="bold" /> {sessionStats.correct}/{sessionStats.completed}
           </span>
         </div>
-        <button className="close-btn" onClick={onClose}>
-          <X weight="bold" />
-        </button>
+        <div className="header-actions">
+          <button
+            className="share-btn"
+            onClick={handleShareSession}
+            title="Session teilen"
+          >
+            <Share weight="bold" />
+          </button>
+          <button className="close-btn" onClick={onClose}>
+            <X weight="bold" />
+          </button>
+        </div>
       </div>
 
       {/* Question Content */}
@@ -707,6 +798,120 @@ function QuestionSession({ sessionId, onClose }) {
                 Weiter geht's! 🚀
               </button>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Share Session Modal */}
+      <AnimatePresence>
+        {showShareModal && (
+          <motion.div
+            className="share-modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowShareModal(false)}
+          >
+            <motion.div
+              className="share-modal"
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="share-modal-header">
+                <Share weight="bold" size={24} />
+                <h3>Session teilen</h3>
+                <button className="close-btn" onClick={() => setShowShareModal(false)}>
+                  <X weight="bold" />
+                </button>
+              </div>
+              <div className="share-modal-content">
+                <p>Teile diese Session mit Freunden, damit sie die gleichen Fragen lösen können!</p>
+                <div className="share-link-container">
+                  <input
+                    type="text"
+                    value={shareLink}
+                    readOnly
+                    className="share-link-input"
+                  />
+                  <button
+                    className={`copy-btn ${shareCopied ? 'copied' : ''}`}
+                    onClick={handleCopyShareLink}
+                  >
+                    {shareCopied ? (
+                      <>
+                        <CheckIcon weight="bold" /> Kopiert!
+                      </>
+                    ) : (
+                      <>
+                        <Copy weight="bold" /> Kopieren
+                      </>
+                    )}
+                  </button>
+                </div>
+                <div className="share-info">
+                  <Users weight="bold" />
+                  <span>Link ist 30 Tage gültig</span>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Streak Warning Modal */}
+      <AnimatePresence>
+        {showStreakWarning && streakStatus?.atRisk && (
+          <motion.div
+            className="streak-warning-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="streak-warning-modal"
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            >
+              <div className="streak-warning-icon">
+                <Fire weight="fill" size={48} />
+              </div>
+              <h3>Dein Streak ist in Gefahr!</h3>
+              <p className="streak-warning-text">
+                Du hast {streakStatus.daysMissed} Tag(e) verpasst. Dein {streakStatus.currentStreak}-Tage-Streak
+                wird zurückgesetzt, wenn du keinen Streak Freeze verwendest.
+              </p>
+
+              {streakStatus.canUseFreeze ? (
+                <div className="streak-freeze-option">
+                  <div className="freeze-info">
+                    <Snowflake weight="bold" size={24} />
+                    <span>{inventory?.streakFreezes || 0} Streak Freeze(s) verfügbar</span>
+                  </div>
+                  <button
+                    className="btn btn-primary freeze-btn"
+                    onClick={handleUseStreakFreeze}
+                    disabled={usingStreakFreeze}
+                  >
+                    <Snowflake weight="bold" />
+                    {usingStreakFreeze ? 'Wird verwendet...' : 'Streak Freeze verwenden'}
+                  </button>
+                </div>
+              ) : (
+                <div className="no-freeze-warning">
+                  <p>Du hast keine Streak Freezes. Verdiene dir welche durch Challenges!</p>
+                </div>
+              )}
+
+              <button
+                className="btn btn-secondary"
+                onClick={() => setShowStreakWarning(false)}
+              >
+                {streakStatus.canUseFreeze ? 'Ohne Freeze fortfahren' : 'Verstanden'}
+              </button>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

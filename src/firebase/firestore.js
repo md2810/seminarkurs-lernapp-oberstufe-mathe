@@ -1028,3 +1028,711 @@ export async function getInitialKnowledge(userId, planItemId) {
     throw error
   }
 }
+
+// ============================================================================
+// PHASE 4: SOCIAL GAMIFICATION
+// ============================================================================
+
+// ==================== ASYNC CHALLENGES ====================
+
+/**
+ * Create a challenge to send to another user
+ * @param {string} challengerId - User creating the challenge
+ * @param {Object} challengeData - { challengeeId, topics, questionCount, timeLimit, message }
+ */
+export async function createChallenge(challengerId, challengeData) {
+  try {
+    const challengeId = `challenge_${Date.now()}_${challengerId.substring(0, 8)}`
+    const seed = Math.random().toString(36).substring(2, 15)
+
+    const challenge = {
+      challengeId,
+      challengerId,
+      challengeeId: challengeData.challengeeId,
+      topics: challengeData.topics,
+      questionCount: challengeData.questionCount || 5,
+      timeLimit: challengeData.timeLimit || null, // in seconds, null = no limit
+      seed, // Used to generate identical questions for both users
+      message: challengeData.message || null,
+      status: 'pending', // pending, accepted, declined, completed, expired
+      createdAt: serverTimestamp(),
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
+      challengerResult: null,
+      challengeeResult: null,
+      winnerId: null
+    }
+
+    // Store in global challenges collection
+    const challengeRef = doc(db, 'challenges', challengeId)
+    await setDoc(challengeRef, challenge)
+
+    // Add reference to challenger's sent challenges
+    const sentRef = doc(db, 'users', challengerId, 'sentChallenges', challengeId)
+    await setDoc(sentRef, {
+      challengeId,
+      challengeeId: challengeData.challengeeId,
+      status: 'pending',
+      createdAt: serverTimestamp()
+    })
+
+    // Add reference to challengee's received challenges
+    const receivedRef = doc(db, 'users', challengeData.challengeeId, 'receivedChallenges', challengeId)
+    await setDoc(receivedRef, {
+      challengeId,
+      challengerId,
+      status: 'pending',
+      createdAt: serverTimestamp()
+    })
+
+    console.log('Challenge created:', challengeId)
+    return challengeId
+  } catch (error) {
+    console.error('Error creating challenge:', error)
+    throw error
+  }
+}
+
+/**
+ * Accept or decline a challenge
+ * @param {string} challengeId
+ * @param {string} userId - The challengee
+ * @param {boolean} accept
+ */
+export async function respondToChallenge(challengeId, userId, accept) {
+  try {
+    const challengeRef = doc(db, 'challenges', challengeId)
+    const newStatus = accept ? 'accepted' : 'declined'
+
+    await updateDoc(challengeRef, {
+      status: newStatus,
+      respondedAt: serverTimestamp()
+    })
+
+    // Update user's received challenge reference
+    const receivedRef = doc(db, 'users', userId, 'receivedChallenges', challengeId)
+    await updateDoc(receivedRef, {
+      status: newStatus
+    })
+
+    // Update challenger's sent challenge reference
+    const challengeSnap = await getDoc(challengeRef)
+    if (challengeSnap.exists()) {
+      const challengerId = challengeSnap.data().challengerId
+      const sentRef = doc(db, 'users', challengerId, 'sentChallenges', challengeId)
+      await updateDoc(sentRef, {
+        status: newStatus
+      })
+    }
+
+    console.log(`Challenge ${challengeId} ${newStatus}`)
+    return newStatus
+  } catch (error) {
+    console.error('Error responding to challenge:', error)
+    throw error
+  }
+}
+
+/**
+ * Submit challenge result
+ * @param {string} challengeId
+ * @param {string} userId
+ * @param {Object} result - { score, correctAnswers, totalQuestions, timeSpent }
+ */
+export async function submitChallengeResult(challengeId, userId, result) {
+  try {
+    const challengeRef = doc(db, 'challenges', challengeId)
+    const challengeSnap = await getDoc(challengeRef)
+
+    if (!challengeSnap.exists()) {
+      throw new Error('Challenge not found')
+    }
+
+    const challenge = challengeSnap.data()
+    const isChallenger = challenge.challengerId === userId
+    const resultField = isChallenger ? 'challengerResult' : 'challengeeResult'
+
+    const updateData = {
+      [resultField]: {
+        ...result,
+        submittedAt: serverTimestamp()
+      }
+    }
+
+    // Check if both results are now in to determine winner
+    const otherResult = isChallenger ? challenge.challengeeResult : challenge.challengerResult
+
+    if (otherResult) {
+      // Both have submitted - determine winner
+      const challengerScore = isChallenger ? result.score : otherResult.score
+      const challengeeScore = isChallenger ? otherResult.score : result.score
+
+      if (challengerScore > challengeeScore) {
+        updateData.winnerId = challenge.challengerId
+      } else if (challengeeScore > challengerScore) {
+        updateData.winnerId = challenge.challengeeId
+      } else {
+        // Tie - winner is whoever was faster
+        const challengerTime = isChallenger ? result.timeSpent : otherResult.timeSpent
+        const challengeeTime = isChallenger ? otherResult.timeSpent : result.timeSpent
+        updateData.winnerId = challengerTime <= challengeeTime ? challenge.challengerId : challenge.challengeeId
+      }
+
+      updateData.status = 'completed'
+      updateData.completedAt = serverTimestamp()
+    }
+
+    await updateDoc(challengeRef, updateData)
+
+    console.log('Challenge result submitted')
+    return updateData.winnerId || null
+  } catch (error) {
+    console.error('Error submitting challenge result:', error)
+    throw error
+  }
+}
+
+/**
+ * Get pending challenges for a user
+ * @param {string} userId
+ */
+export async function getPendingChallenges(userId) {
+  try {
+    const receivedCol = collection(db, 'users', userId, 'receivedChallenges')
+    const q = query(receivedCol, where('status', '==', 'pending'))
+    const querySnapshot = await getDocs(q)
+
+    const challenges = []
+    for (const docSnap of querySnapshot.docs) {
+      const challengeId = docSnap.data().challengeId
+      const challengeRef = doc(db, 'challenges', challengeId)
+      const challengeSnap = await getDoc(challengeRef)
+
+      if (challengeSnap.exists()) {
+        const challengeData = challengeSnap.data()
+        // Check if not expired
+        if (new Date(challengeData.expiresAt) > new Date()) {
+          challenges.push(challengeData)
+        }
+      }
+    }
+
+    return challenges
+  } catch (error) {
+    console.error('Error getting pending challenges:', error)
+    throw error
+  }
+}
+
+/**
+ * Get active challenges (accepted but not completed)
+ * @param {string} userId
+ */
+export async function getActiveChallenges(userId) {
+  try {
+    const challengesCol = collection(db, 'challenges')
+
+    // Get challenges where user is challenger
+    const q1 = query(
+      challengesCol,
+      where('challengerId', '==', userId),
+      where('status', '==', 'accepted')
+    )
+
+    // Get challenges where user is challengee
+    const q2 = query(
+      challengesCol,
+      where('challengeeId', '==', userId),
+      where('status', '==', 'accepted')
+    )
+
+    const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)])
+
+    const challenges = []
+    snap1.forEach(doc => challenges.push({ id: doc.id, ...doc.data() }))
+    snap2.forEach(doc => challenges.push({ id: doc.id, ...doc.data() }))
+
+    return challenges
+  } catch (error) {
+    console.error('Error getting active challenges:', error)
+    throw error
+  }
+}
+
+/**
+ * Get challenge history
+ * @param {string} userId
+ * @param {number} limitCount
+ */
+export async function getChallengeHistory(userId, limitCount = 20) {
+  try {
+    const challengesCol = collection(db, 'challenges')
+
+    // Get completed challenges where user participated
+    const q1 = query(
+      challengesCol,
+      where('challengerId', '==', userId),
+      where('status', '==', 'completed'),
+      orderBy('completedAt', 'desc'),
+      limit(limitCount)
+    )
+
+    const q2 = query(
+      challengesCol,
+      where('challengeeId', '==', userId),
+      where('status', '==', 'completed'),
+      orderBy('completedAt', 'desc'),
+      limit(limitCount)
+    )
+
+    const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)])
+
+    const challenges = []
+    snap1.forEach(doc => challenges.push({ id: doc.id, ...doc.data() }))
+    snap2.forEach(doc => challenges.push({ id: doc.id, ...doc.data() }))
+
+    // Sort by completedAt and limit
+    challenges.sort((a, b) => {
+      const aTime = a.completedAt?.seconds || 0
+      const bTime = b.completedAt?.seconds || 0
+      return bTime - aTime
+    })
+
+    return challenges.slice(0, limitCount)
+  } catch (error) {
+    console.error('Error getting challenge history:', error)
+    throw error
+  }
+}
+
+// ==================== SESSION SHARING ====================
+
+/**
+ * Create a shareable session link
+ * @param {string} userId
+ * @param {string} sessionId
+ * @param {Object} options - { expiresIn, maxUses }
+ */
+export async function createShareableSession(userId, sessionId, options = {}) {
+  try {
+    const shareId = `share_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
+
+    // Get the original session data
+    const sessionData = await getGeneratedQuestions(userId, sessionId)
+    if (!sessionData) {
+      throw new Error('Session not found')
+    }
+
+    const shareData = {
+      shareId,
+      originalUserId: userId,
+      originalSessionId: sessionId,
+      topics: sessionData.topics,
+      userContext: {
+        gradeLevel: sessionData.userContext?.gradeLevel,
+        courseType: sessionData.userContext?.courseType
+      },
+      // Store the seed for question generation
+      seed: sessionData.seed || Math.random().toString(36).substring(2, 15),
+      questionCount: sessionData.questions?.length || sessionData.totalQuestions,
+      createdAt: serverTimestamp(),
+      expiresAt: options.expiresIn
+        ? new Date(Date.now() + options.expiresIn).toISOString()
+        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days default
+      maxUses: options.maxUses || null,
+      useCount: 0,
+      usedBy: []
+    }
+
+    // Store in global shared_sessions collection
+    const shareRef = doc(db, 'shared_sessions', shareId)
+    await setDoc(shareRef, shareData)
+
+    // Add to user's shared sessions
+    const userShareRef = doc(db, 'users', userId, 'sharedSessions', shareId)
+    await setDoc(userShareRef, {
+      shareId,
+      sessionId,
+      createdAt: serverTimestamp()
+    })
+
+    console.log('Shareable session created:', shareId)
+    return shareId
+  } catch (error) {
+    console.error('Error creating shareable session:', error)
+    throw error
+  }
+}
+
+/**
+ * Get shared session data by share ID
+ * @param {string} shareId
+ */
+export async function getSharedSession(shareId) {
+  try {
+    const shareRef = doc(db, 'shared_sessions', shareId)
+    const shareSnap = await getDoc(shareRef)
+
+    if (!shareSnap.exists()) {
+      return null
+    }
+
+    const data = shareSnap.data()
+
+    // Check if expired
+    if (new Date(data.expiresAt) < new Date()) {
+      return { error: 'expired', message: 'Dieser Link ist abgelaufen.' }
+    }
+
+    // Check if max uses reached
+    if (data.maxUses && data.useCount >= data.maxUses) {
+      return { error: 'maxUses', message: 'Dieser Link wurde bereits zu oft verwendet.' }
+    }
+
+    return data
+  } catch (error) {
+    console.error('Error getting shared session:', error)
+    throw error
+  }
+}
+
+/**
+ * Use a shared session (copy it to user's account)
+ * @param {string} shareId
+ * @param {string} userId
+ */
+export async function useSharedSession(shareId, userId) {
+  try {
+    const shareRef = doc(db, 'shared_sessions', shareId)
+    const shareSnap = await getDoc(shareRef)
+
+    if (!shareSnap.exists()) {
+      throw new Error('Shared session not found')
+    }
+
+    const shareData = shareSnap.data()
+
+    // Check if expired or max uses
+    if (new Date(shareData.expiresAt) < new Date()) {
+      throw new Error('Shared session expired')
+    }
+
+    if (shareData.maxUses && shareData.useCount >= shareData.maxUses) {
+      throw new Error('Shared session max uses reached')
+    }
+
+    // Check if user already used this
+    if (shareData.usedBy.includes(userId)) {
+      throw new Error('You have already used this shared session')
+    }
+
+    // Create new session ID for the user
+    const newSessionId = `session_${Date.now()}_${userId.substring(0, 8)}`
+
+    // Update share usage stats
+    await updateDoc(shareRef, {
+      useCount: shareData.useCount + 1,
+      usedBy: [...shareData.usedBy, userId]
+    })
+
+    console.log('Shared session used successfully')
+
+    return {
+      newSessionId,
+      topics: shareData.topics,
+      userContext: shareData.userContext,
+      seed: shareData.seed,
+      questionCount: shareData.questionCount,
+      originalShareId: shareId
+    }
+  } catch (error) {
+    console.error('Error using shared session:', error)
+    throw error
+  }
+}
+
+// ==================== STREAK FREEZE ====================
+
+/**
+ * Get user's inventory (streak freezes, power-ups, etc.)
+ * @param {string} userId
+ */
+export async function getUserInventory(userId) {
+  try {
+    const inventoryRef = doc(db, 'users', userId, 'inventory', 'items')
+    const inventorySnap = await getDoc(inventoryRef)
+
+    if (inventorySnap.exists()) {
+      return inventorySnap.data()
+    }
+
+    // Initialize default inventory
+    const defaultInventory = {
+      streakFreezes: 1, // Start with 1 free streak freeze
+      xpBoosts: 0,
+      hintTokens: 0,
+      lastUpdated: serverTimestamp()
+    }
+
+    await setDoc(inventoryRef, defaultInventory)
+    return defaultInventory
+  } catch (error) {
+    console.error('Error getting user inventory:', error)
+    throw error
+  }
+}
+
+/**
+ * Update user's inventory
+ * @param {string} userId
+ * @param {Object} updates
+ */
+export async function updateUserInventory(userId, updates) {
+  try {
+    const inventoryRef = doc(db, 'users', userId, 'inventory', 'items')
+    await setDoc(inventoryRef, {
+      ...updates,
+      lastUpdated: serverTimestamp()
+    }, { merge: true })
+
+    console.log('Inventory updated')
+  } catch (error) {
+    console.error('Error updating inventory:', error)
+    throw error
+  }
+}
+
+/**
+ * Use a streak freeze to prevent streak loss
+ * @param {string} userId
+ */
+export async function useStreakFreeze(userId) {
+  try {
+    const inventory = await getUserInventory(userId)
+
+    if (inventory.streakFreezes <= 0) {
+      return { success: false, error: 'no_freezes', message: 'Keine Streak-Freezes verfügbar' }
+    }
+
+    // Get user stats
+    const userRef = doc(db, 'users', userId)
+    const userSnap = await getDoc(userRef)
+
+    if (!userSnap.exists()) {
+      throw new Error('User not found')
+    }
+
+    const stats = userSnap.data().stats
+    const today = new Date().toISOString().split('T')[0]
+    const lastActive = stats.lastActiveDate
+
+    // Only use freeze if streak is actually at risk (missed yesterday)
+    const lastActiveDate = new Date(lastActive)
+    const todayDate = new Date(today)
+    const dayDiff = Math.floor((todayDate - lastActiveDate) / (1000 * 60 * 60 * 24))
+
+    if (dayDiff <= 1) {
+      return { success: false, error: 'not_needed', message: 'Streak ist nicht gefährdet' }
+    }
+
+    // Use the freeze
+    await updateUserInventory(userId, {
+      streakFreezes: inventory.streakFreezes - 1
+    })
+
+    // Keep the streak but update last active to yesterday
+    const yesterday = new Date(todayDate.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    await updateDoc(userRef, {
+      'stats.lastActiveDate': yesterday
+    })
+
+    // Log the freeze usage
+    const freezeLogRef = doc(db, 'users', userId, 'streakFreezeLog', `freeze_${Date.now()}`)
+    await setDoc(freezeLogRef, {
+      usedAt: serverTimestamp(),
+      streakPreserved: stats.streak,
+      daysMissed: dayDiff
+    })
+
+    console.log('Streak freeze used successfully')
+    return {
+      success: true,
+      message: `Streak Freeze verwendet! Dein ${stats.streak}-Tage-Streak wurde gerettet!`,
+      remainingFreezes: inventory.streakFreezes - 1
+    }
+  } catch (error) {
+    console.error('Error using streak freeze:', error)
+    throw error
+  }
+}
+
+/**
+ * Award streak freeze (e.g., for completing challenges or achievements)
+ * @param {string} userId
+ * @param {number} count
+ * @param {string} reason
+ */
+export async function awardStreakFreeze(userId, count = 1, reason = 'achievement') {
+  try {
+    const inventory = await getUserInventory(userId)
+
+    await updateUserInventory(userId, {
+      streakFreezes: inventory.streakFreezes + count
+    })
+
+    // Log the award
+    const awardLogRef = doc(db, 'users', userId, 'streakFreezeLog', `award_${Date.now()}`)
+    await setDoc(awardLogRef, {
+      awardedAt: serverTimestamp(),
+      count,
+      reason,
+      newTotal: inventory.streakFreezes + count
+    })
+
+    console.log(`Awarded ${count} streak freeze(s) for ${reason}`)
+    return inventory.streakFreezes + count
+  } catch (error) {
+    console.error('Error awarding streak freeze:', error)
+    throw error
+  }
+}
+
+/**
+ * Check if streak is at risk and prompt for freeze use
+ * @param {string} userId
+ */
+export async function checkStreakStatus(userId) {
+  try {
+    const userRef = doc(db, 'users', userId)
+    const userSnap = await getDoc(userRef)
+
+    if (!userSnap.exists()) {
+      return { atRisk: false }
+    }
+
+    const stats = userSnap.data().stats
+    const today = new Date().toISOString().split('T')[0]
+    const lastActive = stats.lastActiveDate
+
+    const lastActiveDate = new Date(lastActive)
+    const todayDate = new Date(today)
+    const dayDiff = Math.floor((todayDate - lastActiveDate) / (1000 * 60 * 60 * 24))
+
+    if (dayDiff > 1 && stats.streak > 0) {
+      const inventory = await getUserInventory(userId)
+
+      return {
+        atRisk: true,
+        currentStreak: stats.streak,
+        daysMissed: dayDiff,
+        freezesAvailable: inventory.streakFreezes,
+        canUseFreeze: inventory.streakFreezes > 0
+      }
+    }
+
+    return {
+      atRisk: false,
+      currentStreak: stats.streak,
+      daysMissed: dayDiff
+    }
+  } catch (error) {
+    console.error('Error checking streak status:', error)
+    throw error
+  }
+}
+
+// ==================== FRIEND SYSTEM (for challenges) ====================
+
+/**
+ * Search for users by email or display name
+ * @param {string} searchQuery
+ */
+export async function searchUsers(searchQuery) {
+  try {
+    // Note: This is a simple implementation. For production,
+    // consider using Algolia or Firebase Extensions for full-text search
+    const usersCol = collection(db, 'users')
+
+    // Search by email (exact match for privacy)
+    const emailQuery = query(usersCol, where('profile.email', '==', searchQuery.toLowerCase()))
+    const emailSnap = await getDocs(emailQuery)
+
+    const results = []
+    emailSnap.forEach(doc => {
+      const data = doc.data()
+      results.push({
+        id: doc.id,
+        displayName: data.profile?.displayName || 'Anonym',
+        level: data.stats?.level || 1
+      })
+    })
+
+    return results
+  } catch (error) {
+    console.error('Error searching users:', error)
+    throw error
+  }
+}
+
+/**
+ * Add a friend
+ * @param {string} userId
+ * @param {string} friendId
+ */
+export async function addFriend(userId, friendId) {
+  try {
+    // Add to user's friends list
+    const friendRef = doc(db, 'users', userId, 'friends', friendId)
+    await setDoc(friendRef, {
+      friendId,
+      addedAt: serverTimestamp(),
+      status: 'active'
+    })
+
+    // Add reverse relationship
+    const reverseFriendRef = doc(db, 'users', friendId, 'friends', userId)
+    await setDoc(reverseFriendRef, {
+      friendId: userId,
+      addedAt: serverTimestamp(),
+      status: 'active'
+    })
+
+    console.log('Friend added successfully')
+    return true
+  } catch (error) {
+    console.error('Error adding friend:', error)
+    throw error
+  }
+}
+
+/**
+ * Get user's friends list
+ * @param {string} userId
+ */
+export async function getFriends(userId) {
+  try {
+    const friendsCol = collection(db, 'users', userId, 'friends')
+    const q = query(friendsCol, where('status', '==', 'active'))
+    const querySnapshot = await getDocs(q)
+
+    const friends = []
+    for (const docSnap of querySnapshot.docs) {
+      const friendId = docSnap.data().friendId
+
+      // Get friend's profile
+      const friendProfile = await getUserProfile(friendId)
+      if (friendProfile) {
+        friends.push({
+          id: friendId,
+          displayName: friendProfile.profile?.displayName || 'Anonym',
+          level: friendProfile.stats?.level || 1,
+          streak: friendProfile.stats?.streak || 0
+        })
+      }
+    }
+
+    return friends
+  } catch (error) {
+    console.error('Error getting friends:', error)
+    throw error
+  }
+}

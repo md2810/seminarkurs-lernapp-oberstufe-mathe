@@ -261,3 +261,439 @@
 .geogebra-content::-webkit-scrollbar-thumb:hover {
   background: rgba(249, 115, 22, 0.5);
 }
+
+/* ============================================================================
+   SKELETON LOADING STATE
+   ============================================================================ */
+
+.geogebra-skeleton {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+  background: rgba(30, 30, 35, 0.95);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.skeleton-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: rgba(20, 20, 25, 0.8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.skeleton-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.skeleton-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: linear-gradient(90deg,
+    rgba(249, 115, 22, 0.2) 0%,
+    rgba(249, 115, 22, 0.4) 50%,
+    rgba(249, 115, 22, 0.2) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+.skeleton-text {
+  height: 16px;
+  width: 140px;
+  border-radius: 4px;
+  background: linear-gradient(90deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+.skeleton-toolbar {
+  display: flex;
+  gap: 8px;
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.skeleton-tool {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: linear-gradient(90deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+.skeleton-tool:nth-child(2) { animation-delay: 0.1s; }
+.skeleton-tool:nth-child(3) { animation-delay: 0.2s; }
+.skeleton-tool:nth-child(4) { animation-delay: 0.3s; }
+.skeleton-tool:nth-child(5) { animation-delay: 0.4s; }
+
+.skeleton-canvas {
+  flex: 1;
+  position: relative;
+  background: #1a1a1f;
+  min-height: 300px;
+  overflow: hidden;
+}
+
+.skeleton-grid {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.skeleton-axis-x,
+.skeleton-axis-y {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.skeleton-axis-x {
+  width: 100%;
+  height: 1px;
+  top: 50%;
+}
+
+.skeleton-axis-y {
+  width: 1px;
+  height: 100%;
+  left: 50%;
+}
+
+.skeleton-loading-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.skeleton-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid rgba(249, 115, 22, 0.2);
+  border-top-color: var(--primary, #f97316);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.skeleton-loading-indicator span {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 14px;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ============================================================================
+   HEADER STATUS INDICATORS
+   ============================================================================ */
+
+.header-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.header-status.correcting {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+}
+
+.header-status.correcting svg {
+  animation: spin 1s linear infinite;
+}
+
+.header-status.corrected {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.header-status.failed {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.header-status.success {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+/* ============================================================================
+   COMMAND ERROR DISPLAY
+   ============================================================================ */
+
+.geogebra-command-errors {
+  margin-top: 16px;
+  padding: 16px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 10px;
+}
+
+.error-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.error-header svg {
+  color: #ef4444;
+}
+
+.error-header h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fca5a5;
+}
+
+.error-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.error-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  border-left: 3px solid #ef4444;
+}
+
+.error-item.corrected {
+  border-left-color: #22c55e;
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.error-command {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.9);
+  word-break: break-all;
+}
+
+.error-message {
+  font-size: 11px;
+  color: #fca5a5;
+}
+
+.error-item.corrected .error-message {
+  color: #86efac;
+}
+
+/* ============================================================================
+   RETRY BUTTONS
+   ============================================================================ */
+
+.retry-btn,
+.retry-commands-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(249, 115, 22, 0.15);
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  border-radius: 8px;
+  color: var(--primary, #f97316);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retry-btn:hover,
+.retry-commands-btn:hover {
+  background: rgba(249, 115, 22, 0.25);
+  border-color: var(--primary, #f97316);
+}
+
+.retry-btn:disabled,
+.retry-commands-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.retry-commands-btn {
+  margin-top: 12px;
+}
+
+/* ============================================================================
+   COMMAND STATUS BADGES
+   ============================================================================ */
+
+.command-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.command-status-badge.executed {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.command-status-badge.corrected {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+}
+
+.command-status-badge.failed {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+/* ============================================================================
+   COMMAND EXECUTION LOG
+   ============================================================================ */
+
+.command-execution-log {
+  margin-top: 16px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+}
+
+.command-execution-log h5 {
+  margin: 0 0 10px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.command-log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.command-log-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 11px;
+}
+
+.command-log-item .status-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.command-log-item .status-icon.success {
+  color: #22c55e;
+}
+
+.command-log-item .status-icon.warning {
+  color: #fbbf24;
+}
+
+.command-log-item .status-icon.error {
+  color: #ef4444;
+}
+
+.command-log-item code {
+  color: rgba(255, 255, 255, 0.8);
+  word-break: break-all;
+}
+
+/* ============================================================================
+   CORRECTION INDICATOR
+   ============================================================================ */
+
+.correction-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.correction-indicator svg {
+  color: #fbbf24;
+  animation: spin 1s linear infinite;
+}
+
+.correction-indicator span {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* ============================================================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  .geogebra-skeleton {
+    min-height: 300px;
+  }
+
+  .skeleton-header {
+    padding: 12px 16px;
+  }
+
+  .skeleton-toolbar {
+    padding: 10px 16px;
+  }
+
+  .geogebra-command-errors {
+    padding: 12px;
+  }
+
+  .error-item {
+    padding: 8px 10px;
+  }
+
+  .retry-btn,
+  .retry-commands-btn {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+}
