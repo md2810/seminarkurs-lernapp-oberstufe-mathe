@@ -22,7 +22,13 @@
       "Bash(ren:*)",
       "Bash(ren \"FIRESTORE_DEPLOYMENT.md\" \"firestore-deployment.md\")",
       "Bash(mv:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(if not exist \"data\\prompts\" mkdir \"data\\prompts\")",
+      "Bash(mkdir:*)",
+      "Bash(git reset:*)",
+      "Bash(npx tailwindcss:*)",
+      "Bash(npm run build:*)",
+      "Bash(dir:*)"
     ],
     "deny": [],
     "ask": []

@@ -10,6 +10,8 @@ logs
 
 node_modules
 bower_components
+dist
+.wrangler
 
 *.sublime*
 
@@ -40,3 +42,4 @@ sketch
 # End of https://www.toptal.com/developers/gitignore/api/react,visualstudiocode
 .claude/settings.local.json
 /.claude
+
