@@ -27,9 +27,12 @@ import {
   BookOpen,
   Cube,
   Function as FunctionIcon,
-  ArrowsOutCardinal
+  ArrowsOutCardinal,
+  Chalkboard,
+  Plus
 } from '@phosphor-icons/react'
 import './InteractiveCanvas.css'
+import Whiteboard from './Whiteboard'
 
 // GeoGebra App configuration
 const GEOGEBRA_APP_ID = 'ggbApplet'
@@ -51,6 +54,9 @@ function InteractiveCanvas({ wrongQuestions = [], userSettings = {}, onOpenConte
 
   // Sidebar state
   const [showSidebar, setShowSidebar] = useState(true)
+
+  // Whiteboard state
+  const [showWhiteboard, setShowWhiteboard] = useState(false)
 
   // Visualization cache for background generation
   const [visualizationCache, setVisualizationCache] = useState({})
@@ -526,6 +532,20 @@ function InteractiveCanvas({ wrongQuestions = [], userSettings = {}, onOpenConte
               <ArrowsOutCardinal weight="bold" />
             </button>
           </div>
+
+          <div className="tool-spacer" />
+
+          <motion.button
+            className="whiteboard-btn"
+            onClick={() => setShowWhiteboard(true)}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            title="Eigenes Whiteboard öffnen"
+          >
+            <Chalkboard weight="bold" />
+            <span>Whiteboard</span>
+            <Plus weight="bold" size={14} />
+          </motion.button>
         </div>
 
         {/* GeoGebra Container */}
@@ -607,6 +627,13 @@ function InteractiveCanvas({ wrongQuestions = [], userSettings = {}, onOpenConte
           </div>
         )}
       </div>
+
+      {/* Whiteboard Overlay */}
+      <AnimatePresence>
+        {showWhiteboard && (
+          <Whiteboard onClose={() => setShowWhiteboard(false)} />
+        )}
+      </AnimatePresence>
     </div>
   )
 }
