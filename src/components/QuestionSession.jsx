@@ -13,7 +13,6 @@ import {
   Eye,
   Share,
   Snowflake,
-  Swords,
   Copy,
   Check as CheckIcon,
   Users
