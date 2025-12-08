@@ -77,24 +77,30 @@ function InteractiveCanvas({ wrongQuestions = [], userSettings = {}, onOpenConte
     }
 
     return () => {
-      // Cleanup
-      if (geogebraAppRef.current) {
-        try {
-          geogebraAppRef.current.remove()
-        } catch (e) {
-          // Ignore cleanup errors
+      // Cleanup - manually clear the container to prevent React/GeoGebra DOM conflicts
+      if (geogebraContainerRef.current) {
+        // Clear all children manually before React tries to reconcile
+        while (geogebraContainerRef.current.firstChild) {
+          geogebraContainerRef.current.removeChild(geogebraContainerRef.current.firstChild)
         }
       }
+      geogebraAppRef.current = null
+      setGeogebraReady(false)
     }
   }, [])
 
   const initGeoGebra = () => {
     if (!geogebraContainerRef.current || !window.GGBApplet) return
 
+    // Clear any existing content first to prevent conflicts
+    while (geogebraContainerRef.current.firstChild) {
+      geogebraContainerRef.current.removeChild(geogebraContainerRef.current.firstChild)
+    }
+
     const params = {
       appName: 'graphing',
-      width: geogebraContainerRef.current.clientWidth,
-      height: geogebraContainerRef.current.clientHeight,
+      width: geogebraContainerRef.current.clientWidth || 800,
+      height: geogebraContainerRef.current.clientHeight || 600,
       showToolBar: false,
       showAlgebraInput: false,
       showMenuBar: false,
