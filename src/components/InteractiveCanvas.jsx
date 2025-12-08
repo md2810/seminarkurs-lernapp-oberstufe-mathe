@@ -34,14 +34,15 @@ import {
 import './InteractiveCanvas.css'
 import Whiteboard from './Whiteboard'
 
-// GeoGebra App configuration
-const GEOGEBRA_APP_ID = 'ggbApplet'
+// GeoGebra App configuration - use unique ID to prevent React DOM conflicts
+const GEOGEBRA_CONTAINER_ID = 'geogebra-applet-container'
 
 function InteractiveCanvas({ wrongQuestions = [], userSettings = {}, onOpenContext }) {
   const { currentUser } = useAuth()
   const { aiProvider, apiKeys, selectedModels } = useAppStore()
-  const geogebraContainerRef = useRef(null)
+  const geogebraWrapperRef = useRef(null)
   const geogebraAppRef = useRef(null)
+  const geogebraInitialized = useRef(false)
 
   // Solution visualization state
   const [selectedQuestion, setSelectedQuestion] = useState(null)
@@ -63,8 +64,14 @@ function InteractiveCanvas({ wrongQuestions = [], userSettings = {}, onOpenConte
 
   // Initialize GeoGebra
   useEffect(() => {
-    // Load GeoGebra script if not already loaded
-    if (!window.GGBApplet) {
+    // Prevent double initialization
+    if (geogebraInitialized.current) return
+    geogebraInitialized.current = true
+
+    // Check if script already exists
+    const existingScript = document.querySelector('script[src*="geogebra.org/apps/deployggb.js"]')
+
+    if (!window.GGBApplet && !existingScript) {
       const script = document.createElement('script')
       script.src = 'https://www.geogebra.org/apps/deployggb.js'
       script.async = true
@@ -72,35 +79,44 @@ function InteractiveCanvas({ wrongQuestions = [], userSettings = {}, onOpenConte
         initGeoGebra()
       }
       document.head.appendChild(script)
-    } else {
+    } else if (window.GGBApplet) {
       initGeoGebra()
+    } else if (existingScript) {
+      // Script exists but GGBApplet not ready yet
+      existingScript.addEventListener('load', () => initGeoGebra())
     }
 
     return () => {
-      // Cleanup - manually clear the container to prevent React/GeoGebra DOM conflicts
-      if (geogebraContainerRef.current) {
-        // Clear all children manually before React tries to reconcile
-        while (geogebraContainerRef.current.firstChild) {
-          geogebraContainerRef.current.removeChild(geogebraContainerRef.current.firstChild)
-        }
+      // Cleanup - remove the container element entirely
+      const container = document.getElementById(GEOGEBRA_CONTAINER_ID)
+      if (container) {
+        container.remove()
       }
       geogebraAppRef.current = null
-      setGeogebraReady(false)
+      geogebraInitialized.current = false
     }
   }, [])
 
   const initGeoGebra = () => {
-    if (!geogebraContainerRef.current || !window.GGBApplet) return
+    if (!geogebraWrapperRef.current || !window.GGBApplet) return
 
-    // Clear any existing content first to prevent conflicts
-    while (geogebraContainerRef.current.firstChild) {
-      geogebraContainerRef.current.removeChild(geogebraContainerRef.current.firstChild)
+    // Remove any existing GeoGebra container
+    const existingContainer = document.getElementById(GEOGEBRA_CONTAINER_ID)
+    if (existingContainer) {
+      existingContainer.remove()
     }
+
+    // Create a new container outside React's control
+    const container = document.createElement('div')
+    container.id = GEOGEBRA_CONTAINER_ID
+    container.style.width = '100%'
+    container.style.height = '100%'
+    geogebraWrapperRef.current.appendChild(container)
 
     const params = {
       appName: 'graphing',
-      width: geogebraContainerRef.current.clientWidth || 800,
-      height: geogebraContainerRef.current.clientHeight || 600,
+      width: geogebraWrapperRef.current.clientWidth || 800,
+      height: geogebraWrapperRef.current.clientHeight || 600,
       showToolBar: false,
       showAlgebraInput: false,
       showMenuBar: false,
@@ -126,18 +142,18 @@ function InteractiveCanvas({ wrongQuestions = [], userSettings = {}, onOpenConte
     }
 
     const applet = new window.GGBApplet(params, true)
-    applet.inject(geogebraContainerRef.current)
+    applet.inject(GEOGEBRA_CONTAINER_ID)
     geogebraAppRef.current = applet
   }
 
   // Handle window resize
   useEffect(() => {
     const handleResize = () => {
-      if (geogebraAppRef.current && geogebraContainerRef.current) {
+      if (geogebraAppRef.current && geogebraWrapperRef.current) {
         const api = geogebraAppRef.current.getAPI?.()
         if (api) {
-          api.setWidth(geogebraContainerRef.current.clientWidth)
-          api.setHeight(geogebraContainerRef.current.clientHeight)
+          api.setWidth(geogebraWrapperRef.current.clientWidth)
+          api.setHeight(geogebraWrapperRef.current.clientHeight)
         }
       }
     }
@@ -554,8 +570,8 @@ function InteractiveCanvas({ wrongQuestions = [], userSettings = {}, onOpenConte
           </motion.button>
         </div>
 
-        {/* GeoGebra Container */}
-        <div className="geogebra-container" ref={geogebraContainerRef}>
+        {/* GeoGebra Container - wrapper for dynamically created GeoGebra element */}
+        <div className="geogebra-container" ref={geogebraWrapperRef}>
           {geogebraLoading && (
             <div className="geogebra-loading">
               <div className="loading-spinner" />
