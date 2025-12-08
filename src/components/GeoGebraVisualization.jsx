@@ -18,16 +18,16 @@ import './GeoGebraVisualization.css'
 const MAX_CORRECTION_ATTEMPTS = 2
 
 // Common GeoGebra command syntax errors and their fixes
-const COMMON_FIXES = {
+const COMMON_FIXES = [
   // Missing parentheses
-  /^(\w+)\s+(.+)$/: (match, cmd, args) => `${cmd}(${args})`,
+  { pattern: /^(\w+)\s+(.+)$/, replacement: (match, cmd, args) => `${cmd}(${args})` },
   // German decimal comma to point
-  /(\d+),(\d+)/g: '$1.$2',
+  { pattern: /(\d+),(\d+)/g, replacement: '$1.$2' },
   // Fix sqrt without parentheses
-  /sqrt\s+(\d+)/gi: 'sqrt($1)',
+  { pattern: /sqrt\s+(\d+)/gi, replacement: 'sqrt($1)' },
   // Fix exp notation
-  /(\d+)e(\d+)/gi: '$1*10^$2',
-}
+  { pattern: /(\d+)e(\d+)/gi, replacement: '$1*10^$2' },
+]
 
 /**
  * Validate and sanitize a GeoGebra command
@@ -44,15 +44,14 @@ function sanitizeCommand(command) {
     .replace(/eval\(/gi, '')
 
   // Apply common fixes
-  for (const [pattern, replacement] of Object.entries(COMMON_FIXES)) {
+  for (const { pattern, replacement } of COMMON_FIXES) {
     if (typeof replacement === 'function') {
-      const regex = new RegExp(pattern)
-      const match = sanitized.match(regex)
+      const match = sanitized.match(pattern)
       if (match) {
         sanitized = replacement(...match)
       }
     } else {
-      sanitized = sanitized.replace(new RegExp(pattern, 'g'), replacement)
+      sanitized = sanitized.replace(pattern, replacement)
     }
   }
 
