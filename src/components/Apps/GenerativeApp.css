@@ -147,12 +147,114 @@
 .prompt-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 0.75rem;
 }
 
 .char-count {
   font-size: 0.75rem;
   color: #52525b;
+  margin-right: auto;
+}
+
+/* Model Selector */
+.model-selector {
+  position: relative;
+}
+
+.model-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 0.875rem;
+  background: rgba(39, 39, 42, 0.6);
+  border: 1px solid rgba(63, 63, 70, 0.5);
+  border-radius: 0.75rem;
+  color: #a1a1aa;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.model-trigger:hover {
+  background: rgba(63, 63, 70, 0.6);
+  color: white;
+  border-color: rgba(63, 63, 70, 0.8);
+}
+
+.model-trigger svg:first-child {
+  color: #8b5cf6;
+  font-size: 1rem;
+}
+
+.model-name {
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.model-dropdown {
+  position: absolute;
+  bottom: calc(100% + 0.5rem);
+  right: 0;
+  min-width: 220px;
+  background: rgba(24, 24, 27, 0.98);
+  border: 1px solid rgba(63, 63, 70, 0.5);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  z-index: 100;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.model-option {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.125rem;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(63, 63, 70, 0.3);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.2s ease;
+}
+
+.model-option:last-child {
+  border-bottom: none;
+}
+
+.model-option:hover {
+  background: rgba(39, 39, 42, 0.6);
+}
+
+.model-option.selected {
+  background: rgba(139, 92, 246, 0.15);
+}
+
+.model-provider {
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: #8b5cf6;
+  letter-spacing: 0.05em;
+}
+
+.model-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #e4e4e7;
+}
+
+.recommended-badge {
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.15);
+  padding: 0.125rem 0.375rem;
+  border-radius: 9999px;
 }
 
 .generate-btn {

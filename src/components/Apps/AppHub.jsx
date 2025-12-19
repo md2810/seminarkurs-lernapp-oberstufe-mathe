@@ -3,7 +3,7 @@
  * Zentraler Hub für alle interaktiven Tools der Lernapp
  *
  * Tabs:
- * 1. GeoGebra Graphing - Mathematische Visualisierungen
+ * 1. GeoGebra Graphing - Mathematische Visualisierungen mit KI
  * 2. Whiteboard - Kollaboratives Zeichenbrett mit KI
  * 3. KI-Labor - Generative Mini-Apps (Simulationen)
  *
@@ -11,8 +11,9 @@
  * "Lernen durch Erschaffen von Artefakten"
  */
 
-import React, { useState, memo, Suspense, lazy } from 'react'
+import React, { useState, memo, Suspense, lazy, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useAppStore } from '../../stores/useAppStore'
 import {
   Function as FunctionIcon,
   PencilSimple,
@@ -20,7 +21,14 @@ import {
   Sparkle,
   CaretRight,
   CaretLeft,
-  BookOpen
+  BookOpen,
+  Lightning,
+  CircleNotch,
+  CaretDown,
+  Eye,
+  Trash,
+  Check,
+  Warning
 } from '@phosphor-icons/react'
 import './AppHub.css'
 
@@ -28,7 +36,7 @@ import './AppHub.css'
 const InteractiveCanvas = lazy(() => import('../InteractiveCanvas'))
 const GenerativeApp = lazy(() => import('./GenerativeApp'))
 
-// Tab configuration
+// Tab configuration with animated gradients
 const TABS = [
   {
     id: 'whiteboard',
@@ -54,17 +62,26 @@ const TABS = [
   }
 ]
 
-// Loading fallback component
+// Loading fallback component with animation
 const LoadingFallback = memo(function LoadingFallback() {
   return (
     <div className="app-loading">
-      <div className="loading-spinner" />
-      <p>Wird geladen...</p>
+      <motion.div
+        className="loading-spinner"
+        animate={{ rotate: 360 }}
+        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+      />
+      <motion.p
+        animate={{ opacity: [0.5, 1, 0.5] }}
+        transition={{ duration: 1.5, repeat: Infinity }}
+      >
+        Wird geladen...
+      </motion.p>
     </div>
   )
 })
 
-// Tab Button Component
+// Animated Tab Button Component
 const TabButton = memo(function TabButton({ tab, isActive, onClick }) {
   const Icon = tab.icon
 
@@ -75,17 +92,32 @@ const TabButton = memo(function TabButton({ tab, isActive, onClick }) {
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
     >
-      <div className={`tab-icon bg-gradient-to-br ${tab.gradient}`}>
-        <Icon weight="bold" />
-      </div>
+      <motion.div
+        className={`tab-icon bg-gradient-to-br ${tab.gradient}`}
+        animate={isActive ? {
+          boxShadow: ['0 0 20px rgba(34, 197, 94, 0.3)', '0 0 30px rgba(34, 197, 94, 0.5)', '0 0 20px rgba(34, 197, 94, 0.3)']
+        } : {}}
+        transition={{ duration: 2, repeat: Infinity }}
+      >
+        <motion.div
+          animate={isActive ? { rotate: [0, 5, -5, 0] } : {}}
+          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          <Icon weight="bold" />
+        </motion.div>
+      </motion.div>
       <div className="tab-content">
         <span className="tab-label">
           {tab.label}
           {tab.isNew && (
-            <span className="new-badge">
+            <motion.span
+              className="new-badge"
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            >
               <Sparkle weight="fill" size={10} />
               Neu
-            </span>
+            </motion.span>
           )}
         </span>
         <span className="tab-description">{tab.description}</span>
@@ -104,17 +136,51 @@ const TabButton = memo(function TabButton({ tab, isActive, onClick }) {
 // Unique ID for GeoGebra container to prevent React DOM conflicts
 const GEOGEBRA_STANDALONE_ID = 'geogebra-standalone-applet'
 
-// Standalone GeoGebra Component for the dedicated tab
-// Uses ID-based injection to prevent React DOM reconciliation conflicts
-const GeoGebraApp = memo(function GeoGebraApp() {
+// GeoGebra command sanitization
+function sanitizeGeoGebraCommand(command) {
+  if (!command || typeof command !== 'string') return null
+  let sanitized = command.trim()
+    .replace(/[<>]/g, '')
+    .replace(/javascript:/gi, '')
+    .replace(/eval\(/gi, '')
+    .replace(/(\d+),(\d+)/g, '$1.$2')
+
+  const openCount = (sanitized.match(/\(/g) || []).length
+  const closeCount = (sanitized.match(/\)/g) || []).length
+  if (openCount > closeCount) {
+    sanitized += ')'.repeat(openCount - closeCount)
+  }
+  return sanitized.length > 500 ? sanitized.substring(0, 500) : sanitized
+}
+
+// Standalone GeoGebra Component with Task Selector
+const GeoGebraApp = memo(function GeoGebraApp({ wrongQuestions = [], userSettings = {} }) {
+  const { aiProvider, apiKeys } = useAppStore()
   const [geogebraReady, setGeogebraReady] = useState(false)
   const [geogebraLoading, setGeogebraLoading] = useState(true)
+  const [selectedTask, setSelectedTask] = useState(null)
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [generationStatus, setGenerationStatus] = useState(null)
+  const [customPrompt, setCustomPrompt] = useState('')
+
   const geogebraInitialized = React.useRef(false)
   const geogebraAppRef = React.useRef(null)
+  const geogebraApiRef = React.useRef(null)
   const wrapperRef = React.useRef(null)
 
+  // Get API key
+  const getApiKey = useCallback(() => {
+    if (apiKeys[aiProvider]) return apiKeys[aiProvider]
+    switch (aiProvider) {
+      case 'claude': return userSettings.anthropicApiKey
+      case 'gemini': return userSettings.geminiApiKey
+      case 'openai': return userSettings.openaiApiKey
+      default: return userSettings.anthropicApiKey
+    }
+  }, [aiProvider, apiKeys, userSettings])
+
   React.useEffect(() => {
-    // Prevent double initialization in StrictMode
     if (geogebraInitialized.current) return
     geogebraInitialized.current = true
 
@@ -123,13 +189,9 @@ const GeoGebraApp = memo(function GeoGebraApp() {
     const initGeoGebra = () => {
       if (!wrapperRef.current || !window.GGBApplet) return
 
-      // Remove any existing container to prevent conflicts
       const existingContainer = document.getElementById(GEOGEBRA_STANDALONE_ID)
-      if (existingContainer) {
-        existingContainer.remove()
-      }
+      if (existingContainer) existingContainer.remove()
 
-      // Create a new container element with unique ID
       const container = document.createElement('div')
       container.id = GEOGEBRA_STANDALONE_ID
       container.style.width = '100%'
@@ -139,10 +201,10 @@ const GeoGebraApp = memo(function GeoGebraApp() {
       const params = {
         appName: 'graphing',
         width: wrapperRef.current.clientWidth || 800,
-        height: wrapperRef.current.clientHeight || 600,
+        height: wrapperRef.current.clientHeight || 500,
         showToolBar: true,
         showAlgebraInput: true,
-        showMenuBar: true,
+        showMenuBar: false,
         enableLabelDrags: true,
         enableShiftDragZoom: true,
         enableRightClick: true,
@@ -150,20 +212,17 @@ const GeoGebraApp = memo(function GeoGebraApp() {
         language: 'de',
         borderColor: 'transparent',
         preventFocus: true,
-        appletOnLoad: () => {
+        appletOnLoad: (api) => {
+          geogebraApiRef.current = api
           setGeogebraReady(true)
           setGeogebraLoading(false)
-          const api = geogebraAppRef.current?.getAPI?.()
-          if (api) {
-            api.setAxesVisible(true, true)
-            api.setGridVisible(true)
-            api.setCoordSystem(-10, 10, -10, 10)
-          }
+          api.setAxesVisible(true, true)
+          api.setGridVisible(true)
+          api.setCoordSystem(-10, 10, -10, 10)
         }
       }
 
       const applet = new window.GGBApplet(params, true)
-      // Inject by ID, not by ref - this prevents React DOM conflicts
       applet.inject(GEOGEBRA_STANDALONE_ID)
       geogebraAppRef.current = applet
     }
@@ -180,35 +239,254 @@ const GeoGebraApp = memo(function GeoGebraApp() {
       existingScript.addEventListener('load', initGeoGebra)
     }
 
-    // Cleanup on unmount
     return () => {
       const container = document.getElementById(GEOGEBRA_STANDALONE_ID)
-      if (container) {
-        container.remove()
-      }
+      if (container) container.remove()
       geogebraAppRef.current = null
+      geogebraApiRef.current = null
       geogebraInitialized.current = false
     }
   }, [])
 
+  // Execute GeoGebra commands
+  const executeCommands = useCallback((commands) => {
+    const api = geogebraApiRef.current
+    if (!api) return { success: 0, failed: 0 }
+
+    let success = 0, failed = 0
+    commands.forEach(cmd => {
+      const command = typeof cmd === 'string' ? cmd : cmd.command
+      const sanitized = sanitizeGeoGebraCommand(command)
+      if (!sanitized) { failed++; return }
+
+      try {
+        const result = api.evalCommand(sanitized)
+        if (result !== false) {
+          success++
+          if (cmd.color) {
+            const objName = api.getObjectName(api.getObjectNumber() - 1)
+            if (objName) {
+              const hex = cmd.color.replace('#', '')
+              api.setColor(objName, parseInt(hex.substr(0, 2), 16), parseInt(hex.substr(2, 2), 16), parseInt(hex.substr(4, 2), 16))
+              api.setLineThickness(objName, 3)
+            }
+          }
+        } else { failed++ }
+      } catch (e) { failed++ }
+    })
+    return { success, failed }
+  }, [])
+
+  // Clear GeoGebra canvas
+  const clearCanvas = useCallback(() => {
+    const api = geogebraApiRef.current
+    if (api) {
+      api.reset()
+      api.setAxesVisible(true, true)
+      api.setGridVisible(true)
+      api.setCoordSystem(-10, 10, -10, 10)
+    }
+  }, [])
+
+  // Generate visualization with AI
+  const generateVisualization = useCallback(async () => {
+    const apiKey = getApiKey()
+    if (!apiKey) {
+      setGenerationStatus({ type: 'error', message: 'Kein API-Schlüssel hinterlegt' })
+      return
+    }
+
+    const prompt = selectedTask
+      ? `Visualisiere diese Mathematikaufgabe in GeoGebra: ${selectedTask.question}`
+      : customPrompt
+
+    if (!prompt.trim()) {
+      setGenerationStatus({ type: 'error', message: 'Bitte wähle eine Aufgabe oder gib eine Beschreibung ein' })
+      return
+    }
+
+    setIsGenerating(true)
+    setGenerationStatus(null)
+
+    try {
+      const response = await fetch('/api/generate-geogebra', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apiKey,
+          provider: aiProvider,
+          prompt,
+          questionContext: selectedTask
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success && data.commands) {
+        clearCanvas()
+        const result = executeCommands(data.commands)
+        setGenerationStatus({
+          type: result.failed > 0 ? 'warning' : 'success',
+          message: result.failed > 0
+            ? `${result.success} Befehle ausgeführt, ${result.failed} fehlgeschlagen`
+            : `${result.success} Objekte erstellt`
+        })
+      } else {
+        setGenerationStatus({ type: 'error', message: data.error || 'Fehler bei der Generierung' })
+      }
+    } catch (error) {
+      setGenerationStatus({ type: 'error', message: 'Netzwerkfehler' })
+    } finally {
+      setIsGenerating(false)
+    }
+  }, [selectedTask, customPrompt, getApiKey, aiProvider, executeCommands, clearCanvas])
+
   return (
     <div className="geogebra-standalone">
-      {/* Wrapper div that React controls, GeoGebra injects into child by ID */}
+      {/* Task Selector Panel */}
+      <div className="geogebra-controls">
+        <div className="control-section">
+          <label className="control-label">
+            <Eye weight="bold" />
+            Aufgabe visualisieren
+          </label>
+
+          {/* Task Dropdown */}
+          <div className="task-selector">
+            <motion.button
+              className="task-dropdown-trigger"
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+            >
+              <span className="trigger-text">
+                {selectedTask
+                  ? `${selectedTask.topic}: ${selectedTask.question?.substring(0, 50)}...`
+                  : 'Aufgabe auswählen...'}
+              </span>
+              <motion.div
+                animate={{ rotate: isDropdownOpen ? 180 : 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <CaretDown weight="bold" />
+              </motion.div>
+            </motion.button>
+
+            <AnimatePresence>
+              {isDropdownOpen && (
+                <motion.div
+                  className="task-dropdown-menu"
+                  initial={{ opacity: 0, y: -10, height: 0 }}
+                  animate={{ opacity: 1, y: 0, height: 'auto' }}
+                  exit={{ opacity: 0, y: -10, height: 0 }}
+                >
+                  {wrongQuestions.length > 0 ? (
+                    wrongQuestions.slice(0, 10).map((task, index) => (
+                      <motion.button
+                        key={task.id || index}
+                        className={`task-option ${selectedTask?.id === task.id ? 'selected' : ''}`}
+                        onClick={() => { setSelectedTask(task); setIsDropdownOpen(false); setCustomPrompt('') }}
+                        whileHover={{ x: 4 }}
+                      >
+                        <span className="task-topic">{task.topic}</span>
+                        <span className="task-text">{task.question?.substring(0, 60)}...</span>
+                      </motion.button>
+                    ))
+                  ) : (
+                    <div className="no-tasks">
+                      <BookOpen weight="duotone" size={24} />
+                      <span>Keine Aufgaben verfügbar</span>
+                      <small>Beantworte Fragen im Feed, um Aufgaben zu sammeln</small>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Or custom prompt */}
+          <div className="custom-prompt-section">
+            <span className="divider-text">oder eigene Beschreibung</span>
+            <input
+              type="text"
+              className="custom-prompt-input"
+              placeholder="z.B. Zeichne die Funktion f(x) = sin(x) und ihre Ableitung"
+              value={customPrompt}
+              onChange={(e) => { setCustomPrompt(e.target.value); setSelectedTask(null) }}
+            />
+          </div>
+
+          {/* Action buttons */}
+          <div className="control-actions">
+            <motion.button
+              className="generate-btn"
+              onClick={generateVisualization}
+              disabled={isGenerating || (!selectedTask && !customPrompt.trim())}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              {isGenerating ? (
+                <>
+                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
+                    <CircleNotch weight="bold" />
+                  </motion.div>
+                  Generiere...
+                </>
+              ) : (
+                <>
+                  <Lightning weight="fill" />
+                  Visualisieren
+                </>
+              )}
+            </motion.button>
+
+            <motion.button
+              className="clear-btn"
+              onClick={clearCanvas}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              title="Canvas leeren"
+            >
+              <Trash weight="bold" />
+            </motion.button>
+          </div>
+
+          {/* Status message */}
+          <AnimatePresence>
+            {generationStatus && (
+              <motion.div
+                className={`generation-status ${generationStatus.type}`}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+              >
+                {generationStatus.type === 'success' && <Check weight="bold" />}
+                {generationStatus.type === 'warning' && <Warning weight="bold" />}
+                {generationStatus.type === 'error' && <Warning weight="bold" />}
+                <span>{generationStatus.message}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* GeoGebra Container */}
       <div className="geogebra-container" ref={wrapperRef}>
         {geogebraLoading && (
           <div className="geogebra-loading">
-            <div className="loading-spinner" />
-            <p>GeoGebra wird geladen...</p>
+            <motion.div
+              className="loading-spinner"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+            />
+            <motion.p
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            >
+              GeoGebra wird geladen...
+            </motion.p>
           </div>
         )}
-      </div>
-      <div className="geogebra-tips">
-        <h4>Tipps</h4>
-        <ul>
-          <li>Gib Funktionen direkt in die Eingabeleiste ein, z.B. <code>f(x) = x^2</code></li>
-          <li>Nutze die Werkzeugleiste für geometrische Konstruktionen</li>
-          <li>Rechtsklick auf Objekte für weitere Optionen</li>
-        </ul>
       </div>
     </div>
   )
@@ -221,6 +499,9 @@ function AppHub({ wrongQuestions = [], userSettings = {}, onOpenContext }) {
 
   return (
     <div className="app-hub">
+      {/* Animated background gradient */}
+      <div className="ambient-bg" />
+
       {/* Sidebar with tabs */}
       <AnimatePresence>
         {!sidebarCollapsed && (
@@ -232,8 +513,20 @@ function AppHub({ wrongQuestions = [], userSettings = {}, onOpenContext }) {
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           >
             <div className="sidebar-header">
-              <h2>Apps</h2>
-              <span className="app-count">{TABS.length} Tools</span>
+              <motion.h2
+                animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
+                transition={{ duration: 5, repeat: Infinity, ease: 'linear' }}
+                className="animated-text"
+              >
+                Apps
+              </motion.h2>
+              <motion.span
+                className="app-count"
+                animate={{ scale: [1, 1.05, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                {TABS.length} Tools
+              </motion.span>
             </div>
 
             <div className="tabs-container">
@@ -247,25 +540,43 @@ function AppHub({ wrongQuestions = [], userSettings = {}, onOpenContext }) {
               ))}
             </div>
 
-            {/* Context info */}
+            {/* Context info with pulse animation */}
             {wrongQuestions.length > 0 && (
-              <div className="context-info">
-                <BookOpen weight="duotone" />
+              <motion.div
+                className="context-info"
+                animate={{
+                  boxShadow: ['0 0 0 0 rgba(34, 197, 94, 0)', '0 0 0 8px rgba(34, 197, 94, 0.1)', '0 0 0 0 rgba(34, 197, 94, 0)']
+                }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <motion.div
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                >
+                  <BookOpen weight="duotone" />
+                </motion.div>
                 <span>{wrongQuestions.length} Aufgaben verfügbar</span>
-              </div>
+              </motion.div>
             )}
           </motion.aside>
         )}
       </AnimatePresence>
 
       {/* Sidebar toggle */}
-      <button
+      <motion.button
         className="sidebar-toggle"
         onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
         aria-label={sidebarCollapsed ? 'Sidebar öffnen' : 'Sidebar schließen'}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
       >
-        {sidebarCollapsed ? <CaretRight weight="bold" /> : <CaretLeft weight="bold" />}
-      </button>
+        <motion.div
+          animate={{ x: sidebarCollapsed ? [0, 3, 0] : [0, -3, 0] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+        >
+          {sidebarCollapsed ? <CaretRight weight="bold" /> : <CaretLeft weight="bold" />}
+        </motion.div>
+      </motion.button>
 
       {/* Main content area */}
       <div className={`app-content ${sidebarCollapsed ? 'expanded' : ''}`}>
@@ -298,7 +609,10 @@ function AppHub({ wrongQuestions = [], userSettings = {}, onOpenContext }) {
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.2 }}
             >
-              <GeoGebraApp />
+              <GeoGebraApp
+                wrongQuestions={wrongQuestions}
+                userSettings={userSettings}
+              />
             </motion.div>
           )}
 

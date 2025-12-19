@@ -10,7 +10,9 @@ import {
   Trash,
   Camera,
   CaretRight,
-  CaretDown
+  CaretDown,
+  Info,
+  CircleNotch
 } from '@phosphor-icons/react'
 
 import { useAuth } from '../contexts/AuthContext'
@@ -44,6 +46,7 @@ function LearningPlan({ isOpen, onClose, userSettings, onStartSession }) {
   const [showIntroTest, setShowIntroTest] = useState(false)
   const [introTestPlanItem, setIntroTestPlanItem] = useState(null)
   const [introTestResponses, setIntroTestResponses] = useState({})
+  const [savingIntroTest, setSavingIntroTest] = useState(false)
 
   // Get themes based on user settings
   const getAvailableThemes = () => {
@@ -202,6 +205,8 @@ function LearningPlan({ isOpen, onClose, userSettings, onStartSession }) {
   const handleIntroTestSubmit = async () => {
     if (!currentUser || !introTestPlanItem) return
 
+    setSavingIntroTest(true)
+
     try {
       // Save initial knowledge assessment to Firestore
       await saveInitialKnowledge(currentUser.uid, {
@@ -226,6 +231,8 @@ function LearningPlan({ isOpen, onClose, userSettings, onStartSession }) {
     } catch (error) {
       console.error('Error saving initial knowledge:', error)
       alert('Fehler beim Speichern der Einschätzung')
+    } finally {
+      setSavingIntroTest(false)
     }
   }
 
@@ -618,35 +625,65 @@ function LearningPlan({ isOpen, onClose, userSettings, onStartSession }) {
                       </div>
                       <div className="plan-actions">
                         <div style={{ flex: 1, display: 'flex', gap: '12px' }}>
-                          <motion.button
-                            className="btn btn-smart"
-                            onClick={() => handleSmartLearning(item)}
-                            disabled={generatingQuestions === `smart_${item.id}` || generatingQuestions === item.id}
-                            style={{ flex: 1 }}
-                            whileHover={{
-                              scale: !generatingQuestions ? 1.05 : 1,
-                              y: !generatingQuestions ? -2 : 0,
-                              transition: { type: "spring", stiffness: 400, damping: 20 }
-                            }}
-                            whileTap={{ scale: !generatingQuestions ? 0.95 : 1 }}
-                            title="KI wählt automatisch die wichtigsten Themen aus"
-                          >
-                            {generatingQuestions === `smart_${item.id}` ? `🤖 ${generationProgress}%` : '🤖 Intelligentes Lernen'}
-                          </motion.button>
-                          <motion.button
-                            className="btn btn-primary start-btn"
-                            onClick={() => handleStartLearning(item)}
-                            disabled={generatingQuestions === item.id || generatingQuestions === `smart_${item.id}`}
-                            style={{ flex: 1 }}
-                            whileHover={{
-                              scale: !generatingQuestions ? 1.05 : 1,
-                              y: !generatingQuestions ? -2 : 0,
-                              transition: { type: "spring", stiffness: 400, damping: 20 }
-                            }}
-                            whileTap={{ scale: !generatingQuestions ? 0.95 : 1 }}
-                          >
-                            {generatingQuestions === item.id ? `${generationProgress}%` : 'Alle Themen'}
-                          </motion.button>
+                          {/* Intelligentes Lernen with tooltip */}
+                          <div className="button-with-tooltip" style={{ flex: 1 }}>
+                            <motion.button
+                              className="btn btn-smart"
+                              onClick={() => handleSmartLearning(item)}
+                              disabled={generatingQuestions === `smart_${item.id}` || generatingQuestions === item.id}
+                              style={{ width: '100%' }}
+                              whileHover={{
+                                scale: !generatingQuestions ? 1.05 : 1,
+                                y: !generatingQuestions ? -2 : 0,
+                                transition: { type: "spring", stiffness: 400, damping: 20 }
+                              }}
+                              whileTap={{ scale: !generatingQuestions ? 0.95 : 1 }}
+                            >
+                              {generatingQuestions === `smart_${item.id}` ? `🤖 ${generationProgress}%` : '🤖 Intelligentes Lernen'}
+                            </motion.button>
+                            <div className="tooltip-trigger">
+                              <Info weight="fill" size={16} />
+                              <div className="tooltip-content">
+                                <strong>Intelligentes Lernen</strong>
+                                <p>Die KI analysiert deinen Lernfortschritt und wählt automatisch 3-5 Themen aus, die du am meisten üben solltest:</p>
+                                <ul>
+                                  <li>Themen mit niedriger Genauigkeit</li>
+                                  <li>Lange nicht geübte Themen</li>
+                                  <li>Noch nie geübte Themen</li>
+                                </ul>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Alle Themen with tooltip */}
+                          <div className="button-with-tooltip" style={{ flex: 1 }}>
+                            <motion.button
+                              className="btn btn-primary start-btn"
+                              onClick={() => handleStartLearning(item)}
+                              disabled={generatingQuestions === item.id || generatingQuestions === `smart_${item.id}`}
+                              style={{ width: '100%' }}
+                              whileHover={{
+                                scale: !generatingQuestions ? 1.05 : 1,
+                                y: !generatingQuestions ? -2 : 0,
+                                transition: { type: "spring", stiffness: 400, damping: 20 }
+                              }}
+                              whileTap={{ scale: !generatingQuestions ? 0.95 : 1 }}
+                            >
+                              {generatingQuestions === item.id ? `${generationProgress}%` : 'Alle Themen'}
+                            </motion.button>
+                            <div className="tooltip-trigger">
+                              <Info weight="fill" size={16} />
+                              <div className="tooltip-content">
+                                <strong>Alle Themen</strong>
+                                <p>Übe alle Themen in diesem Lernziel gleichmäßig. Ideal für:</p>
+                                <ul>
+                                  <li>Vollständige Prüfungsvorbereitung</li>
+                                  <li>Wenn du alle Themen abdecken möchtest</li>
+                                  <li>Erste Übungsrunde mit neuem Material</li>
+                                </ul>
+                              </div>
+                            </div>
+                          </div>
                           {(generatingQuestions === item.id || generatingQuestions === `smart_${item.id}`) && (
                             <div style={{ width: '100%', marginTop: '12px' }}>
                               {/* Progress Label */}
@@ -1022,13 +1059,28 @@ function LearningPlan({ isOpen, onClose, userSettings, onStartSession }) {
                       <button className="btn btn-secondary" onClick={handleIntroTestSkip}>
                         Überspringen
                       </button>
-                      <button
+                      <motion.button
                         className="btn btn-primary"
                         onClick={handleIntroTestSubmit}
-                        disabled={Object.keys(introTestResponses).length !== introTestPlanItem.themes.length}
+                        disabled={Object.keys(introTestResponses).length !== introTestPlanItem.themes.length || savingIntroTest}
+                        whileHover={!savingIntroTest ? { scale: 1.02 } : {}}
+                        whileTap={!savingIntroTest ? { scale: 0.98 } : {}}
                       >
-                        Einschätzung speichern
-                      </button>
+                        {savingIntroTest ? (
+                          <>
+                            <motion.span
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                              style={{ display: 'inline-flex' }}
+                            >
+                              <CircleNotch weight="bold" />
+                            </motion.span>
+                            Wird gespeichert...
+                          </>
+                        ) : (
+                          'Einschätzung speichern'
+                        )}
+                      </motion.button>
                     </div>
                   </div>
                 </motion.div>

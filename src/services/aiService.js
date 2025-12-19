@@ -17,13 +17,13 @@ const AI_ENDPOINTS = {
 // Model tiers: light (fast/cheap), standard (balanced), heavy (powerful)
 const MODEL_TIERS = {
   claude: {
-    light: 'claude-3-haiku-20240307',
-    standard: 'claude-sonnet-4-5-20250929',
-    heavy: 'claude-sonnet-4-5-20250929'
+    light: 'claude-3-5-haiku-20241022',
+    standard: 'claude-sonnet-4-20250514',
+    heavy: 'claude-sonnet-4-20250514'
   },
   gemini: {
-    light: 'gemini-1.5-flash',
-    standard: 'gemini-1.5-flash',
+    light: 'gemini-2.0-flash-exp',
+    standard: 'gemini-2.0-flash-exp',
     heavy: 'gemini-1.5-pro'
   },
   openai: {
@@ -35,8 +35,8 @@ const MODEL_TIERS = {
 
 // Default models (for backward compatibility)
 const DEFAULT_MODELS = {
-  claude: 'claude-sonnet-4-5-20250929',
-  gemini: 'gemini-1.5-flash',
+  claude: 'claude-sonnet-4-20250514',
+  gemini: 'gemini-2.0-flash-exp',
   openai: 'gpt-4o'
 }
 
@@ -306,12 +306,13 @@ export function estimateTokens(text) {
  */
 export function estimateCost(provider, model, inputTokens, outputTokens) {
   const PRICING = {
-    'claude-3-haiku-20240307': { input: 0.00025, output: 0.00125 },
-    'claude-sonnet-4-5-20250929': { input: 0.003, output: 0.015 },
+    'claude-3-5-haiku-20241022': { input: 0.0008, output: 0.004 },
+    'claude-sonnet-4-20250514': { input: 0.003, output: 0.015 },
+    'gemini-2.0-flash-exp': { input: 0.0001, output: 0.0004 },
     'gemini-1.5-flash': { input: 0.000075, output: 0.0003 },
     'gemini-1.5-pro': { input: 0.00125, output: 0.005 },
     'gpt-4o-mini': { input: 0.00015, output: 0.0006 },
-    'gpt-4o': { input: 0.005, output: 0.015 }
+    'gpt-4o': { input: 0.0025, output: 0.01 }
   }
 
   const pricing = PRICING[model]

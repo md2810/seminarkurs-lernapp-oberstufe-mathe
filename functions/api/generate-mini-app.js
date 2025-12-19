@@ -23,6 +23,7 @@ export async function onRequestPost(context) {
     const {
       apiKey,
       provider = 'claude',
+      model,
       prompt,
       context: userContext = {}
     } = await context.request.json()
@@ -61,16 +62,16 @@ export async function onRequestPost(context) {
     // Build the system prompt
     const systemPrompt = buildSystemPrompt(userContext)
 
-    // Call the appropriate AI provider
+    // Call the appropriate AI provider with the selected model
     let response
     if (provider === 'claude') {
-      response = await callClaude(apiKey, systemPrompt, prompt)
+      response = await callClaude(apiKey, systemPrompt, prompt, model)
     } else if (provider === 'openai') {
-      response = await callOpenAI(apiKey, systemPrompt, prompt)
+      response = await callOpenAI(apiKey, systemPrompt, prompt, model)
     } else if (provider === 'gemini') {
-      response = await callGemini(apiKey, systemPrompt, prompt)
+      response = await callGemini(apiKey, systemPrompt, prompt, model)
     } else {
-      response = await callClaude(apiKey, systemPrompt, prompt)
+      response = await callClaude(apiKey, systemPrompt, prompt, model)
     }
 
     if (!response.success) {
@@ -193,8 +194,10 @@ Beispiel für eine einfache Struktur:
 Erstelle nun basierend auf der Nutzerbeschreibung eine passende Simulation.`
 }
 
-async function callClaude(apiKey, systemPrompt, userPrompt) {
+async function callClaude(apiKey, systemPrompt, userPrompt, selectedModel) {
   try {
+    const modelId = selectedModel || 'claude-sonnet-4-20250514'
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -203,7 +206,7 @@ async function callClaude(apiKey, systemPrompt, userPrompt) {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: modelId,
         max_tokens: 8000,
         system: systemPrompt,
         messages: [{
@@ -249,8 +252,10 @@ async function callClaude(apiKey, systemPrompt, userPrompt) {
   }
 }
 
-async function callOpenAI(apiKey, systemPrompt, userPrompt) {
+async function callOpenAI(apiKey, systemPrompt, userPrompt, selectedModel) {
   try {
+    const modelId = selectedModel || 'gpt-4o'
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -258,7 +263,7 @@ async function callOpenAI(apiKey, systemPrompt, userPrompt) {
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: modelId,
         max_tokens: 8000,
         messages: [
           { role: 'system', content: systemPrompt },
@@ -299,10 +304,13 @@ async function callOpenAI(apiKey, systemPrompt, userPrompt) {
   }
 }
 
-async function callGemini(apiKey, systemPrompt, userPrompt) {
+async function callGemini(apiKey, systemPrompt, userPrompt, selectedModel) {
   try {
+    // Use provided model or default to gemini-2.0-flash-exp (gemini-1.5-flash is deprecated)
+    const modelId = selectedModel || 'gemini-2.0-flash-exp'
+
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

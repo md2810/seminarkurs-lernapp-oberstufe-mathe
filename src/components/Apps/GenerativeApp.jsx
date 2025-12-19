@@ -28,9 +28,24 @@ import {
   BookOpen,
   Warning,
   Check,
-  X
+  X,
+  CaretDown,
+  Robot,
+  Gear
 } from '@phosphor-icons/react'
+import ErrorMessage from '../ErrorMessage'
+import { parseError } from '../../utils/errorMessages'
 import './GenerativeApp.css'
+
+// Available AI models for generation
+const AI_MODELS = [
+  { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4', provider: 'claude', recommended: true },
+  { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku', provider: 'claude' },
+  { id: 'gpt-4o', name: 'GPT-4o', provider: 'openai' },
+  { id: 'gpt-4o-mini', name: 'GPT-4o Mini', provider: 'openai' },
+  { id: 'gemini-2.0-flash-exp', name: 'Gemini 2.0 Flash', provider: 'gemini' },
+  { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', provider: 'gemini' }
+]
 
 // Example prompts for inspiration
 const EXAMPLE_PROMPTS = [
@@ -53,6 +68,26 @@ const EXAMPLE_PROMPTS = [
     title: 'Normalverteilung',
     prompt: 'Zeige die Normalverteilung mit einstellbarem Mittelwert und Standardabweichung. Markiere den Bereich innerhalb von 1, 2 und 3 Standardabweichungen.',
     category: 'Stochastik'
+  },
+  {
+    title: 'Integralrechnung',
+    prompt: 'Visualisiere das bestimmte Integral als Fläche unter einer Kurve. Zeige die Untersumme und Obersumme mit einstellbarer Rechteckanzahl.',
+    category: 'Analysis'
+  },
+  {
+    title: 'Exponentialfunktion',
+    prompt: 'Zeige die e-Funktion f(x) = e^(ax) mit einem Slider für Parameter a. Markiere den Zusammenhang zwischen Funktionswert und Steigung.',
+    category: 'Analysis'
+  },
+  {
+    title: 'Trigonometrie',
+    prompt: 'Erstelle einen interaktiven Einheitskreis mit Sinus, Kosinus und Tangens. Zeige die Werte am beweglichen Punkt und die zugehörigen Graphen.',
+    category: 'Geometrie'
+  },
+  {
+    title: 'Wahrscheinlichkeitsbaum',
+    prompt: 'Visualisiere einen Wahrscheinlichkeitsbaum für ein zweistufiges Experiment. Ermögliche die Eingabe der Wahrscheinlichkeiten und berechne Gesamt­wahrschein­lichkeiten.',
+    category: 'Stochastik'
   }
 ]
 
@@ -69,20 +104,23 @@ function GenerativeApp({ userSettings = {}, onOpenContext }) {
   const [showCode, setShowCode] = useState(false)
   const [error, setError] = useState(null)
   const [history, setHistory] = useState([])
+  const [selectedModel, setSelectedModel] = useState(AI_MODELS[0])
+  const [showModelSelector, setShowModelSelector] = useState(false)
 
   // Refs
   const iframeRef = useRef(null)
 
-  // Get API key
+  // Get API key based on selected model's provider
   const getApiKey = useCallback(() => {
-    if (apiKeys[aiProvider]) return apiKeys[aiProvider]
-    switch (aiProvider) {
+    const provider = selectedModel.provider
+    if (apiKeys[provider]) return apiKeys[provider]
+    switch (provider) {
       case 'claude': return userSettings.anthropicApiKey
       case 'gemini': return userSettings.geminiApiKey
       case 'openai': return userSettings.openaiApiKey
       default: return userSettings.anthropicApiKey
     }
-  }, [aiProvider, apiKeys, userSettings])
+  }, [selectedModel, apiKeys, userSettings])
 
   // Generate mini-app
   const generateMiniApp = async () => {
@@ -108,7 +146,8 @@ function GenerativeApp({ userSettings = {}, onOpenContext }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           apiKey,
-          provider: aiProvider,
+          provider: selectedModel.provider,
+          model: selectedModel.id,
           prompt: prompt.trim(),
           context: {
             gradeLevel: userSettings.gradeLevel || 'Klasse_11',
@@ -232,6 +271,57 @@ function GenerativeApp({ userSettings = {}, onOpenContext }) {
               />
               <div className="prompt-actions">
                 <span className="char-count">{prompt.length} / 500</span>
+
+                {/* Model Selector */}
+                <div className="model-selector">
+                  <motion.button
+                    className="model-trigger"
+                    onClick={() => setShowModelSelector(!showModelSelector)}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    type="button"
+                  >
+                    <Robot weight="duotone" />
+                    <span className="model-name">{selectedModel.name}</span>
+                    <motion.div
+                      animate={{ rotate: showModelSelector ? 180 : 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <CaretDown weight="bold" size={12} />
+                    </motion.div>
+                  </motion.button>
+
+                  <AnimatePresence>
+                    {showModelSelector && (
+                      <motion.div
+                        className="model-dropdown"
+                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                      >
+                        {AI_MODELS.map((model) => (
+                          <motion.button
+                            key={model.id}
+                            className={`model-option ${selectedModel.id === model.id ? 'selected' : ''}`}
+                            onClick={() => {
+                              setSelectedModel(model)
+                              setShowModelSelector(false)
+                            }}
+                            whileHover={{ x: 4 }}
+                          >
+                            <span className="model-provider">{model.provider.toUpperCase()}</span>
+                            <span className="model-label">
+                              {model.name}
+                              {model.recommended && <span className="recommended-badge">Empfohlen</span>}
+                            </span>
+                          </motion.button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
                 <button
                   className="generate-btn"
                   onClick={generateMiniApp}
@@ -252,21 +342,15 @@ function GenerativeApp({ userSettings = {}, onOpenContext }) {
               </div>
             </div>
 
-            {/* Error message */}
+            {/* Error message with suggestions */}
             <AnimatePresence>
               {error && (
-                <motion.div
-                  className="error-message"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                >
-                  <Warning weight="fill" />
-                  <span>{error}</span>
-                  <button onClick={() => setError(null)}>
-                    <X weight="bold" />
-                  </button>
-                </motion.div>
+                <ErrorMessage
+                  error={error}
+                  onClose={() => setError(null)}
+                  onRetry={generateMiniApp}
+                  showSuggestions={true}
+                />
               )}
             </AnimatePresence>
 

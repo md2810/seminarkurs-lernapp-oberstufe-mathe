@@ -11,12 +11,63 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  
+
   /* Subtle gradient background */
-  background: 
+  background:
     radial-gradient(circle at 15% 15%, rgba(var(--primary), 0.05) 0%, transparent 40%),
     radial-gradient(circle at 85% 85%, rgba(100, 100, 255, 0.03) 0%, transparent 40%),
     var(--bg-primary);
+}
+
+/* Ambient animated gradient orbs */
+.app::before,
+.app::after {
+  content: '';
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(80px);
+  opacity: 0.4;
+}
+
+.app::before {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(var(--primary), 0.15) 0%, transparent 70%);
+  top: 10%;
+  left: -5%;
+  animation: floatOrb1 25s ease-in-out infinite;
+}
+
+.app::after {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, transparent 70%);
+  bottom: 10%;
+  right: -5%;
+  animation: floatOrb2 20s ease-in-out infinite;
+}
+
+@keyframes floatOrb1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(30px, -20px) scale(1.1); }
+  50% { transform: translate(-20px, 30px) scale(0.95); }
+  75% { transform: translate(20px, 20px) scale(1.05); }
+}
+
+@keyframes floatOrb2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-25px, 15px) scale(1.08); }
+  66% { transform: translate(15px, -25px) scale(0.92); }
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .app::before,
+  .app::after {
+    animation: none;
+  }
 }
 
 /* === HEADER === */

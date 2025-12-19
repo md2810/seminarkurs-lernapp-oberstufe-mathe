@@ -18,13 +18,13 @@ import { SYSTEM_PROMPT } from '../../data/prompts/generate-questions.js'
 // Model tiers for different AI providers
 const MODEL_TIERS = {
   claude: {
-    light: 'claude-3-haiku-20240307',
-    standard: 'claude-sonnet-4-5-20250929',
-    heavy: 'claude-sonnet-4-5-20250929'
+    light: 'claude-3-5-haiku-20241022',
+    standard: 'claude-sonnet-4-20250514',
+    heavy: 'claude-sonnet-4-20250514'
   },
   gemini: {
-    light: 'gemini-1.5-flash',
-    standard: 'gemini-1.5-flash',
+    light: 'gemini-2.0-flash-exp',
+    standard: 'gemini-2.0-flash-exp',
     heavy: 'gemini-1.5-pro'
   },
   openai: {

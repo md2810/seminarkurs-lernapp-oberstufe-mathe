@@ -15,7 +15,10 @@ import {
   Trash,
   Brain,
   Lightning,
-  OpenAiLogo
+  OpenAiLogo,
+  Check,
+  Warning,
+  CircleNotch
 } from '@phosphor-icons/react'
 import { useAppStore } from '../stores/useAppStore'
 
@@ -128,6 +131,11 @@ function Settings({ isOpen, onClose, settings, onSettingsChange }) {
     claude: null,
     gemini: null,
     openai: null
+  })
+  const [keyValidation, setKeyValidation] = useState({
+    claude: { status: null, message: '' }, // status: 'valid', 'invalid', 'validating', null
+    gemini: { status: null, message: '' },
+    openai: { status: null, message: '' }
   })
 
   useEffect(() => {
@@ -280,6 +288,95 @@ function Settings({ isOpen, onClose, settings, onSettingsChange }) {
 
     // Also update the store's apiKeys
     setStoreApiKey(provider, apiKey)
+
+    // Reset validation status when key changes
+    setKeyValidation(prev => ({
+      ...prev,
+      [provider]: { status: null, message: '' }
+    }))
+  }
+
+  // Validate API key
+  const validateApiKey = async (provider) => {
+    const apiKey = getApiKey(provider)
+    if (!apiKey || apiKey.trim() === '') {
+      setKeyValidation(prev => ({
+        ...prev,
+        [provider]: { status: 'invalid', message: 'Bitte gib einen API-Key ein' }
+      }))
+      return
+    }
+
+    setKeyValidation(prev => ({
+      ...prev,
+      [provider]: { status: 'validating', message: 'Wird überprüft...' }
+    }))
+
+    try {
+      let isValid = false
+      let errorMessage = ''
+
+      switch (provider) {
+        case 'claude':
+          // Validate Claude key by listing models
+          const claudeResponse = await fetch('https://api.anthropic.com/v1/models', {
+            method: 'GET',
+            headers: {
+              'x-api-key': apiKey,
+              'anthropic-version': '2023-06-01'
+            }
+          })
+          isValid = claudeResponse.ok
+          if (!isValid) {
+            const error = await claudeResponse.json().catch(() => ({}))
+            errorMessage = error.error?.message || 'Ungültiger API-Key'
+          }
+          break
+
+        case 'gemini':
+          // Validate Gemini key by listing models
+          const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`)
+          isValid = geminiResponse.ok
+          if (!isValid) {
+            const error = await geminiResponse.json().catch(() => ({}))
+            errorMessage = error.error?.message || 'Ungültiger API-Key'
+          }
+          break
+
+        case 'openai':
+          // Validate OpenAI key by listing models
+          const openaiResponse = await fetch('https://api.openai.com/v1/models', {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${apiKey}`
+            }
+          })
+          isValid = openaiResponse.ok
+          if (!isValid) {
+            const error = await openaiResponse.json().catch(() => ({}))
+            errorMessage = error.error?.message || 'Ungültiger API-Key'
+          }
+          break
+      }
+
+      setKeyValidation(prev => ({
+        ...prev,
+        [provider]: {
+          status: isValid ? 'valid' : 'invalid',
+          message: isValid ? 'API-Key ist gültig' : errorMessage
+        }
+      }))
+
+      // If valid, also load models
+      if (isValid) {
+        fetchAvailableModels(provider)
+      }
+    } catch (error) {
+      setKeyValidation(prev => ({
+        ...prev,
+        [provider]: { status: 'invalid', message: 'Verbindungsfehler - bitte später erneut versuchen' }
+      }))
+    }
   }
 
   // Legacy support - map anthropicApiKey to claudeApiKey
@@ -952,13 +1049,51 @@ function Settings({ isOpen, onClose, settings, onSettingsChange }) {
                         <label className="setting-label-small">
                           <Key weight="bold" /> API Key
                         </label>
-                        <input
-                          type="password"
-                          placeholder={provider.placeholder}
-                          value={apiKey}
-                          onChange={(e) => handleApiKeyChange(provider.id, e.target.value)}
-                          className="api-key-input"
-                        />
+                        <div className="api-key-input-wrapper">
+                          <input
+                            type="password"
+                            placeholder={provider.placeholder}
+                            value={apiKey}
+                            onChange={(e) => handleApiKeyChange(provider.id, e.target.value)}
+                            className={`api-key-input ${keyValidation[provider.id]?.status === 'valid' ? 'valid' : ''} ${keyValidation[provider.id]?.status === 'invalid' ? 'invalid' : ''}`}
+                          />
+                          <motion.button
+                            className="validate-btn"
+                            onClick={() => validateApiKey(provider.id)}
+                            disabled={!apiKey || keyValidation[provider.id]?.status === 'validating'}
+                            whileHover={apiKey ? { scale: 1.05 } : {}}
+                            whileTap={apiKey ? { scale: 0.95 } : {}}
+                            title="API-Key überprüfen"
+                          >
+                            {keyValidation[provider.id]?.status === 'validating' ? (
+                              <motion.span
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                                style={{ display: 'flex' }}
+                              >
+                                <CircleNotch weight="bold" />
+                              </motion.span>
+                            ) : keyValidation[provider.id]?.status === 'valid' ? (
+                              <Check weight="bold" />
+                            ) : keyValidation[provider.id]?.status === 'invalid' ? (
+                              <Warning weight="bold" />
+                            ) : (
+                              <Check weight="bold" />
+                            )}
+                          </motion.button>
+                        </div>
+                        {keyValidation[provider.id]?.status && (
+                          <motion.div
+                            className={`validation-message ${keyValidation[provider.id]?.status}`}
+                            initial={{ opacity: 0, y: -5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                          >
+                            {keyValidation[provider.id]?.status === 'valid' && <Check weight="bold" />}
+                            {keyValidation[provider.id]?.status === 'invalid' && <Warning weight="bold" />}
+                            {keyValidation[provider.id]?.status === 'validating' && <CircleNotch weight="bold" />}
+                            <span>{keyValidation[provider.id]?.message}</span>
+                          </motion.div>
+                        )}
                       </div>
 
                       {/* Model Selector */}

@@ -608,10 +608,64 @@ function LiveFeed({ topics = [], userSettings = {}, onOpenContext }) {
                   )}
                 </div>
                 {feedback && <p className="result-text">{feedback}</p>}
-                {!isCorrect && currentQuestion.solution && (
-                  <div className="solution-reveal">
-                    <strong>Lösung:</strong>
-                    <LaTeX>{currentQuestion.solution}</LaTeX>
+                {!isCorrect && (
+                  <div className="wrong-answer-feedback">
+                    {/* Show correct answer */}
+                    {currentQuestion.type === 'multiple-choice' && currentQuestion.options && (
+                      <div className="correct-answer-reveal">
+                        <strong>Richtige Antwort:</strong>
+                        <div className="correct-option">
+                          {(() => {
+                            const correctOption = currentQuestion.options.find(o => o.isCorrect)
+                            return correctOption ? (
+                              <>
+                                <span className="option-badge">{correctOption.id}</span>
+                                <LaTeX>{correctOption.text}</LaTeX>
+                              </>
+                            ) : null
+                          })()}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Show solution for step-by-step */}
+                    {currentQuestion.solution && (
+                      <div className="solution-reveal">
+                        <strong>Lösung:</strong>
+                        <LaTeX>{currentQuestion.solution}</LaTeX>
+                      </div>
+                    )}
+
+                    {/* Explanation why the answer is correct */}
+                    {currentQuestion.explanation && (
+                      <div className="explanation-section">
+                        <strong>Erklärung:</strong>
+                        <p className="explanation-text">
+                          <LaTeX>{currentQuestion.explanation}</LaTeX>
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Fallback explanation based on hints if no explicit explanation */}
+                    {!currentQuestion.explanation && currentQuestion.hints?.length > 0 && (
+                      <div className="explanation-section">
+                        <strong>Lösungsansatz:</strong>
+                        <p className="explanation-text">
+                          <LaTeX>{currentQuestion.hints[currentQuestion.hints.length - 1]?.text || ''}</LaTeX>
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Learn more button */}
+                    <motion.button
+                      className="learn-more-btn"
+                      onClick={onOpenContext}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <BookOpen weight="bold" />
+                      Mehr erfahren
+                    </motion.button>
                   </div>
                 )}
               </motion.div>

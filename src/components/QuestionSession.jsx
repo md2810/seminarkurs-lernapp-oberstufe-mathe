@@ -701,6 +701,7 @@ function QuestionSession({ sessionId, onClose }) {
                 )}
               </div>
               <p className="feedback-text">{feedback.feedback}</p>
+
               {feedback.isCorrect && (
                 <div className="xp-earned">
                   <Trophy weight="bold" /> +{feedback.xpEarned} XP
@@ -724,6 +725,55 @@ function QuestionSession({ sessionId, onClose }) {
                       </div>
                     )}
                   </div>
+                </div>
+              )}
+
+              {/* Enhanced Wrong Answer Feedback */}
+              {!feedback.isCorrect && (
+                <div className="wrong-answer-details">
+                  {/* Show correct answer for multiple choice */}
+                  {currentQuestion.type === 'multiple-choice' && currentQuestion.options && (
+                    <div className="correct-answer-box">
+                      <strong>Richtige Antwort:</strong>
+                      <div className="correct-answer-content">
+                        {(() => {
+                          const correctOption = currentQuestion.options.find(o => o.isCorrect)
+                          return correctOption ? (
+                            <>
+                              <span className="correct-badge">{correctOption.id}</span>
+                              <LaTeX>{correctOption.text}</LaTeX>
+                            </>
+                          ) : null
+                        })()}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Show solution for step-by-step */}
+                  {currentQuestion.solution && (
+                    <div className="solution-box">
+                      <strong>Lösung:</strong>
+                      <div className="solution-content">
+                        <LaTeX>{currentQuestion.solution}</LaTeX>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Explanation section */}
+                  {currentQuestion.explanation && (
+                    <div className="explanation-box">
+                      <strong>Erklärung:</strong>
+                      <p><LaTeX>{currentQuestion.explanation}</LaTeX></p>
+                    </div>
+                  )}
+
+                  {/* Fallback: use last hint as explanation if no explanation provided */}
+                  {!currentQuestion.explanation && currentQuestion.hints?.length > 0 && (
+                    <div className="explanation-box">
+                      <strong>Lösungsansatz:</strong>
+                      <p><LaTeX>{currentQuestion.hints[currentQuestion.hints.length - 1]?.text || ''}</LaTeX></p>
+                    </div>
+                  )}
                 </div>
               )}
             </motion.div>
