@@ -91,7 +91,7 @@ export const useAppStore = create(
       // Selected models per provider
       selectedModels: {
         claude: 'claude-sonnet-4-20250514',
-        gemini: 'gemini-2.0-flash-exp',
+        gemini: 'gemini-3-flash-preview',
         openai: 'gpt-4o',
       },
       setSelectedModel: (provider, model) => set((state) => ({

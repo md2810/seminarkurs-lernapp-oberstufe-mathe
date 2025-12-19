@@ -43,7 +43,7 @@ const AI_MODELS = [
   { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku', provider: 'claude' },
   { id: 'gpt-4o', name: 'GPT-4o', provider: 'openai' },
   { id: 'gpt-4o-mini', name: 'GPT-4o Mini', provider: 'openai' },
-  { id: 'gemini-2.0-flash-exp', name: 'Gemini 2.0 Flash', provider: 'gemini' },
+  { id: 'gemini-3-flash-preview', name: 'Gemini 3 Flash', provider: 'gemini' },
   { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', provider: 'gemini' }
 ]
 

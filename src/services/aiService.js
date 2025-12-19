@@ -22,8 +22,8 @@ const MODEL_TIERS = {
     heavy: 'claude-sonnet-4-20250514'
   },
   gemini: {
-    light: 'gemini-2.0-flash-exp',
-    standard: 'gemini-2.0-flash-exp',
+    light: 'gemini-3-flash-preview',
+    standard: 'gemini-3-flash-preview',
     heavy: 'gemini-1.5-pro'
   },
   openai: {
@@ -36,7 +36,7 @@ const MODEL_TIERS = {
 // Default models (for backward compatibility)
 const DEFAULT_MODELS = {
   claude: 'claude-sonnet-4-20250514',
-  gemini: 'gemini-2.0-flash-exp',
+  gemini: 'gemini-3-flash-preview',
   openai: 'gpt-4o'
 }
 
@@ -308,7 +308,7 @@ export function estimateCost(provider, model, inputTokens, outputTokens) {
   const PRICING = {
     'claude-3-5-haiku-20241022': { input: 0.0008, output: 0.004 },
     'claude-sonnet-4-20250514': { input: 0.003, output: 0.015 },
-    'gemini-2.0-flash-exp': { input: 0.0001, output: 0.0004 },
+    'gemini-3-flash-preview': { input: 0.0001, output: 0.0004 },
     'gemini-1.5-flash': { input: 0.000075, output: 0.0003 },
     'gemini-1.5-pro': { input: 0.00125, output: 0.005 },
     'gpt-4o-mini': { input: 0.00015, output: 0.0006 },

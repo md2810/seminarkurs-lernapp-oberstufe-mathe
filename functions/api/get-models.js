@@ -176,7 +176,7 @@ async function fetchGeminiModels(apiKey) {
 
 function formatGeminiModelName(modelId) {
   // gemini-1.5-pro -> Gemini 1.5 Pro
-  // gemini-2.0-flash-exp -> Gemini 2.0 Flash (Experimental)
+  // gemini-3-flash-preview -> Gemini 3 Flash (Preview)
   const parts = modelId.split('-')
   let name = 'Gemini'
 

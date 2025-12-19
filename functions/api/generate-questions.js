@@ -23,8 +23,8 @@ const MODEL_TIERS = {
     heavy: 'claude-sonnet-4-20250514'
   },
   gemini: {
-    light: 'gemini-2.0-flash-exp',
-    standard: 'gemini-2.0-flash-exp',
+    light: 'gemini-3-flash-preview',
+    standard: 'gemini-3-flash-preview',
     heavy: 'gemini-1.5-pro'
   },
   openai: {

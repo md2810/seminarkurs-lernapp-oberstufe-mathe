@@ -306,8 +306,8 @@ async function callOpenAI(apiKey, systemPrompt, userPrompt, selectedModel) {
 
 async function callGemini(apiKey, systemPrompt, userPrompt, selectedModel) {
   try {
-    // Use provided model or default to gemini-2.0-flash-exp (gemini-1.5-flash is deprecated)
-    const modelId = selectedModel || 'gemini-2.0-flash-exp'
+    // Use provided model or default to gemini-3-flash-preview (gemini-1.5-flash is deprecated)
+    const modelId = selectedModel || 'gemini-3-flash-preview'
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`,
