@@ -3,10 +3,11 @@
  * Real-time question feed with adaptive difficulty, caching, and buffer system
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../contexts/AuthContext'
 import { useAppStore } from '../stores/useAppStore'
+import { isOnline, generateFallbackQuestions } from '../utils/apiFallback'
 import LaTeX from './LaTeX'
 import ParticleExplosion from './ParticleExplosion'
 import {
@@ -101,10 +102,18 @@ function LiveFeed({ topics = [], userSettings = {}, onOpenContext }) {
     }
   }, [aiProvider, apiKeys, userSettings])
 
-  // Generate questions from API
+  // Generate questions from API with fallback
   const generateQuestions = useCallback(async (count = BUFFER_SIZE, adjustedDifficulty = null, isBackground = false) => {
     const apiKey = getApiKey()
-    if (!apiKey || topics.length === 0) return []
+    const difficulty = adjustedDifficulty ?? questionCache.difficultyLevel
+
+    // Fallback: Wenn kein API-Key oder offline, nutze lokale Fragen
+    if (!apiKey || !isOnline()) {
+      console.log('[LiveFeed] Using fallback questions (no API key or offline)')
+      return generateFallbackQuestions(topics, difficulty, count)
+    }
+
+    if (topics.length === 0) return []
 
     const model = selectedModels[aiProvider] || userSettings.selectedModel
 
@@ -124,23 +133,29 @@ function LiveFeed({ topics = [], userSettings = {}, onOpenContext }) {
           model,
           userId: currentUser?.uid,
           topics,
-          difficultyLevel: adjustedDifficulty ?? questionCache.difficultyLevel,
+          difficultyLevel: difficulty,
           questionCount: count,
           userContext: {
             gradeLevel: userSettings.gradeLevel || 'Klasse_11',
             courseType: userSettings.courseType || 'Leistungsfach'
           }
-        })
+        }),
+        // Timeout nach 15 Sekunden
+        signal: AbortSignal.timeout(15000)
       })
 
       const data = await response.json()
       if (data.success && data.questions) {
         return data.questions
       }
-      return []
+
+      // API hat keine Fragen zurückgegeben, nutze Fallback
+      console.log('[LiveFeed] API returned no questions, using fallback')
+      return generateFallbackQuestions(topics, difficulty, count)
     } catch (error) {
-      console.error('Error generating questions:', error)
-      return []
+      console.error('[LiveFeed] Error generating questions, using fallback:', error)
+      // Bei Fehler: Fallback-Fragen nutzen
+      return generateFallbackQuestions(topics, difficulty, count)
     } finally {
       if (!isBackground) {
         setQuestionCache({ isGenerating: false })
@@ -663,4 +678,4 @@ function LiveFeed({ topics = [], userSettings = {}, onOpenContext }) {
   )
 }
 
-export default LiveFeed
+export default memo(LiveFeed)

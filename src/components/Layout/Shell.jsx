@@ -236,7 +236,7 @@ function ViewToggleButton({ view, label, activeView, onSetView }) {
 export function Shell({
   children,
   feed,
-  canvas,
+  apps,
   progress,
   userStats = {},
   onLogout,
@@ -280,8 +280,8 @@ export function Shell({
               onSetView={setActiveView}
             />
             <ViewToggleButton
-              view="canvas"
-              label="Canvas"
+              view="apps"
+              label="Apps"
               activeView={activeView}
               onSetView={setActiveView}
             />
@@ -327,16 +327,16 @@ export function Shell({
                 {feed}
               </motion.div>
             )}
-            {activeView === 'canvas' && (
+            {activeView === 'apps' && (
               <motion.div
-                key="canvas"
+                key="apps"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                 className="h-full w-full overflow-hidden"
               >
-                {canvas}
+                {apps}
               </motion.div>
             )}
             {activeView === 'progress' && (

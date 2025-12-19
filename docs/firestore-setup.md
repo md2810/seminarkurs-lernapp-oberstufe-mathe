@@ -270,4 +270,70 @@ Die App ist jetzt mit Firestore verbunden und speichert alle User-Daten sicher i
 
 ---
 
-*Letzte Aktualisierung: 2025-10-17*
+---
+
+## 🔒 Datenschutz & DSGVO-Konformität
+
+### Rechtsgrundlage
+
+Die Verarbeitung personenbezogener Daten erfolgt auf Grundlage von:
+- **Art. 6 Abs. 1 lit. a DSGVO** (Einwilligung) für optionale Funktionen
+- **Art. 6 Abs. 1 lit. b DSGVO** (Vertragserfüllung) für Kernfunktionalität
+- **Art. 6 Abs. 1 lit. f DSGVO** (berechtigtes Interesse) für Sicherheit und Betrieb
+
+### Prinzip der Datenminimierung (Art. 5 Abs. 1 lit. c DSGVO)
+
+Die App speichert nur Daten, die für den Lernzweck **unmittelbar erforderlich** sind:
+
+| Datenkategorie | Zweck | Speicherdauer |
+|----------------|-------|---------------|
+| E-Mail-Adresse | Authentifizierung | Bis Kontolöschung |
+| Lernfortschritt | Adaptive Übungen | Bis Kontolöschung |
+| Streak-Daten | Gamification | Bis Kontolöschung |
+| AI-Memories | Personalisierung | Max. 90 Tage |
+| Task History | Lernanalyse | Max. 365 Tage |
+
+**Nicht gespeicherte Daten:**
+- ❌ Standortdaten
+- ❌ Gerätekennungen (außer für Sicherheit)
+- ❌ Browserverlauf außerhalb der App
+- ❌ Kontaktdaten Dritter
+
+### Betroffenenrechte (Art. 15-21 DSGVO)
+
+Nutzer können jederzeit:
+1. **Auskunft** über gespeicherte Daten verlangen
+2. **Berichtigung** falscher Daten fordern
+3. **Löschung** ihrer Daten veranlassen
+4. **Export** ihrer Daten anfordern (Datenportabilität)
+5. **Widerspruch** gegen Verarbeitung einlegen
+
+### Implementierung in der App
+
+```javascript
+// Datenexport (Art. 20 DSGVO)
+async function exportUserData(userId) {
+  const userData = await getUserDocument(userId)
+  return JSON.stringify(userData, null, 2)
+}
+
+// Datenlöschung (Art. 17 DSGVO)
+async function deleteUserData(userId) {
+  await deleteDoc(doc(db, 'users', userId))
+  await deleteUser(auth.currentUser)
+}
+```
+
+### Verarbeitungsverzeichnis
+
+Ein Verarbeitungsverzeichnis gemäß Art. 30 DSGVO ist in `/docs/verarbeitungsverzeichnis.md` dokumentiert.
+
+### Auftragsverarbeitung
+
+Firebase/Google fungiert als Auftragsverarbeiter. Der Data Processing Agreement (DPA) mit Google ist unter [firebase.google.com/terms/data-processing-terms](https://firebase.google.com/terms/data-processing-terms) einsehbar.
+
+**Serverstandort:** EU (europe-west1) - keine Datenübertragung in Drittstaaten.
+
+---
+
+*Letzte Aktualisierung: Dezember 2024*

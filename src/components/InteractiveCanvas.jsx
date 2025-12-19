@@ -9,10 +9,11 @@
  * - AI can respond with drawings AND GeoGebra commands
  */
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../contexts/AuthContext'
 import { useAppStore } from '../stores/useAppStore'
+import { GeoGebraErrorBoundary } from './ErrorBoundary'
 import LaTeX from './LaTeX'
 import {
   PencilSimple,
@@ -42,6 +43,86 @@ import './InteractiveCanvas.css'
 
 // GeoGebra App configuration
 const GEOGEBRA_CONTAINER_ID = 'geogebra-applet-container'
+
+/**
+ * Sanitize and validate GeoGebra commands before execution
+ * Prevents injection attacks and fixes common syntax issues
+ */
+function sanitizeGeoGebraCommand(command) {
+  if (!command || typeof command !== 'string') return null
+
+  let sanitized = command.trim()
+
+  // Remove potentially dangerous content
+  sanitized = sanitized
+    .replace(/[<>]/g, '')
+    .replace(/javascript:/gi, '')
+    .replace(/eval\(/gi, '')
+    .replace(/Function\(/gi, '')
+    .replace(/document\./gi, '')
+    .replace(/window\./gi, '')
+
+  // Fix common syntax issues
+  // German decimal comma to point
+  sanitized = sanitized.replace(/(\d+),(\d+)/g, '$1.$2')
+
+  // Fix unbalanced parentheses (simple cases)
+  const openCount = (sanitized.match(/\(/g) || []).length
+  const closeCount = (sanitized.match(/\)/g) || []).length
+  if (openCount > closeCount) {
+    sanitized += ')'.repeat(openCount - closeCount)
+  }
+
+  // Limit command length to prevent abuse
+  if (sanitized.length > 500) {
+    console.warn('[GeoGebra] Command too long, truncating')
+    sanitized = sanitized.substring(0, 500)
+  }
+
+  return sanitized
+}
+
+/**
+ * Execute a GeoGebra command safely with try-catch
+ */
+function safeEvalCommand(api, command, color) {
+  const sanitized = sanitizeGeoGebraCommand(command)
+  if (!sanitized) {
+    console.warn('[GeoGebra] Invalid command skipped:', command)
+    return false
+  }
+
+  try {
+    const result = api.evalCommand(sanitized)
+
+    if (result === false) {
+      console.warn('[GeoGebra] Command rejected:', sanitized)
+      return false
+    }
+
+    // Apply color if specified
+    if (color) {
+      try {
+        const objName = api.getObjectName(api.getObjectNumber() - 1)
+        if (objName) {
+          const hex = color.replace('#', '')
+          const r = parseInt(hex.substr(0, 2), 16)
+          const g = parseInt(hex.substr(2, 2), 16)
+          const b = parseInt(hex.substr(4, 2), 16)
+          api.setColor(objName, r, g, b)
+          api.setLineThickness(objName, 3)
+        }
+      } catch (colorError) {
+        console.warn('[GeoGebra] Could not apply color:', colorError)
+      }
+    }
+
+    return true
+  } catch (error) {
+    console.error('[GeoGebra] Command execution error:', sanitized, error)
+    return false
+  }
+}
 
 // Drawing tools
 const TOOLS = {
@@ -657,26 +738,23 @@ function InteractiveCanvas({ wrongQuestions = [], userSettings = {}, onOpenConte
           setAiDrawings(prev => [...prev, ...offsetDrawings])
         }
 
-        // Execute GeoGebra commands
+        // Execute GeoGebra commands safely
         if (data.geogebraCommands && data.geogebraCommands.length > 0 && api) {
+          let successCount = 0
+          let failCount = 0
+
           data.geogebraCommands.forEach(cmd => {
-            try {
-              api.evalCommand(cmd.command)
-              if (cmd.color) {
-                const objName = api.getObjectName(api.getObjectNumber() - 1)
-                if (objName) {
-                  const hex = cmd.color.replace('#', '')
-                  const r = parseInt(hex.substr(0, 2), 16)
-                  const g = parseInt(hex.substr(2, 2), 16)
-                  const b = parseInt(hex.substr(4, 2), 16)
-                  api.setColor(objName, r, g, b)
-                  api.setLineThickness(objName, 3)
-                }
-              }
-            } catch (e) {
-              console.warn('GeoGebra command error:', cmd.command, e)
+            const success = safeEvalCommand(api, cmd.command, cmd.color)
+            if (success) {
+              successCount++
+            } else {
+              failCount++
             }
           })
+
+          if (failCount > 0) {
+            console.warn(`[GeoGebra] ${failCount}/${data.geogebraCommands.length} commands failed`)
+          }
         }
       } else {
         setAiResponse({ error: data.error || 'Fehler bei der KI-Analyse' })
@@ -887,15 +965,17 @@ function InteractiveCanvas({ wrongQuestions = [], userSettings = {}, onOpenConte
 
         {/* Canvas layers */}
         <div className="canvas-layers">
-          {/* GeoGebra layer (bottom) */}
-          <div className="geogebra-layer" ref={geogebraWrapperRef}>
-            {geogebraLoading && (
-              <div className="geogebra-loading">
-                <div className="loading-spinner" />
-                <p>GeoGebra wird geladen...</p>
-              </div>
-            )}
-          </div>
+          {/* GeoGebra layer (bottom) - wrapped in error boundary */}
+          <GeoGebraErrorBoundary>
+            <div className="geogebra-layer" ref={geogebraWrapperRef}>
+              {geogebraLoading && (
+                <div className="geogebra-loading">
+                  <div className="loading-spinner" />
+                  <p>GeoGebra wird geladen...</p>
+                </div>
+              )}
+            </div>
+          </GeoGebraErrorBoundary>
 
           {/* Drawing canvas layer (middle) */}
           <canvas
@@ -1056,4 +1136,4 @@ function InteractiveCanvas({ wrongQuestions = [], userSettings = {}, onOpenConte
   )
 }
 
-export default InteractiveCanvas
+export default memo(InteractiveCanvas)

@@ -25,7 +25,7 @@ export const useAppStore = create(
   persist(
     (set, get) => ({
       // View State
-      activeView: 'feed', // 'feed' | 'canvas' | 'progress'
+      activeView: 'feed', // 'feed' | 'apps' | 'progress'
       setActiveView: (view) => set({ activeView: view }),
 
       // Command Center State

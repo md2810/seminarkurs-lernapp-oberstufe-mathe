@@ -14,7 +14,7 @@ import LearningPlan from './components/LearningPlan'
 import QuestionSession from './components/QuestionSession'
 import Progress from './components/Progress'
 import LiveFeed from './components/LiveFeed'
-import InteractiveCanvas from './components/InteractiveCanvas'
+import { AppHub } from './components/Apps'
 import {
   initializeUserProfile,
   updateUserSettings,
@@ -278,8 +278,8 @@ function App() {
           onOpenContext={() => setLearningPlanOpen(true)}
         />
       }
-      canvas={
-        <InteractiveCanvas
+      apps={
+        <AppHub
           wrongQuestions={wrongQuestions}
           userSettings={settings}
           onOpenContext={() => setLearningPlanOpen(true)}

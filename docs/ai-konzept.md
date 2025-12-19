@@ -672,4 +672,208 @@ SessionComplete.jsx:
 
 ---
 
-*Letzte Aktualisierung: 2025-10-17*
+---
+
+## 🛡️ Halluzination Prevention & Qualitätssicherung
+
+### Das Problem: AI-Halluzinationen im Bildungskontext
+
+Large Language Models (LLMs) können faktisch falsche Informationen generieren – besonders problematisch im mathematischen Kontext:
+- Falsche Rechenschritte
+- Erfundene Formeln
+- Inkorrekte Lösungen
+- Falsche didaktische Hinweise
+
+### Mehrstufige Präventionsstrategie
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                HALLUZINATION PREVENTION                     │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│   Layer 1: PROMPT ENGINEERING                               │
+│   ├── Strikte Ausgabeformate (JSON Schema)                 │
+│   ├── Explizite Anweisungen zur Selbstprüfung              │
+│   └── Referenz auf verifizierte Curriculum-Daten            │
+│                                                             │
+│   Layer 2: STRUKTURELLE VALIDIERUNG                         │
+│   ├── JSON Schema Validation                                │
+│   ├── Mathematische Plausibilitätsprüfung                  │
+│   └── Schwierigkeitsgrad-Konsistenz                        │
+│                                                             │
+│   Layer 3: TEACHER-IN-THE-LOOP                              │
+│   ├── Flagging verdächtiger Antworten                      │
+│   ├── Periodische Stichproben-Review                       │
+│   └── Feedback-Loop für Verbesserungen                      │
+│                                                             │
+│   Layer 4: USER FEEDBACK                                    │
+│   ├── "Diese Erklärung war falsch" Button                  │
+│   └── Automatisches Logging für Review                      │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Layer 1: Prompt Engineering
+
+**Selbstverifikations-Anweisung im Prompt:**
+```
+KRITISCHE ANFORDERUNG:
+Bevor du eine mathematische Lösung ausgibst:
+1. Prüfe jeden Rechenschritt auf Korrektheit
+2. Verifiziere, dass die Lösung zur Aufgabe passt
+3. Stelle sicher, dass verwendete Formeln korrekt sind
+4. Setze die Lösung in die Originalgleichung ein (Probe)
+
+Bei JEGLICHER Unsicherheit:
+- Markiere den fraglichen Schritt
+- Füge "BITTE PRÜFEN" Hinweis hinzu
+```
+
+### Layer 2: Backend-Validierung
+
+```javascript
+// functions/api/validate-math-response.js
+
+function validateMathematicalResponse(response) {
+  const issues = []
+
+  // 1. Check for common hallucination patterns
+  const hallucIndicators = [
+    /\d+\s*[+\-*/]\s*\d+\s*=\s*\d+/, // Check if basic arithmetic is correct
+    /√(-?\d+)/,  // Check for impossible square roots
+    /0\s*\/\s*0/, // Division by zero
+  ]
+
+  // 2. Validate JSON structure
+  try {
+    const parsed = JSON.parse(response)
+    if (!parsed.solution || !parsed.explanation) {
+      issues.push('MISSING_REQUIRED_FIELDS')
+    }
+  } catch (e) {
+    issues.push('INVALID_JSON')
+  }
+
+  // 3. Cross-check with curriculum database
+  // Ensure topics mentioned exist in official BW curriculum
+
+  // 4. Flag for review if confidence is low
+  if (issues.length > 0) {
+    logForReview(response, issues)
+  }
+
+  return { valid: issues.length === 0, issues }
+}
+```
+
+### Layer 3: Teacher-in-the-Loop
+
+**Konzept:**
+> Keine vollständig autonome KI im Bildungskontext – Lehrkräfte bleiben die finale Instanz.
+
+**Implementierung:**
+
+| Szenario | Aktion |
+|----------|--------|
+| Neue Fragetypen | Lehrkraft-Review vor Freigabe |
+| Low-Confidence Antworten | Automatisches Flagging |
+| User-Reports | Queue für manuelles Review |
+| Monatliche Stichprobe | 5% aller generierten Fragen |
+
+**Review-Dashboard (geplant):**
+```
+/admin/ai-review
+├── Geflaggte Antworten (23 neu)
+├── User-Reports (5 offen)
+├── Stichproben-Queue (heute fällig: 15)
+└── Qualitäts-Metriken
+    ├── Halluzinationsrate: 0.3%
+    ├── User-Beschwerden: 2/1000
+    └── Korrekturquote: 98.7%
+```
+
+### Layer 4: User Feedback Integration
+
+```javascript
+// Feedback-Button in QuestionSession.jsx
+<button
+  className="report-btn"
+  onClick={() => handleReportIssue(questionId)}
+>
+  <Warning weight="bold" />
+  Diese Erklärung ist fehlerhaft
+</button>
+
+// Backend-Handler
+async function handleReportIssue(reportData) {
+  await addDoc(collection(db, 'aiIssueReports'), {
+    questionId: reportData.questionId,
+    generatedContent: reportData.content,
+    reportedAt: serverTimestamp(),
+    userId: reportData.userId,
+    category: 'hallucination',
+    status: 'pending_review'
+  })
+
+  // Sofortige Aktion: Frage aus Rotation nehmen
+  await flagQuestionForReview(reportData.questionId)
+}
+```
+
+### Metriken & Monitoring
+
+| Metrik | Ziel | Alarm-Schwelle |
+|--------|------|----------------|
+| Halluzinationsrate | < 0.5% | > 1% |
+| User-Beschwerden | < 1/1000 | > 5/1000 |
+| Validation-Failures | < 2% | > 5% |
+| Review-Backlog | < 50 | > 200 |
+
+### Spezielle Maßnahmen für Mathematik
+
+1. **Numerische Verifikation**: Bei allen rechnerischen Aufgaben wird die Lösung automatisch mit der Eingabe verifiziert (symbolisch oder numerisch).
+
+2. **Formel-Whitelist**: Nur Formeln aus dem verifizierten Curriculum werden akzeptiert.
+
+3. **Schritt-für-Schritt Validierung**: Jeder Rechenschritt wird separat auf Plausibilität geprüft.
+
+4. **Grenzwert-Checks**: Extremwerte und Grenzfälle werden getestet.
+
+---
+
+## 🎓 Pädagogische Qualitätssicherung
+
+### Alignment mit Bildungsplan BW
+
+Alle generierten Inhalte werden gegen den offiziellen Bildungsplan geprüft:
+
+```javascript
+const CURRICULUM_VALIDATOR = {
+  validateTopic(topic) {
+    return bwCurriculum.topics.includes(topic)
+  },
+
+  validateDifficulty(afbLevel, gradeLevel) {
+    const maxAFB = gradeLevel === 'KS2' ? 3 : 2
+    return afbLevel <= maxAFB
+  },
+
+  validateCompetencies(question) {
+    // Check if question addresses stated competencies
+    return question.competencies.every(c =>
+      bwCurriculum.competencies.includes(c)
+    )
+  }
+}
+```
+
+### Differenzierung nach Kurstyp
+
+| Kurstyp | Max. Schwierigkeit | Spezielle Anforderungen |
+|---------|-------------------|------------------------|
+| Basisfach | AFB II (selten III) | Anwendungsorientiert |
+| Leistungsfach | AFB III vollständig | Beweise, Abstraktion |
+
+---
+
+*Letzte Aktualisierung: Dezember 2024*

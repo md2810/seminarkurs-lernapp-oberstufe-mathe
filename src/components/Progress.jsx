@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { Zap, Flame, Trophy, Star, Target, CheckCircle, Lock, Sparkles, TrendingUp, SkipForward } from 'lucide-react'
 import { useAppStore } from '../stores/useAppStore'
@@ -18,7 +19,7 @@ const MILESTONES = [
   { level: 11, xpRequired: 5500, title: 'Transzendent', icon: Flame },
 ]
 
-function ProgressPath({ userStats }) {
+const ProgressPath = memo(function ProgressPath({ userStats }) {
   const currentXp = userStats.totalXp || userStats.xp || 0
   const currentLevel = userStats.level || 1
 
@@ -117,9 +118,9 @@ function ProgressPath({ userStats }) {
       })}
     </div>
   )
-}
+})
 
-function StatCard({ icon: Icon, label, value, gradient, delay = 0 }) {
+const StatCard = memo(function StatCard({ icon: Icon, label, value, gradient, delay = 0 }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -137,9 +138,9 @@ function StatCard({ icon: Icon, label, value, gradient, delay = 0 }) {
       </div>
     </motion.div>
   )
-}
+})
 
-export default function Progress() {
+function Progress() {
   // Get user stats from the store
   const { getUserStats } = useAppStore()
   const userStats = getUserStats()
@@ -253,3 +254,5 @@ export default function Progress() {
     </div>
   )
 }
+
+export default memo(Progress)
