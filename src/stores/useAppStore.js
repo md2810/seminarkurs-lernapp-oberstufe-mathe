@@ -286,6 +286,64 @@ export const useAppStore = create(
       })),
       clearWrongQuestions: () => set({ wrongQuestions: [] }),
 
+      // Saved Content - "Meine Inhalte"
+      savedContent: {
+        miniApps: [],      // Generated HTML/JS apps from KI-Labor
+        geogebraProjects: [], // Saved GeoGebra visualizations
+      },
+
+      // Save a mini app
+      saveMiniApp: (app) => set((state) => ({
+        savedContent: {
+          ...state.savedContent,
+          miniApps: [
+            {
+              id: `app_${Date.now()}`,
+              ...app,
+              savedAt: new Date().toISOString()
+            },
+            ...state.savedContent.miniApps
+          ].slice(0, 50) // Keep last 50
+        }
+      })),
+
+      // Delete a mini app
+      deleteMiniApp: (appId) => set((state) => ({
+        savedContent: {
+          ...state.savedContent,
+          miniApps: state.savedContent.miniApps.filter(a => a.id !== appId)
+        }
+      })),
+
+      // Save a GeoGebra project
+      saveGeoGebraProject: (project) => set((state) => ({
+        savedContent: {
+          ...state.savedContent,
+          geogebraProjects: [
+            {
+              id: `geo_${Date.now()}`,
+              ...project,
+              savedAt: new Date().toISOString()
+            },
+            ...state.savedContent.geogebraProjects
+          ].slice(0, 50)
+        }
+      })),
+
+      // Delete a GeoGebra project
+      deleteGeoGebraProject: (projectId) => set((state) => ({
+        savedContent: {
+          ...state.savedContent,
+          geogebraProjects: state.savedContent.geogebraProjects.filter(p => p.id !== projectId)
+        }
+      })),
+
+      // Get all saved content count
+      getSavedContentCount: () => {
+        const state = get()
+        return state.savedContent.miniApps.length + state.savedContent.geogebraProjects.length
+      },
+
       // Learning Session State
       currentDifficulty: 5,
       setCurrentDifficulty: (level) => set({ currentDifficulty: Math.max(1, Math.min(10, level)) }),
@@ -324,6 +382,7 @@ export const useAppStore = create(
         contextData: state.contextData,
         stats: state.stats,
         wrongQuestions: state.wrongQuestions,
+        savedContent: state.savedContent,
         currentDifficulty: state.currentDifficulty,
         questionCache: state.questionCache,
       }),

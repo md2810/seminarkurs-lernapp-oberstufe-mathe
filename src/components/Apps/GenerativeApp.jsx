@@ -31,7 +31,8 @@ import {
   X,
   CaretDown,
   Robot,
-  Gear
+  Gear,
+  FloppyDisk
 } from '@phosphor-icons/react'
 import ErrorMessage from '../ErrorMessage'
 import { parseError } from '../../utils/errorMessages'
@@ -93,7 +94,7 @@ const EXAMPLE_PROMPTS = [
 const SANDBOX_ATTRS = 'allow-scripts allow-same-origin'
 
 function GenerativeApp({ userSettings = {}, onOpenContext }) {
-  const { aiProvider, apiKeys } = useAppStore()
+  const { aiProvider, apiKeys, saveMiniApp } = useAppStore()
 
   // State
   const [prompt, setPrompt] = useState('')
@@ -104,6 +105,7 @@ function GenerativeApp({ userSettings = {}, onOpenContext }) {
   const [history, setHistory] = useState([])
   const [selectedModel, setSelectedModel] = useState(AI_MODELS[0])
   const [showModelSelector, setShowModelSelector] = useState(false)
+  const [isSaved, setIsSaved] = useState(false)
 
   // Refs
   const iframeRef = useRef(null)
@@ -193,6 +195,20 @@ function GenerativeApp({ userSettings = {}, onOpenContext }) {
     setGeneratedCode(null)
     setShowCode(false)
     setError(null)
+    setIsSaved(false)
+  }
+
+  // Save to "Meine Inhalte"
+  const handleSave = () => {
+    if (!generatedCode) return
+
+    saveMiniApp({
+      title: generatedCode.title,
+      description: generatedCode.description,
+      html: generatedCode.html,
+      prompt: history[0]?.prompt || ''
+    })
+    setIsSaved(true)
   }
 
   // Render generated app in iframe
@@ -238,6 +254,14 @@ function GenerativeApp({ userSettings = {}, onOpenContext }) {
             >
               {showCode ? <Eye weight="bold" /> : <Code weight="bold" />}
               {showCode ? 'Vorschau' : 'Code'}
+            </button>
+            <button
+              className={`action-btn ${isSaved ? 'saved' : ''}`}
+              onClick={handleSave}
+              disabled={isSaved}
+            >
+              {isSaved ? <Check weight="bold" /> : <FloppyDisk weight="bold" />}
+              {isSaved ? 'Gespeichert' : 'Speichern'}
             </button>
             <button className="action-btn" onClick={reset}>
               <ArrowCounterClockwise weight="bold" />

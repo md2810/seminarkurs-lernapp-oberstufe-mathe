@@ -1,0 +1,263 @@
+/**
+ * AnnotationOverlay Styles
+ * Drawing/highlighting overlay (like Gemini's "Markieren")
+ */
+
+.annotation-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  flex-direction: column;
+  z-index: 200;
+}
+
+/* Header */
+.annotation-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: transparent;
+}
+
+.header-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 1.25rem;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background 0.2s ease;
+}
+
+.header-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.header-title {
+  font-size: 1.0625rem;
+  font-weight: 500;
+  color: white;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.header-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 1.125rem;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.header-action:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.header-action:disabled {
+  color: #52525b;
+  cursor: not-allowed;
+}
+
+/* Canvas Wrapper */
+.annotation-canvas-wrapper {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  overflow: hidden;
+}
+
+.annotation-background {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 0.75rem;
+}
+
+.annotation-canvas {
+  position: absolute;
+  inset: 1rem;
+  width: calc(100% - 2rem);
+  height: calc(100% - 2rem);
+  cursor: crosshair;
+  touch-action: none;
+}
+
+/* Text Input Popup */
+.text-input-popup {
+  position: absolute;
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  background: rgba(24, 24, 27, 0.95);
+  border: 1px solid rgba(63, 63, 70, 0.5);
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  z-index: 10;
+}
+
+.text-input-popup input {
+  width: 200px;
+  padding: 0.5rem 0.75rem;
+  background: rgba(39, 39, 42, 0.8);
+  border: 1px solid rgba(63, 63, 70, 0.5);
+  border-radius: 0.5rem;
+  color: white;
+  font-size: 0.875rem;
+  outline: none;
+}
+
+.text-input-popup input:focus {
+  border-color: #22c55e;
+}
+
+.text-input-popup button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  border-radius: 0.5rem;
+  color: #a1a1aa;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.text-input-popup button:first-of-type {
+  color: #22c55e;
+}
+
+.text-input-popup button:hover {
+  background: rgba(63, 63, 70, 0.5);
+}
+
+/* Tools */
+.annotation-tools {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem 2rem;
+}
+
+.tools-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.tool-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.875rem 1.5rem;
+  background: rgba(39, 39, 42, 0.6);
+  border: 2px solid transparent;
+  border-radius: 1rem;
+  color: #a1a1aa;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tool-btn svg {
+  font-size: 1.5rem;
+}
+
+.tool-btn span {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.tool-btn:hover {
+  background: rgba(63, 63, 70, 0.6);
+  color: white;
+}
+
+.tool-btn.active {
+  background: rgba(147, 197, 253, 0.2);
+  border-color: rgba(147, 197, 253, 0.5);
+  color: #93c5fd;
+}
+
+/* Colors */
+.colors-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.color-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.color-btn:hover {
+  transform: scale(1.1);
+}
+
+.color-btn.active {
+  border-color: white;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+}
+
+/* Complete Button */
+.complete-btn {
+  padding: 0.875rem 3rem;
+  background: rgba(147, 197, 253, 0.2);
+  border: none;
+  border-radius: 9999px;
+  color: #93c5fd;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.complete-btn:hover {
+  background: rgba(147, 197, 253, 0.3);
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .annotation-tools {
+    padding: 0.75rem 1rem 1.5rem;
+  }
+
+  .tool-btn {
+    padding: 0.75rem 1rem;
+  }
+
+  .tool-btn svg {
+    font-size: 1.25rem;
+  }
+
+  .color-btn {
+    width: 32px;
+    height: 32px;
+  }
+}

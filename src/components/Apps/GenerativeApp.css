@@ -80,6 +80,17 @@
   color: white;
 }
 
+.action-btn.saved {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: rgba(34, 197, 94, 0.4);
+  color: #22c55e;
+}
+
+.action-btn:disabled {
+  opacity: 0.8;
+  cursor: default;
+}
+
 /* Main Content */
 .generative-content {
   flex: 1;

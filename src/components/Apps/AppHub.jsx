@@ -16,7 +16,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAppStore } from '../../stores/useAppStore'
 import {
   Function as FunctionIcon,
-  PencilSimple,
   Flask,
   Sparkle,
   CaretRight,
@@ -30,28 +29,32 @@ import {
   Check,
   Warning,
   Brain,
-  Gauge
+  Gauge,
+  FolderOpen,
+  Robot,
+  PencilSimple,
+  X,
+  PaperPlaneTilt,
+  ArrowsOutCardinal
 } from '@phosphor-icons/react'
 import './AppHub.css'
 
 // Lazy load heavy components for better performance
-const InteractiveCanvas = lazy(() => import('../InteractiveCanvas'))
 const GenerativeApp = lazy(() => import('./GenerativeApp'))
+const MyContent = lazy(() => import('./MyContent'))
+import FloatingChat from './FloatingChat'
+import AnnotationOverlay from './AnnotationOverlay'
+import './MyContent.css'
+import './FloatingChat.css'
+import './AnnotationOverlay.css'
 
 // Tab configuration with animated gradients
 const TABS = [
   {
-    id: 'whiteboard',
-    label: 'Whiteboard',
-    icon: PencilSimple,
-    description: 'Kollaboratives Zeichenbrett mit KI-Unterstützung',
-    gradient: 'from-blue-500 to-cyan-500'
-  },
-  {
     id: 'geogebra',
     label: 'GeoGebra',
     icon: FunctionIcon,
-    description: 'Interaktive mathematische Visualisierungen',
+    description: 'Interaktive Visualisierungen mit KI-Assistent',
     gradient: 'from-emerald-500 to-green-500'
   },
   {
@@ -59,8 +62,14 @@ const TABS = [
     label: 'KI-Labor',
     icon: Flask,
     description: 'Generiere eigene Simulationen und Mini-Apps',
-    gradient: 'from-purple-500 to-pink-500',
-    isNew: true
+    gradient: 'from-purple-500 to-pink-500'
+  },
+  {
+    id: 'my-content',
+    label: 'Meine Inhalte',
+    icon: FolderOpen,
+    description: 'Gespeicherte Simulationen und Projekte',
+    gradient: 'from-violet-500 to-purple-500'
   }
 ]
 
@@ -155,9 +164,9 @@ function sanitizeGeoGebraCommand(command) {
   return sanitized.length > 500 ? sanitized.substring(0, 500) : sanitized
 }
 
-// Standalone GeoGebra Component with Task Selector
+// Standalone GeoGebra Component with Task Selector and AI Chat
 const GeoGebraApp = memo(function GeoGebraApp({ wrongQuestions = [], userSettings = {} }) {
-  const { aiProvider, apiKeys } = useAppStore()
+  const { aiProvider, apiKeys, saveGeoGebraProject } = useAppStore()
   const [geogebraReady, setGeogebraReady] = useState(false)
   const [geogebraLoading, setGeogebraLoading] = useState(true)
   const [selectedTask, setSelectedTask] = useState(null)
@@ -165,6 +174,16 @@ const GeoGebraApp = memo(function GeoGebraApp({ wrongQuestions = [], userSetting
   const [isGenerating, setIsGenerating] = useState(false)
   const [generationStatus, setGenerationStatus] = useState(null)
   const [customPrompt, setCustomPrompt] = useState('')
+
+  // AI Chat state
+  const [isChatOpen, setIsChatOpen] = useState(false)
+  const [chatMessages, setChatMessages] = useState([])
+  const [isChatLoading, setIsChatLoading] = useState(false)
+
+  // Annotation state
+  const [isAnnotating, setIsAnnotating] = useState(false)
+  const [annotationImage, setAnnotationImage] = useState(null)
+  const [screenshotImage, setScreenshotImage] = useState(null)
 
   const geogebraInitialized = React.useRef(false)
   const geogebraAppRef = React.useRef(null)
@@ -342,6 +361,125 @@ const GeoGebraApp = memo(function GeoGebraApp({ wrongQuestions = [], userSetting
     }
   }, [selectedTask, customPrompt, getApiKey, aiProvider, executeCommands, clearCanvas])
 
+  // Capture screenshot of GeoGebra
+  const captureScreenshot = useCallback(() => {
+    const api = geogebraApiRef.current
+    if (!api) return null
+
+    try {
+      // GeoGebra API export to PNG
+      const base64 = api.getPNGBase64(1.0, false, 72)
+      return `data:image/png;base64,${base64}`
+    } catch (e) {
+      console.error('Screenshot capture failed:', e)
+      return null
+    }
+  }, [])
+
+  // Start annotation mode
+  const handleStartAnnotation = useCallback(() => {
+    const screenshot = captureScreenshot()
+    if (screenshot) {
+      setScreenshotImage(screenshot)
+      setIsAnnotating(true)
+    }
+  }, [captureScreenshot])
+
+  // Complete annotation
+  const handleAnnotationComplete = useCallback((annotatedImage) => {
+    setIsAnnotating(false)
+    if (annotatedImage) {
+      setAnnotationImage(annotatedImage)
+      setIsChatOpen(true)
+    }
+    setScreenshotImage(null)
+  }, [])
+
+  // Send chat message
+  const handleSendMessage = useCallback(async (message, imageData) => {
+    const apiKey = getApiKey()
+    if (!apiKey) {
+      setChatMessages(prev => [...prev, {
+        role: 'assistant',
+        content: 'Bitte hinterlege einen API-Schlüssel in den Einstellungen.'
+      }])
+      return
+    }
+
+    // Add user message
+    setChatMessages(prev => [...prev, { role: 'user', content: message }])
+    setIsChatLoading(true)
+
+    try {
+      // Build context about current GeoGebra state
+      const api = geogebraApiRef.current
+      let geogebraState = { objects: [] }
+      if (api) {
+        const objCount = api.getObjectNumber()
+        for (let i = 0; i < objCount; i++) {
+          const name = api.getObjectName(i)
+          const type = api.getObjectType(name)
+          const value = api.getValueString(name)
+          geogebraState.objects.push({ name, type, value })
+        }
+      }
+
+      const response = await fetch('/api/collaborative-canvas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apiKey,
+          provider: aiProvider,
+          question: message,
+          imageData: imageData || annotationImage,
+          geogebraState,
+          questionContext: selectedTask
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Add assistant response
+        setChatMessages(prev => [...prev, {
+          role: 'assistant',
+          content: data.explanation || data.response,
+          commands: data.geogebraCommands
+        }])
+
+        // Execute GeoGebra commands if any
+        if (data.geogebraCommands && data.geogebraCommands.length > 0) {
+          const commands = data.geogebraCommands.map(cmd =>
+            typeof cmd === 'string' ? cmd : cmd.command
+          )
+          executeCommands(commands)
+        }
+
+        // Clear annotation after successful use
+        setAnnotationImage(null)
+      } else {
+        setChatMessages(prev => [...prev, {
+          role: 'assistant',
+          content: data.error || 'Ein Fehler ist aufgetreten. Bitte versuche es erneut.'
+        }])
+      }
+    } catch (error) {
+      console.error('Chat error:', error)
+      setChatMessages(prev => [...prev, {
+        role: 'assistant',
+        content: 'Netzwerkfehler. Bitte überprüfe deine Verbindung.'
+      }])
+    } finally {
+      setIsChatLoading(false)
+    }
+  }, [getApiKey, aiProvider, annotationImage, selectedTask, executeCommands])
+
+  // Clear chat
+  const handleClearChat = useCallback(() => {
+    setChatMessages([])
+    setAnnotationImage(null)
+  }, [])
+
   return (
     <div className="geogebra-standalone">
       {/* Task Selector Panel */}
@@ -488,6 +626,62 @@ const GeoGebraApp = memo(function GeoGebraApp({ wrongQuestions = [], userSetting
             </motion.p>
           </div>
         )}
+
+        {/* AI Floating Buttons */}
+        {geogebraReady && !isAnnotating && (
+          <div className="geogebra-ai-buttons">
+            <motion.button
+              className="ai-btn ask"
+              onClick={() => setIsChatOpen(true)}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              title="KI fragen"
+            >
+              <Robot weight="fill" />
+              <span>KI fragen</span>
+            </motion.button>
+            <motion.button
+              className="ai-btn annotate"
+              onClick={handleStartAnnotation}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              title="Markieren"
+            >
+              <PencilSimple weight="fill" />
+              <span>Markieren</span>
+            </motion.button>
+          </div>
+        )}
+
+        {/* Floating Chat */}
+        <AnimatePresence>
+          {isChatOpen && (
+            <FloatingChat
+              isOpen={isChatOpen}
+              onClose={() => setIsChatOpen(false)}
+              onSendMessage={handleSendMessage}
+              isLoading={isChatLoading}
+              messages={chatMessages}
+              onClearChat={handleClearChat}
+              annotationImage={annotationImage}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Annotation Overlay */}
+        <AnimatePresence>
+          {isAnnotating && (
+            <AnnotationOverlay
+              isOpen={isAnnotating}
+              onClose={() => {
+                setIsAnnotating(false)
+                setScreenshotImage(null)
+              }}
+              onComplete={handleAnnotationComplete}
+              backgroundImage={screenshotImage}
+            />
+          )}
+        </AnimatePresence>
       </div>
     </div>
   )
@@ -525,7 +719,7 @@ const ModelModeToggle = memo(function ModelModeToggle() {
 
 // Main AppHub Component
 function AppHub({ wrongQuestions = [], userSettings = {}, onOpenContext }) {
-  const [activeTab, setActiveTab] = useState('whiteboard')
+  const [activeTab, setActiveTab] = useState('geogebra')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   return (
@@ -615,25 +809,6 @@ function AppHub({ wrongQuestions = [], userSettings = {}, onOpenContext }) {
       {/* Main content area */}
       <div className={`app-content ${sidebarCollapsed ? 'expanded' : ''}`}>
         <AnimatePresence mode="wait">
-          {activeTab === 'whiteboard' && (
-            <motion.div
-              key="whiteboard"
-              className="app-view"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Suspense fallback={<LoadingFallback />}>
-                <InteractiveCanvas
-                  wrongQuestions={wrongQuestions}
-                  userSettings={userSettings}
-                  onOpenContext={onOpenContext}
-                />
-              </Suspense>
-            </motion.div>
-          )}
-
           {activeTab === 'geogebra' && (
             <motion.div
               key="geogebra"
@@ -664,6 +839,21 @@ function AppHub({ wrongQuestions = [], userSettings = {}, onOpenContext }) {
                   userSettings={userSettings}
                   onOpenContext={onOpenContext}
                 />
+              </Suspense>
+            </motion.div>
+          )}
+
+          {activeTab === 'my-content' && (
+            <motion.div
+              key="my-content"
+              className="app-view"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Suspense fallback={<LoadingFallback />}>
+                <MyContent />
               </Suspense>
             </motion.div>
           )}
