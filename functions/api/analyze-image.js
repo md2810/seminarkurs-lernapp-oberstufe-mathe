@@ -2,7 +2,7 @@
 // Analyzes uploaded images of topic lists using Claude 4.5 Sonnet
 
 import curriculumData from '../../data/bw_oberstufe_themen.json'
-import { SYSTEM_PROMPT } from '../../data/prompts/analyze-image.js'
+import { loadPrompt } from '../utils/promptEngine.js'
 
 export async function onRequestPost(context) {
   try {
@@ -32,11 +32,12 @@ export async function onRequestPost(context) {
       )
     }
 
-    // Build prompt from template
-    const prompt = SYSTEM_PROMPT
-      .replace('{{gradeLevel}}', gradeLevel)
-      .replace('{{courseType}}', courseType)
-      .replace('{{curriculum}}', JSON.stringify(curriculum, null, 2))
+    // Build prompt using centralized prompt engine
+    const prompt = loadPrompt('image-analysis', {
+      gradeLevel,
+      courseType,
+      curriculum: JSON.stringify(curriculum, null, 2)
+    })
 
     // Call Claude API
     const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {

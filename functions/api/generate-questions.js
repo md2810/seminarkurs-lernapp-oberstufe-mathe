@@ -9,7 +9,7 @@
  */
 
 import curriculumData from '../../data/bw_oberstufe_themen.json'
-import { SYSTEM_PROMPT } from '../../data/prompts/generate-questions.js'
+import { loadPrompt } from '../utils/promptEngine.js'
 
 // ============================================================================
 // MODEL ROUTER CONFIGURATION
@@ -295,15 +295,16 @@ ${afbLevel === 'III' ? '- Fokus auf Transfer und komplexe Problemlösung\n- Bewe
 ANZAHL FRAGEN: ${questionCount}
 `
 
-    // Build prompt
-    const prompt = SYSTEM_PROMPT
-      .replace('{{TOPICS_LIST}}', topicsList)
-      .replace('{{GRADE_LEVEL}}', userContext.gradeLevel)
-      .replace('{{COURSE_TYPE}}', userContext.courseType)
-      .replace('{{STRUGGLING_TOPICS}}', strugglingTopicsText)
-      .replace('{{MEMORIES}}', memoriesText)
-      .replace('{{AUTO_MODE}}', autoModeText)
-      .replace('{{COMPLEXITY}}', complexityInstructions)
+    // Build prompt using centralized prompt engine
+    const prompt = loadPrompt('question-generation', {
+      TOPICS_LIST: topicsList,
+      GRADE_LEVEL: userContext.gradeLevel,
+      COURSE_TYPE: userContext.courseType,
+      STRUGGLING_TOPICS: strugglingTopicsText,
+      MEMORIES: memoriesText,
+      AUTO_MODE: autoModeText,
+      COMPLEXITY: complexityInstructions
+    })
 
     // Get temperature from AUTO mode or use default
     const temperature = userContext.autoModeAssessment?.currentAssessment?.temperature || 0.7

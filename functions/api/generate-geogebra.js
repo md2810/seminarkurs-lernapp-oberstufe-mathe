@@ -5,45 +5,13 @@
  * Supports: Claude, Gemini
  */
 
+import { loadPrompt } from '../utils/promptEngine.js'
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 }
-
-// System prompt for GeoGebra command generation
-const GEOGEBRA_SYSTEM_PROMPT = `Du bist ein Mathematik-Experte mit tiefer GeoGebra-Expertise.
-
-AUFGABE:
-Erstelle GeoGebra-Befehle für die mathematische Visualisierung basierend auf der Nutzerbeschreibung.
-
-ANFORDERUNGEN:
-
-1. **GEOGEBRA-BEFEHLE:**
-   - Generiere eine Liste valider GeoGebra-Befehle
-   - Verwende klare Variablennamen (f, g, A, B)
-   - Nutze Farben (SetColor) und Punktstile (SetPointStyle) für wichtige Elemente
-   - Stelle sicher, dass der relevante Bereich sichtbar ist (ZoomIn, SetCoordSystem)
-
-2. **INTERAKTIVITÄT:**
-   - Nutze Slider wenn sinnvoll (z.B. a = Slider[-5, 5, 0.1])
-   - Ermögliche dynamische Exploration
-
-3. **ERKLÄRUNG:**
-   - Erkläre in 2-4 Sätzen auf Deutsch, was der Schüler sieht
-   - Schülerfreundlich und hilfreich
-
-AUSGABE-FORMAT:
-Antworte NUR mit validem JSON:
-{
-  "commands": [
-    "f(x) = x^2",
-    "A = (1, 1)",
-    "SetColor(f, \"blue\")"
-  ],
-  "explanation": "Deutsche Erklärung des Graphen...",
-  "interactionTips": "Tipps zur Interaktion..."
-}`
 
 export async function onRequestPost(context) {
   try {
@@ -131,6 +99,7 @@ export async function onRequestOptions() {
 async function callClaude(apiKey, userPrompt, selectedModel) {
   try {
     const model = selectedModel || 'claude-sonnet-4-20250514'
+    const systemPrompt = loadPrompt('geogebra-generation')
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -142,7 +111,7 @@ async function callClaude(apiKey, userPrompt, selectedModel) {
       body: JSON.stringify({
         model,
         max_tokens: 2000,
-        system: GEOGEBRA_SYSTEM_PROMPT,
+        system: systemPrompt,
         messages: [{ role: 'user', content: userPrompt }]
       })
     })
@@ -171,6 +140,7 @@ async function callClaude(apiKey, userPrompt, selectedModel) {
 
 async function callGemini(apiKey, userPrompt) {
   try {
+    const systemPrompt = loadPrompt('geogebra-generation')
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
       {
@@ -179,7 +149,7 @@ async function callGemini(apiKey, userPrompt) {
         body: JSON.stringify({
           contents: [{
             parts: [
-              { text: GEOGEBRA_SYSTEM_PROMPT },
+              { text: systemPrompt },
               { text: userPrompt }
             ]
           }],

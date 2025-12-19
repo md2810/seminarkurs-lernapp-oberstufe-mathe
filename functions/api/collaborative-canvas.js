@@ -3,6 +3,8 @@
  * This powers the interactive collaborative learning canvas
  */
 
+import { loadPrompt } from '../utils/promptEngine.js'
+
 export async function onRequestPost(context) {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -102,69 +104,30 @@ export async function onRequestOptions() {
 }
 
 function buildSystemPrompt(geogebraState, questionContext) {
-  let prompt = `Du bist ein erfahrener Mathe-Tutor, der auf einem interaktiven Whiteboard mit GeoGebra arbeitet.
-Du kannst:
-1. Mathematische Konzepte erklären
-2. Auf dem Canvas zeichnen (Linien, Pfeile, Kreise, Text, Hervorhebungen)
-3. GeoGebra-Befehle ausführen um Funktionen, Punkte, Geraden etc. zu visualisieren
-
-Wenn der Schüler eine Frage stellt oder einen Bereich markiert, sollst du:
-- Eine klare, verständliche Erklärung geben
-- Bei Bedarf Zeichnungen hinzufügen, die die Erklärung unterstützen
-- Bei mathematischen Visualisierungen GeoGebra-Befehle verwenden
-
-WICHTIG: Antworte IMMER im folgenden JSON-Format:
-{
-  "explanation": "Deine textuelle Erklärung (kann LaTeX wie $x^2$ enthalten)",
-  "drawings": [
-    // Canvas-Zeichnungen (optional)
-  ],
-  "geogebraCommands": [
-    // GeoGebra-Befehle (optional)
-  ]
-}
-
-Verfügbare Zeichnungstypen für "drawings":
-- { "type": "line", "start": {"x": 0, "y": 0}, "end": {"x": 100, "y": 100}, "color": "#22c55e" }
-- { "type": "arrow", "start": {"x": 0, "y": 0}, "end": {"x": 100, "y": 50}, "color": "#22c55e" }
-- { "type": "circle", "center": {"x": 50, "y": 50}, "radius": 30, "color": "#3b82f6" }
-- { "type": "text", "text": "Beschriftung", "x": 10, "y": 20, "fontSize": 16, "color": "#ffffff" }
-- { "type": "highlight", "x": 0, "y": 0, "width": 100, "height": 50, "color": "#22c55e" }
-- { "type": "equation", "text": "f(x) = x²", "x": 10, "y": 30, "fontSize": 18, "color": "#f97316" }
-
-Koordinaten sind relativ zum ausgewählten Bereich (falls vorhanden).
-Positive Y-Werte gehen nach unten.
-
-Verfügbare GeoGebra-Befehle für "geogebraCommands":
-- { "command": "f(x) = x^2", "color": "#22c55e" } - Funktion definieren
-- { "command": "A = (2, 3)", "color": "#ef4444" } - Punkt erstellen
-- { "command": "g: y = 2x + 1", "color": "#3b82f6" } - Gerade definieren
-- { "command": "Circle((0,0), 3)", "color": "#8b5cf6" } - Kreis erstellen
-- { "command": "Integral(f, 0, 2)", "color": "#22c55e" } - Integral visualisieren
-- { "command": "Tangent(A, f)", "color": "#f97316" } - Tangente zeichnen
-- { "command": "Derivative(f)", "color": "#ec4899" } - Ableitung zeichnen
-
-Nutze GeoGebra für mathematische Visualisierungen und Canvas-Zeichnungen für Annotationen/Erklärungen.
-`
-
-  // Add GeoGebra state context if available
+  // Build GeoGebra state context
+  let geogebraStateText = ''
   if (geogebraState && geogebraState.objects && geogebraState.objects.length > 0) {
-    prompt += `\n\nAktueller GeoGebra-Zustand (bereits vorhandene Objekte):\n`
+    geogebraStateText = `\n\nAktueller GeoGebra-Zustand (bereits vorhandene Objekte):\n`
     geogebraState.objects.forEach(obj => {
-      prompt += `- ${obj.name}: ${obj.type} = ${obj.value}\n`
+      geogebraStateText += `- ${obj.name}: ${obj.type} = ${obj.value}\n`
     })
   }
 
-  // Add question context if available
+  // Build question context
+  let questionContextText = ''
   if (questionContext) {
-    prompt += `\n\nKontext der aktuellen Aufgabe:\n`
-    prompt += `Aufgabe: ${questionContext.question}\n`
+    questionContextText = `\n\nKontext der aktuellen Aufgabe:\n`
+    questionContextText += `Aufgabe: ${questionContext.question}\n`
     if (questionContext.solution) {
-      prompt += `Lösung: ${questionContext.solution}\n`
+      questionContextText += `Lösung: ${questionContext.solution}\n`
     }
   }
 
-  return prompt
+  // Load prompt using centralized prompt engine
+  return loadPrompt('collaborative-canvas', {
+    GEOGEBRA_STATE: geogebraStateText,
+    QUESTION_CONTEXT: questionContextText
+  })
 }
 
 function buildMessages(question, imageData, chatHistory, selectionBounds) {

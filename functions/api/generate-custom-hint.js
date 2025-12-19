@@ -1,7 +1,7 @@
 // Cloudflare Pages Function: Custom Hint Generation
 // Generates personalized hint based on user's specific question
 
-import { SYSTEM_PROMPT } from '../../data/prompts/generate-custom-hint.js'
+import { loadPrompt } from '../utils/promptEngine.js'
 
 export async function onRequestPost(context) {
   try {
@@ -34,12 +34,13 @@ ${questionData.options.map(opt => `${opt.id}) ${opt.text}`).join('\n')}`
 ${questionData.steps.map(s => `Schritt ${s.stepNumber}: ${s.instruction}`).join('\n')}`
     }
 
-    // Build prompt from template
-    const prompt = SYSTEM_PROMPT
-      .replace('{{question}}', questionData.question)
-      .replace('{{questionTypeContent}}', questionTypeContent)
-      .replace('{{previousHints}}', hintsUsedText)
-      .replace('{{userQuestion}}', userQuestion)
+    // Build prompt using centralized prompt engine
+    const prompt = loadPrompt('custom-hint', {
+      question: questionData.question,
+      questionTypeContent,
+      previousHints: hintsUsedText,
+      userQuestion
+    })
 
     // Call Claude API
     const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {

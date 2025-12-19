@@ -3,6 +3,8 @@
  * Uses Claude's vision capabilities to understand mathematical content
  */
 
+import { loadPrompt } from '../utils/promptEngine.js'
+
 export async function onRequestPost(context) {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -36,36 +38,8 @@ export async function onRequestPost(context) {
     // Extract base64 data from data URL
     const base64Image = imageData.replace(/^data:image\/\w+;base64,/, '')
 
-    // System prompt for whiteboard analysis
-    const systemPrompt = `Du bist ein hilfreicher Mathe-Tutor, der auf einem interaktiven Whiteboard arbeitet.
-Der Schüler hat einen Bereich auf dem Whiteboard markiert und stellt eine Frage dazu.
-
-Deine Aufgaben:
-1. Analysiere das Bild und verstehe, was der Schüler geschrieben/gezeichnet hat
-2. Beantworte die Frage des Schülers klar und verständlich
-3. Wenn es hilfreich ist, erstelle Zeichnungen/Annotationen die auf dem Canvas angezeigt werden
-
-Für Zeichnungen kannst du folgende Typen zurückgeben (im JSON-Format im drawings Array):
-- "line": { type: "line", start: {x, y}, end: {x, y}, color: "#hex", strokeWidth: number }
-- "arrow": { type: "arrow", start: {x, y}, end: {x, y}, color: "#hex" }
-- "text": { type: "text", text: "string", x: number, y: number, fontSize: number, color: "#hex" }
-- "circle": { type: "circle", center: {x, y}, radius: number, color: "#hex" }
-- "highlight": { type: "highlight", x: number, y: number, width: number, height: number }
-- "equation": { type: "equation", text: "math expression", x: number, y: number, fontSize: number }
-
-Koordinaten sind relativ zum ausgewählten Bereich (0,0 ist oben links der Auswahl).
-Positive Y-Werte zeichnen UNTER der Auswahl.
-
-Antworte IMMER im folgenden JSON-Format:
-{
-  "explanation": "Deine textuelle Erklärung hier (kann LaTeX enthalten wie $x^2$)",
-  "drawings": [
-    // Optional: Array von Zeichnungsobjekten
-  ]
-}
-
-Halte Erklärungen prägnant aber vollständig. Nutze LaTeX für mathematische Ausdrücke.
-Zeichnungen sollten die Erklärung ergänzen, nicht ersetzen.`
+    // Load system prompt from centralized prompt engine
+    const systemPrompt = loadPrompt('whiteboard-analysis')
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
