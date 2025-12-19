@@ -4,23 +4,25 @@
  * Architecture: Backend-Driven UI with strict separation of code and content
  *
  * Features:
- * - Loads prompts from markdown files in data/prompts/
+ * - Loads prompts from JavaScript exports (CF Workers compatible)
  * - Replaces {{variable}} placeholders with provided values
  * - Validates required variables
  * - Provides helpful error messages for missing prompts/variables
  */
 
-// Import all prompt files statically (Cloudflare Workers requirement)
-import questionGenerationPrompt from '../../data/prompts/question-generation.md'
-import adaptiveQuestionPrompt from '../../data/prompts/adaptive-question-generation.md'
-import imageAnalysisPrompt from '../../data/prompts/image-analysis.md'
-import geogebraGenerationPrompt from '../../data/prompts/geogebra-generation.md'
-import customHintPrompt from '../../data/prompts/custom-hint.md'
-import whiteboardAnalysisPrompt from '../../data/prompts/whiteboard-analysis.md'
-import autoModeUpdatePrompt from '../../data/prompts/auto-mode-update.md'
-import collaborativeCanvasPrompt from '../../data/prompts/collaborative-canvas.md'
-import miniAppGenerationPrompt from '../../data/prompts/mini-app-generation.md'
-import solutionVisualizationPrompt from '../../data/prompts/solution-visualization.md'
+// Import all prompts from the JavaScript prompts file
+import {
+  questionGenerationPrompt,
+  adaptiveQuestionPrompt,
+  imageAnalysisPrompt,
+  geogebraGenerationPrompt,
+  customHintPrompt,
+  whiteboardAnalysisPrompt,
+  autoModeUpdatePrompt,
+  collaborativeCanvasPrompt,
+  miniAppGenerationPrompt,
+  solutionVisualizationPrompt
+} from './prompts.js'
 
 // Prompt registry mapping names to imported content
 const PROMPT_REGISTRY = {
