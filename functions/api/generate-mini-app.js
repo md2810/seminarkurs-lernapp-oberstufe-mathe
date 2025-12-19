@@ -215,8 +215,27 @@ async function callClaude(apiKey, systemPrompt, userPrompt) {
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('Claude API error:', errorText)
-      return { success: false, error: 'Fehler bei der KI-Anfrage' }
+      console.error('Claude API error:', response.status, errorText)
+
+      // Parse error for better user feedback
+      let errorMessage = 'Fehler bei der KI-Anfrage'
+      try {
+        const errorData = JSON.parse(errorText)
+        if (errorData.error?.message) {
+          errorMessage = `Claude API: ${errorData.error.message}`
+        }
+      } catch (e) {
+        // Use status code based message
+        if (response.status === 401) {
+          errorMessage = 'Ungültiger API-Schlüssel'
+        } else if (response.status === 429) {
+          errorMessage = 'API-Limit erreicht. Bitte versuche es später erneut.'
+        } else if (response.status === 400) {
+          errorMessage = 'Ungültige Anfrage an die KI'
+        }
+      }
+
+      return { success: false, error: errorMessage }
     }
 
     const data = await response.json()
@@ -226,7 +245,7 @@ async function callClaude(apiKey, systemPrompt, userPrompt) {
     }
   } catch (error) {
     console.error('Claude API error:', error)
-    return { success: false, error: error.message }
+    return { success: false, error: `Netzwerkfehler: ${error.message}` }
   }
 }
 
@@ -250,8 +269,23 @@ async function callOpenAI(apiKey, systemPrompt, userPrompt) {
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('OpenAI API error:', errorText)
-      return { success: false, error: 'Fehler bei der KI-Anfrage' }
+      console.error('OpenAI API error:', response.status, errorText)
+
+      let errorMessage = 'Fehler bei der KI-Anfrage'
+      try {
+        const errorData = JSON.parse(errorText)
+        if (errorData.error?.message) {
+          errorMessage = `OpenAI: ${errorData.error.message}`
+        }
+      } catch (e) {
+        if (response.status === 401) {
+          errorMessage = 'Ungültiger API-Schlüssel'
+        } else if (response.status === 429) {
+          errorMessage = 'API-Limit erreicht'
+        }
+      }
+
+      return { success: false, error: errorMessage }
     }
 
     const data = await response.json()
@@ -261,7 +295,7 @@ async function callOpenAI(apiKey, systemPrompt, userPrompt) {
     }
   } catch (error) {
     console.error('OpenAI API error:', error)
-    return { success: false, error: error.message }
+    return { success: false, error: `Netzwerkfehler: ${error.message}` }
   }
 }
 
@@ -289,8 +323,23 @@ async function callGemini(apiKey, systemPrompt, userPrompt) {
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('Gemini API error:', errorText)
-      return { success: false, error: 'Fehler bei der KI-Anfrage' }
+      console.error('Gemini API error:', response.status, errorText)
+
+      let errorMessage = 'Fehler bei der KI-Anfrage'
+      try {
+        const errorData = JSON.parse(errorText)
+        if (errorData.error?.message) {
+          errorMessage = `Gemini: ${errorData.error.message}`
+        }
+      } catch (e) {
+        if (response.status === 400) {
+          errorMessage = 'Ungültiger API-Schlüssel oder Anfrage'
+        } else if (response.status === 429) {
+          errorMessage = 'API-Limit erreicht'
+        }
+      }
+
+      return { success: false, error: errorMessage }
     }
 
     const data = await response.json()
@@ -303,7 +352,7 @@ async function callGemini(apiKey, systemPrompt, userPrompt) {
     return { success: true, content: text }
   } catch (error) {
     console.error('Gemini API error:', error)
-    return { success: false, error: error.message }
+    return { success: false, error: `Netzwerkfehler: ${error.message}` }
   }
 }
 

@@ -101,22 +101,45 @@ const TabButton = memo(function TabButton({ tab, isActive, onClick }) {
   )
 })
 
+// Unique ID for GeoGebra container to prevent React DOM conflicts
+const GEOGEBRA_STANDALONE_ID = 'geogebra-standalone-applet'
+
 // Standalone GeoGebra Component for the dedicated tab
+// Uses ID-based injection to prevent React DOM reconciliation conflicts
 const GeoGebraApp = memo(function GeoGebraApp() {
   const [geogebraReady, setGeogebraReady] = useState(false)
-  const geogebraRef = React.useRef(null)
+  const [geogebraLoading, setGeogebraLoading] = useState(true)
+  const geogebraInitialized = React.useRef(false)
   const geogebraAppRef = React.useRef(null)
+  const wrapperRef = React.useRef(null)
 
   React.useEffect(() => {
+    // Prevent double initialization in StrictMode
+    if (geogebraInitialized.current) return
+    geogebraInitialized.current = true
+
     const existingScript = document.querySelector('script[src*="geogebra.org/apps/deployggb.js"]')
 
     const initGeoGebra = () => {
-      if (!geogebraRef.current || !window.GGBApplet) return
+      if (!wrapperRef.current || !window.GGBApplet) return
+
+      // Remove any existing container to prevent conflicts
+      const existingContainer = document.getElementById(GEOGEBRA_STANDALONE_ID)
+      if (existingContainer) {
+        existingContainer.remove()
+      }
+
+      // Create a new container element with unique ID
+      const container = document.createElement('div')
+      container.id = GEOGEBRA_STANDALONE_ID
+      container.style.width = '100%'
+      container.style.height = '100%'
+      wrapperRef.current.appendChild(container)
 
       const params = {
         appName: 'graphing',
-        width: geogebraRef.current.clientWidth || 800,
-        height: geogebraRef.current.clientHeight || 600,
+        width: wrapperRef.current.clientWidth || 800,
+        height: wrapperRef.current.clientHeight || 600,
         showToolBar: true,
         showAlgebraInput: true,
         showMenuBar: true,
@@ -126,8 +149,10 @@ const GeoGebraApp = memo(function GeoGebraApp() {
         showResetIcon: true,
         language: 'de',
         borderColor: 'transparent',
+        preventFocus: true,
         appletOnLoad: () => {
           setGeogebraReady(true)
+          setGeogebraLoading(false)
           const api = geogebraAppRef.current?.getAPI?.()
           if (api) {
             api.setAxesVisible(true, true)
@@ -138,7 +163,8 @@ const GeoGebraApp = memo(function GeoGebraApp() {
       }
 
       const applet = new window.GGBApplet(params, true)
-      applet.inject(geogebraRef.current)
+      // Inject by ID, not by ref - this prevents React DOM conflicts
+      applet.inject(GEOGEBRA_STANDALONE_ID)
       geogebraAppRef.current = applet
     }
 
@@ -154,15 +180,22 @@ const GeoGebraApp = memo(function GeoGebraApp() {
       existingScript.addEventListener('load', initGeoGebra)
     }
 
+    // Cleanup on unmount
     return () => {
+      const container = document.getElementById(GEOGEBRA_STANDALONE_ID)
+      if (container) {
+        container.remove()
+      }
       geogebraAppRef.current = null
+      geogebraInitialized.current = false
     }
   }, [])
 
   return (
     <div className="geogebra-standalone">
-      <div className="geogebra-container" ref={geogebraRef}>
-        {!geogebraReady && (
+      {/* Wrapper div that React controls, GeoGebra injects into child by ID */}
+      <div className="geogebra-container" ref={wrapperRef}>
+        {geogebraLoading && (
           <div className="geogebra-loading">
             <div className="loading-spinner" />
             <p>GeoGebra wird geladen...</p>
