@@ -1,7 +1,7 @@
 /**
  * Cloudflare Pages Function: Adaptive Question Generation
  * Generates questions with dynamic difficulty based on user performance
- * Supports Claude, Gemini, and OpenAI
+ * Supports Claude and Gemini
  */
 
 const ADAPTIVE_QUESTION_PROMPT = `
@@ -85,14 +85,12 @@ WICHTIG: Generiere exakt {{QUESTION_COUNT}} Fragen. Alle Fragen müssen auf Deut
 
 const AI_ENDPOINTS = {
   claude: 'https://api.anthropic.com/v1/messages',
-  gemini: 'https://generativelanguage.googleapis.com/v1beta/models',
-  openai: 'https://api.openai.com/v1/chat/completions'
+  gemini: 'https://generativelanguage.googleapis.com/v1beta/models'
 }
 
 const DEFAULT_MODELS = {
-  claude: 'claude-sonnet-4-20250514',
-  gemini: 'gemini-3-flash-preview',
-  openai: 'gpt-4o'
+  claude: 'claude-sonnet-4-5-20250929',
+  gemini: 'gemini-3-flash-preview'
 }
 
 async function callClaude({ apiKey, model, prompt, temperature }) {
@@ -143,30 +141,6 @@ async function callGemini({ apiKey, model, prompt, temperature }) {
 
   const data = await response.json()
   return data.candidates[0].content.parts[0].text
-}
-
-async function callOpenAI({ apiKey, model, prompt, temperature }) {
-  const response = await fetch(AI_ENDPOINTS.openai, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-      model: model || DEFAULT_MODELS.openai,
-      max_tokens: 8000,
-      temperature,
-      messages: [{ role: 'user', content: prompt }]
-    })
-  })
-
-  if (!response.ok) {
-    const error = await response.json()
-    throw new Error(`OpenAI API error: ${JSON.stringify(error)}`)
-  }
-
-  const data = await response.json()
-  return data.choices[0].message.content
 }
 
 function parseJSONResponse(response) {
@@ -256,9 +230,6 @@ export async function onRequestPost(context) {
       switch (provider) {
         case 'gemini':
           responseText = await callGemini({ apiKey, model, prompt, temperature })
-          break
-        case 'openai':
-          responseText = await callOpenAI({ apiKey, model, prompt, temperature })
           break
         case 'claude':
         default:

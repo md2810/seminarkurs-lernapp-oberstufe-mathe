@@ -39,12 +39,10 @@ import './GenerativeApp.css'
 
 // Available AI models for generation
 const AI_MODELS = [
-  { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4', provider: 'claude', recommended: true },
-  { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku', provider: 'claude' },
-  { id: 'gpt-4o', name: 'GPT-4o', provider: 'openai' },
-  { id: 'gpt-4o-mini', name: 'GPT-4o Mini', provider: 'openai' },
-  { id: 'gemini-3-flash-preview', name: 'Gemini 3 Flash', provider: 'gemini' },
-  { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', provider: 'gemini' }
+  { id: 'claude-sonnet-4-5-20250929', name: 'Claude Sonnet 4.5', provider: 'claude', recommended: true },
+  { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku 4.5', provider: 'claude' },
+  { id: 'gemini-3-pro-preview', name: 'Gemini 3 Pro', provider: 'gemini' },
+  { id: 'gemini-3-flash-preview', name: 'Gemini 3 Flash', provider: 'gemini' }
 ]
 
 // Example prompts for inspiration
@@ -117,7 +115,6 @@ function GenerativeApp({ userSettings = {}, onOpenContext }) {
     switch (provider) {
       case 'claude': return userSettings.anthropicApiKey
       case 'gemini': return userSettings.geminiApiKey
-      case 'openai': return userSettings.openaiApiKey
       default: return userSettings.anthropicApiKey
     }
   }, [selectedModel, apiKeys, userSettings])

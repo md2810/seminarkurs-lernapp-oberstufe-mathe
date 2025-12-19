@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { Settings, X, Zap, Flame, Brain, Sparkles, Bot, LogOut, User, ImagePlus, BookOpen, TrendingUp } from 'lucide-react'
+import { Settings, X, Zap, Flame, Brain, Sparkles, LogOut, User, ImagePlus, BookOpen, TrendingUp } from 'lucide-react'
 import { useAppStore } from '../../stores/useAppStore'
 import clsx from 'clsx'
 import './Shell.css'
@@ -8,7 +8,6 @@ import './Shell.css'
 const AI_PROVIDERS = [
   { id: 'claude', name: 'Anthropic Claude', icon: Brain, gradient: 'from-orange-500 to-amber-500' },
   { id: 'gemini', name: 'Google Gemini', icon: Sparkles, gradient: 'from-blue-500 to-cyan-500' },
-  { id: 'openai', name: 'OpenAI GPT-4', icon: Bot, gradient: 'from-emerald-500 to-green-500' },
 ]
 
 // Smooth spring config

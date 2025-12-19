@@ -54,14 +54,12 @@ Erstelle eine Schritt-für-Schritt Visualisierung für die folgende Lösung.
 
 const AI_ENDPOINTS = {
   claude: 'https://api.anthropic.com/v1/messages',
-  gemini: 'https://generativelanguage.googleapis.com/v1beta/models',
-  openai: 'https://api.openai.com/v1/chat/completions'
+  gemini: 'https://generativelanguage.googleapis.com/v1beta/models'
 }
 
 const DEFAULT_MODELS = {
-  claude: 'claude-sonnet-4-20250514',
-  gemini: 'gemini-3-flash-preview',
-  openai: 'gpt-4o'
+  claude: 'claude-sonnet-4-5-20250929',
+  gemini: 'gemini-3-flash-preview'
 }
 
 async function callAI({ provider, apiKey, model, prompt }) {
@@ -98,24 +96,6 @@ async function callAI({ provider, apiKey, model, prompt }) {
       if (!response.ok) throw new Error(`Gemini API error: ${response.status}`)
       const data = await response.json()
       return data.candidates[0].content.parts[0].text
-    }
-    case 'openai': {
-      const response = await fetch(AI_ENDPOINTS.openai, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model: model || DEFAULT_MODELS.openai,
-          max_tokens: 4000,
-          temperature: 0.5,
-          messages: [{ role: 'user', content: prompt }]
-        })
-      })
-      if (!response.ok) throw new Error(`OpenAI API error: ${response.status}`)
-      const data = await response.json()
-      return data.choices[0].message.content
     }
     default:
       throw new Error(`Unknown provider: ${provider}`)

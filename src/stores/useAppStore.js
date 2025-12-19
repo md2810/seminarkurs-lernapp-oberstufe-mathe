@@ -76,33 +76,52 @@ export const useAppStore = create(
       })),
 
       // AI Provider Settings
-      aiProvider: 'claude', // 'claude' | 'gemini' | 'openai'
+      aiProvider: 'claude', // 'claude' | 'gemini'
       setAiProvider: (provider) => set({ aiProvider: provider }),
 
       apiKeys: {
         claude: '',
         gemini: '',
-        openai: '',
       },
       setApiKey: (provider, key) => set((state) => ({
         apiKeys: { ...state.apiKeys, [provider]: key }
       })),
 
-      // Selected models per provider
-      selectedModels: {
-        claude: 'claude-sonnet-4-20250514',
+      // Model mode: 'smart' (more capable) or 'fast' (quicker responses)
+      modelMode: 'smart', // 'smart' | 'fast'
+      setModelMode: (mode) => set({ modelMode: mode }),
+
+      // Smart and Fast models per provider
+      smartModels: {
+        claude: 'claude-sonnet-4-5-20250929',
+        gemini: 'gemini-3-pro-preview',
+      },
+      fastModels: {
+        claude: 'claude-haiku-4-5-20251001',
         gemini: 'gemini-3-flash-preview',
-        openai: 'gpt-4o',
+      },
+      setSmartModel: (provider, model) => set((state) => ({
+        smartModels: { ...state.smartModels, [provider]: model }
+      })),
+      setFastModel: (provider, model) => set((state) => ({
+        fastModels: { ...state.fastModels, [provider]: model }
+      })),
+
+      // Get current model based on provider and mode
+      getCurrentModel: () => {
+        const state = get()
+        const models = state.modelMode === 'smart' ? state.smartModels : state.fastModels
+        return models[state.aiProvider] || null
+      },
+
+      // Legacy: selectedModels for backward compatibility
+      selectedModels: {
+        claude: 'claude-sonnet-4-5-20250929',
+        gemini: 'gemini-3-pro-preview',
       },
       setSelectedModel: (provider, model) => set((state) => ({
         selectedModels: { ...state.selectedModels, [provider]: model }
       })),
-
-      // Get current model for active provider
-      getCurrentModel: () => {
-        const state = get()
-        return state.selectedModels[state.aiProvider] || null
-      },
 
       // User Stats with XP/Level system
       stats: {
@@ -298,6 +317,9 @@ export const useAppStore = create(
       partialize: (state) => ({
         aiProvider: state.aiProvider,
         apiKeys: state.apiKeys,
+        modelMode: state.modelMode,
+        smartModels: state.smartModels,
+        fastModels: state.fastModels,
         selectedModels: state.selectedModels,
         contextData: state.contextData,
         stats: state.stats,

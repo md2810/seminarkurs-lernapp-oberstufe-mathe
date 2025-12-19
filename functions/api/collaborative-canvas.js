@@ -52,8 +52,6 @@ export async function onRequestPost(context) {
     let response
     if (provider === 'claude') {
       response = await callClaude(apiKey, systemPrompt, messages)
-    } else if (provider === 'openai') {
-      response = await callOpenAI(apiKey, systemPrompt, messages)
     } else if (provider === 'gemini') {
       response = await callGemini(apiKey, systemPrompt, messages, imageData)
     } else {
@@ -244,68 +242,6 @@ async function callClaude(apiKey, systemPrompt, messages) {
     }
   } catch (error) {
     console.error('Claude API error:', error)
-    return { success: false, error: error.message }
-  }
-}
-
-async function callOpenAI(apiKey, systemPrompt, messages) {
-  try {
-    // Convert messages to OpenAI format
-    const openaiMessages = [
-      { role: 'system', content: systemPrompt }
-    ]
-
-    messages.forEach(msg => {
-      if (msg.role === 'user') {
-        if (Array.isArray(msg.content)) {
-          const content = msg.content.map(c => {
-            if (c.type === 'text') {
-              return { type: 'text', text: c.text }
-            } else if (c.type === 'image') {
-              return {
-                type: 'image_url',
-                image_url: {
-                  url: `data:${c.source.media_type};base64,${c.source.data}`
-                }
-              }
-            }
-            return c
-          })
-          openaiMessages.push({ role: 'user', content })
-        } else {
-          openaiMessages.push({ role: 'user', content: msg.content })
-        }
-      } else {
-        openaiMessages.push(msg)
-      }
-    })
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        max_tokens: 4000,
-        messages: openaiMessages
-      })
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('OpenAI API error:', errorText)
-      return { success: false, error: 'Fehler bei der KI-Anfrage' }
-    }
-
-    const data = await response.json()
-    return {
-      success: true,
-      content: data.choices[0].message.content
-    }
-  } catch (error) {
-    console.error('OpenAI API error:', error)
     return { success: false, error: error.message }
   }
 }

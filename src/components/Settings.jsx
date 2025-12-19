@@ -15,10 +15,10 @@ import {
   Trash,
   Brain,
   Lightning,
-  OpenAiLogo,
   Check,
   Warning,
-  CircleNotch
+  CircleNotch,
+  Gauge
 } from '@phosphor-icons/react'
 import { useAppStore } from '../stores/useAppStore'
 
@@ -91,7 +91,9 @@ const AI_PROVIDERS = [
     icon: Brain,
     placeholder: 'sk-ant-...',
     gradient: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
-    color: '#f97316'
+    color: '#f97316',
+    defaultSmartModel: 'claude-sonnet-4-5-20250929',
+    defaultFastModel: 'claude-haiku-4-5-20251001'
   },
   {
     id: 'gemini',
@@ -99,15 +101,9 @@ const AI_PROVIDERS = [
     icon: Lightning,
     placeholder: 'AIza...',
     gradient: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)',
-    color: '#3b82f6'
-  },
-  {
-    id: 'openai',
-    name: 'OpenAI GPT',
-    icon: OpenAiLogo,
-    placeholder: 'sk-...',
-    gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-    color: '#10b981'
+    color: '#3b82f6',
+    defaultSmartModel: 'gemini-3-pro-preview',
+    defaultFastModel: 'gemini-3-flash-preview'
   }
 ]
 
@@ -116,26 +112,31 @@ function Settings({ isOpen, onClose, settings, onSettingsChange }) {
   const [autoMode, setAutoMode] = useState(false)
 
   // Multi-provider state
-  const { aiProvider, setAiProvider, setSelectedModel, setApiKey: setStoreApiKey, selectedModels } = useAppStore()
+  const {
+    aiProvider,
+    setAiProvider,
+    setSelectedModel,
+    setApiKey: setStoreApiKey,
+    smartModels,
+    fastModels,
+    setSmartModel,
+    setFastModel
+  } = useAppStore()
   const [providerModels, setProviderModels] = useState({
     claude: [],
-    gemini: [],
-    openai: []
+    gemini: []
   })
   const [loadingModels, setLoadingModels] = useState({
     claude: false,
-    gemini: false,
-    openai: false
+    gemini: false
   })
   const [modelsError, setModelsError] = useState({
     claude: null,
-    gemini: null,
-    openai: null
+    gemini: null
   })
   const [keyValidation, setKeyValidation] = useState({
     claude: { status: null, message: '' }, // status: 'valid', 'invalid', 'validating', null
-    gemini: { status: null, message: '' },
-    openai: { status: null, message: '' }
+    gemini: { status: null, message: '' }
   })
 
   useEffect(() => {
@@ -143,26 +144,12 @@ function Settings({ isOpen, onClose, settings, onSettingsChange }) {
     // Check if AUTO mode was previously enabled
     setAutoMode(settings.aiModel?.autoMode || false)
 
-    // Sync API keys and models from settings to store on initial load
+    // Sync API keys from settings to store on initial load
     if (settings.claudeApiKey || settings.anthropicApiKey) {
       setStoreApiKey('claude', settings.claudeApiKey || settings.anthropicApiKey)
     }
     if (settings.geminiApiKey) {
       setStoreApiKey('gemini', settings.geminiApiKey)
-    }
-    if (settings.openaiApiKey) {
-      setStoreApiKey('openai', settings.openaiApiKey)
-    }
-
-    // Sync models
-    if (settings.claudeModel) {
-      setSelectedModel('claude', settings.claudeModel)
-    }
-    if (settings.geminiModel) {
-      setSelectedModel('gemini', settings.geminiModel)
-    }
-    if (settings.openaiModel) {
-      setSelectedModel('openai', settings.openaiModel)
     }
   }, [settings])
 
@@ -342,21 +329,6 @@ function Settings({ isOpen, onClose, settings, onSettingsChange }) {
             errorMessage = error.error?.message || 'Ungültiger API-Key'
           }
           break
-
-        case 'openai':
-          // Validate OpenAI key by listing models
-          const openaiResponse = await fetch('https://api.openai.com/v1/models', {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${apiKey}`
-            }
-          })
-          isValid = openaiResponse.ok
-          if (!isValid) {
-            const error = await openaiResponse.json().catch(() => ({}))
-            errorMessage = error.error?.message || 'Ungültiger API-Key'
-          }
-          break
       }
 
       setKeyValidation(prev => ({
@@ -430,9 +402,6 @@ function Settings({ isOpen, onClose, settings, onSettingsChange }) {
           break
         case 'gemini':
           models = await fetchGeminiModels(apiKey)
-          break
-        case 'openai':
-          models = await fetchOpenAIModels(apiKey)
           break
         default:
           throw new Error(`Unknown provider: ${provider}`)
@@ -544,81 +513,28 @@ function Settings({ isOpen, onClose, settings, onSettingsChange }) {
     return name
   }
 
-  const fetchOpenAIModels = async (apiKey) => {
-    const response = await fetch('https://api.openai.com/v1/models', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`
-      }
-    })
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}))
-      throw new Error(error.error?.message || 'Fehler beim Abrufen der OpenAI Modelle')
-    }
-
-    const data = await response.json()
-    return (data.data || [])
-      .filter(model => {
-        const id = model.id || ''
-        return (id.includes('gpt-4') || id.includes('gpt-3.5') || id.startsWith('o1') || id.startsWith('o3')) &&
-               !id.includes('vision') && !id.includes('instruct') && !id.includes('realtime') && !id.includes('audio')
-      })
-      .map(model => ({
-        id: model.id,
-        name: formatOpenAIModelName(model.id)
-      }))
-      .sort((a, b) => {
-        const tierOrder = { 'o3': 0, 'o1': 1, 'gpt-4o': 2, 'gpt-4-turbo': 3, 'gpt-4': 4, 'gpt-3.5': 5 }
-        const aTier = Object.keys(tierOrder).find(t => a.id.includes(t)) || 'z'
-        const bTier = Object.keys(tierOrder).find(t => b.id.includes(t)) || 'z'
-        return (tierOrder[aTier] ?? 99) - (tierOrder[bTier] ?? 99)
-      })
-  }
-
-  const formatOpenAIModelName = (modelId) => {
-    if (modelId.startsWith('o1') || modelId.startsWith('o3')) {
-      const parts = modelId.split('-')
-      let name = parts[0].toUpperCase()
-      if (parts[1] === 'preview') name += ' Preview'
-      else if (parts[1] === 'mini') name += ' Mini'
-      else if (parts[1]) name += ` ${parts[1]}`
-      return name
-    }
-    return modelId
-      .replace('gpt-4o', 'GPT-4o')
-      .replace('gpt-4-turbo', 'GPT-4 Turbo')
-      .replace('gpt-3.5-turbo', 'GPT-3.5 Turbo')
-      .replace(/-\d{4}-\d{2}-\d{2}$/, '')
-  }
-
-  const handleModelChange = (provider, modelId) => {
-    const modelField = `${provider}Model`
+  const handleSmartModelChange = (provider, modelId) => {
+    setSmartModel(provider, modelId)
     const newSettings = {
       ...localSettings,
-      [modelField]: modelId,
-      // Also update the legacy selectedModel if this is the active provider
-      ...(provider === aiProvider ? { selectedModel: modelId } : {})
+      [`${provider}SmartModel`]: modelId
     }
     setLocalSettings(newSettings)
     onSettingsChange(newSettings)
+  }
 
-    // Also update the store's selectedModels
-    setSelectedModel(provider, modelId)
+  const handleFastModelChange = (provider, modelId) => {
+    setFastModel(provider, modelId)
+    const newSettings = {
+      ...localSettings,
+      [`${provider}FastModel`]: modelId
+    }
+    setLocalSettings(newSettings)
+    onSettingsChange(newSettings)
   }
 
   const handleProviderChange = (providerId) => {
     setAiProvider(providerId)
-    // Update selectedModel to this provider's model
-    const modelField = `${providerId}Model`
-    if (localSettings[modelField]) {
-      const newSettings = {
-        ...localSettings,
-        selectedModel: localSettings[modelField]
-      }
-      setLocalSettings(newSettings)
-      onSettingsChange(newSettings)
-    }
   }
 
   if (!isOpen) return null
@@ -1096,46 +1012,75 @@ function Settings({ isOpen, onClose, settings, onSettingsChange }) {
                         )}
                       </div>
 
-                      {/* Model Selector */}
-                      <div className="model-selector-container">
-                        <label className="setting-label-small">
-                          <Robot weight="bold" /> Modell
-                        </label>
-                        {models.length === 0 ? (
-                          <motion.button
-                            className="btn btn-secondary btn-small"
-                            onClick={() => fetchAvailableModels(provider.id)}
-                            disabled={isLoading || !apiKey}
-                            whileHover={{
-                              scale: apiKey && !isLoading ? 1.02 : 1,
-                              y: apiKey && !isLoading ? -2 : 0
-                            }}
-                            whileTap={{ scale: apiKey && !isLoading ? 0.98 : 1 }}
-                          >
-                            {isLoading ? 'Lade...' : 'Modelle laden'}
-                          </motion.button>
-                        ) : (
-                          <div className="model-select-wrapper">
-                            <select
-                              value={selectedModel}
-                              onChange={(e) => handleModelChange(provider.id, e.target.value)}
-                              className="model-select"
-                            >
-                              {models.map((model) => (
-                                <option key={model.id} value={model.id}>
-                                  {model.name}
-                                </option>
-                              ))}
-                            </select>
-                            <button
+                      {/* Smart/Fast Model Selectors */}
+                      <div className="model-selectors">
+                        {/* Smart Model */}
+                        <div className="model-selector-container">
+                          <label className="setting-label-small">
+                            <Brain weight="bold" /> Smart Modell
+                          </label>
+                          {models.length === 0 ? (
+                            <motion.button
+                              className="btn btn-secondary btn-small"
                               onClick={() => fetchAvailableModels(provider.id)}
-                              className="refresh-models-btn"
-                              disabled={isLoading}
+                              disabled={isLoading || !apiKey}
+                              whileHover={{
+                                scale: apiKey && !isLoading ? 1.02 : 1,
+                                y: apiKey && !isLoading ? -2 : 0
+                              }}
+                              whileTap={{ scale: apiKey && !isLoading ? 0.98 : 1 }}
                             >
-                              {isLoading ? '...' : '↻'}
-                            </button>
-                          </div>
-                        )}
+                              {isLoading ? 'Lade...' : 'Modelle laden'}
+                            </motion.button>
+                          ) : (
+                            <div className="model-select-wrapper">
+                              <select
+                                value={smartModels[provider.id] || provider.defaultSmartModel}
+                                onChange={(e) => handleSmartModelChange(provider.id, e.target.value)}
+                                className="model-select"
+                              >
+                                {models.map((model) => (
+                                  <option key={model.id} value={model.id}>
+                                    {model.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+                          <p className="model-hint">Leistungsstärker, für komplexe Aufgaben</p>
+                        </div>
+
+                        {/* Fast Model */}
+                        <div className="model-selector-container">
+                          <label className="setting-label-small">
+                            <Lightning weight="bold" /> Fast Modell
+                          </label>
+                          {models.length === 0 ? (
+                            <span className="model-hint">Lade zuerst die Modelle</span>
+                          ) : (
+                            <div className="model-select-wrapper">
+                              <select
+                                value={fastModels[provider.id] || provider.defaultFastModel}
+                                onChange={(e) => handleFastModelChange(provider.id, e.target.value)}
+                                className="model-select"
+                              >
+                                {models.map((model) => (
+                                  <option key={model.id} value={model.id}>
+                                    {model.name}
+                                  </option>
+                                ))}
+                              </select>
+                              <button
+                                onClick={() => fetchAvailableModels(provider.id)}
+                                className="refresh-models-btn"
+                                disabled={isLoading}
+                              >
+                                {isLoading ? '...' : '↻'}
+                              </button>
+                            </div>
+                          )}
+                          <p className="model-hint">Schneller, für einfache Aufgaben</p>
+                        </div>
                         {error && (
                           <p className="error-text">{error}</p>
                         )}

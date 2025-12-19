@@ -1,5 +1,5 @@
 // Cloudflare Pages Function: Get Available Models
-// Fetches available models from Anthropic, Google, and OpenAI APIs
+// Fetches available models from Anthropic and Google APIs
 
 export async function onRequestPost(context) {
   try {
@@ -25,9 +25,6 @@ export async function onRequestPost(context) {
         break
       case 'gemini':
         models = await fetchGeminiModels(apiKey)
-        break
-      case 'openai':
-        models = await fetchOpenAIModels(apiKey)
         break
       default:
         return new Response(
@@ -213,95 +210,6 @@ function getGeminiModelDescription(modelId) {
   return 'Google Gemini'
 }
 
-// ============================================
-// OPENAI
-// ============================================
-async function fetchOpenAIModels(apiKey) {
-  const response = await fetch('https://api.openai.com/v1/models', {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
-    }
-  })
-
-  if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.error?.message || 'Failed to fetch OpenAI models')
-  }
-
-  const data = await response.json()
-
-  return (data.data || [])
-    .filter(model => {
-      // Only show GPT models suitable for chat
-      const id = model.id || ''
-      return (id.includes('gpt-4') || id.includes('gpt-3.5') || id.includes('o1') || id.includes('o3')) &&
-             !id.includes('vision') &&
-             !id.includes('instruct') &&
-             !id.includes('realtime')
-    })
-    .map(model => ({
-      id: model.id,
-      name: formatOpenAIModelName(model.id),
-      type: getOpenAIModelType(model.id),
-      description: getOpenAIModelDescription(model.id)
-    }))
-    .sort((a, b) => {
-      // Sort: o1/o3 > gpt-4o > gpt-4 > gpt-3.5
-      const tierOrder = { 'o3': 0, 'o1': 1, 'gpt-4o': 2, 'gpt-4-turbo': 3, 'gpt-4': 4, 'gpt-3.5': 5 }
-      const aTier = Object.keys(tierOrder).find(t => a.id.includes(t)) || 'z'
-      const bTier = Object.keys(tierOrder).find(t => b.id.includes(t)) || 'z'
-      return (tierOrder[aTier] || 99) - (tierOrder[bTier] || 99)
-    })
-}
-
-function formatOpenAIModelName(modelId) {
-  // gpt-4o-2024-11-20 -> GPT-4o (Nov 2024)
-  // gpt-4-turbo -> GPT-4 Turbo
-  // o1-preview -> O1 Preview
-
-  if (modelId.startsWith('o1') || modelId.startsWith('o3')) {
-    const parts = modelId.split('-')
-    let name = parts[0].toUpperCase()
-    if (parts[1] === 'preview') name += ' Preview'
-    else if (parts[1] === 'mini') name += ' Mini'
-    else if (parts[1]) name += ` ${parts[1]}`
-    return name
-  }
-
-  let name = modelId.toUpperCase()
-    .replace('GPT-4O', 'GPT-4o')
-    .replace('GPT-4-TURBO', 'GPT-4 Turbo')
-    .replace('GPT-3.5-TURBO', 'GPT-3.5 Turbo')
-
-  // Remove date suffixes for cleaner display
-  name = name.replace(/-\d{4}-\d{2}-\d{2}$/, '')
-
-  return name
-}
-
-function getOpenAIModelType(modelId) {
-  if (modelId.includes('o1') || modelId.includes('o3')) return 'reasoning'
-  if (modelId.includes('gpt-4o')) return 'powerful'
-  if (modelId.includes('gpt-4-turbo')) return 'fast'
-  if (modelId.includes('gpt-4')) return 'balanced'
-  if (modelId.includes('gpt-3.5')) return 'efficient'
-  return 'standard'
-}
-
-function getOpenAIModelDescription(modelId) {
-  if (modelId.includes('o3')) return 'Neuestes Reasoning Modell'
-  if (modelId.includes('o1-preview')) return 'Erweitertes Reasoning'
-  if (modelId.includes('o1-mini')) return 'Schnelles Reasoning'
-  if (modelId.includes('gpt-4o-mini')) return 'Schnell & Günstig'
-  if (modelId.includes('gpt-4o')) return 'Multimodal & Schnell'
-  if (modelId.includes('gpt-4-turbo')) return 'Schnelle GPT-4 Variante'
-  if (modelId.includes('gpt-4')) return 'Höchste Qualität'
-  if (modelId.includes('gpt-3.5')) return 'Effizient & Günstig'
-  return 'OpenAI Modell'
-}
-
 export async function onRequestGet(context) {
   return new Response(
     JSON.stringify({
@@ -310,7 +218,7 @@ export async function onRequestGet(context) {
       description: 'Fetches available models from AI providers',
       requiredFields: ['apiKey'],
       optionalFields: ['provider'],
-      providers: ['claude', 'gemini', 'openai']
+      providers: ['claude', 'gemini']
     }),
     { status: 200, headers: { 'Content-Type': 'application/json' } }
   )

@@ -66,8 +66,6 @@ export async function onRequestPost(context) {
     let response
     if (provider === 'claude') {
       response = await callClaude(apiKey, systemPrompt, prompt, model)
-    } else if (provider === 'openai') {
-      response = await callOpenAI(apiKey, systemPrompt, prompt, model)
     } else if (provider === 'gemini') {
       response = await callGemini(apiKey, systemPrompt, prompt, model)
     } else {
@@ -248,58 +246,6 @@ async function callClaude(apiKey, systemPrompt, userPrompt, selectedModel) {
     }
   } catch (error) {
     console.error('Claude API error:', error)
-    return { success: false, error: `Netzwerkfehler: ${error.message}` }
-  }
-}
-
-async function callOpenAI(apiKey, systemPrompt, userPrompt, selectedModel) {
-  try {
-    const modelId = selectedModel || 'gpt-4o'
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: modelId,
-        max_tokens: 8000,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Erstelle eine interaktive Simulation für: ${userPrompt}\n\nAntworte im JSON-Format.` }
-        ]
-      })
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('OpenAI API error:', response.status, errorText)
-
-      let errorMessage = 'Fehler bei der KI-Anfrage'
-      try {
-        const errorData = JSON.parse(errorText)
-        if (errorData.error?.message) {
-          errorMessage = `OpenAI: ${errorData.error.message}`
-        }
-      } catch (e) {
-        if (response.status === 401) {
-          errorMessage = 'Ungültiger API-Schlüssel'
-        } else if (response.status === 429) {
-          errorMessage = 'API-Limit erreicht'
-        }
-      }
-
-      return { success: false, error: errorMessage }
-    }
-
-    const data = await response.json()
-    return {
-      success: true,
-      content: data.choices[0].message.content
-    }
-  } catch (error) {
-    console.error('OpenAI API error:', error)
     return { success: false, error: `Netzwerkfehler: ${error.message}` }
   }
 }

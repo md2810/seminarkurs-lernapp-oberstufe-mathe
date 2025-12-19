@@ -2,7 +2,7 @@
  * GeoGebra Visualization Generation API
  * Generates GeoGebra commands from AI based on math problems or custom prompts
  *
- * Supports: Claude, OpenAI, Gemini
+ * Supports: Claude, Gemini
  */
 
 const corsHeaders = {
@@ -77,9 +77,7 @@ Erstelle eine passende GeoGebra-Visualisierung.`
 
     // Call the appropriate AI provider
     let response
-    if (provider === 'openai') {
-      response = await callOpenAI(apiKey, userPrompt, selectedModel)
-    } else if (provider === 'gemini') {
+    if (provider === 'gemini') {
       response = await callGemini(apiKey, userPrompt)
     } else {
       response = await callClaude(apiKey, userPrompt, selectedModel)
@@ -166,48 +164,6 @@ async function callClaude(apiKey, userPrompt, selectedModel) {
 
     const data = await response.json()
     return { success: true, content: data.content[0].text }
-  } catch (error) {
-    return { success: false, error: `Netzwerkfehler: ${error.message}` }
-  }
-}
-
-async function callOpenAI(apiKey, userPrompt, selectedModel) {
-  try {
-    const model = selectedModel || 'gpt-4o'
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 2000,
-        messages: [
-          { role: 'system', content: GEOGEBRA_SYSTEM_PROMPT },
-          { role: 'user', content: userPrompt }
-        ]
-      })
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      let errorMessage = 'OpenAI API Fehler'
-
-      try {
-        const errorData = JSON.parse(errorText)
-        if (errorData.error?.message) errorMessage = errorData.error.message
-      } catch {
-        if (response.status === 401) errorMessage = 'Ungültiger API-Schlüssel'
-        else if (response.status === 429) errorMessage = 'API-Limit erreicht'
-      }
-
-      return { success: false, error: errorMessage }
-    }
-
-    const data = await response.json()
-    return { success: true, content: data.choices[0].message.content }
   } catch (error) {
     return { success: false, error: `Netzwerkfehler: ${error.message}` }
   }

@@ -18,27 +18,21 @@ import { SYSTEM_PROMPT } from '../../data/prompts/generate-questions.js'
 // Model tiers for different AI providers
 const MODEL_TIERS = {
   claude: {
-    light: 'claude-3-5-haiku-20241022',
-    standard: 'claude-sonnet-4-20250514',
-    heavy: 'claude-sonnet-4-20250514'
+    light: 'claude-haiku-4-5-20251001',
+    standard: 'claude-sonnet-4-5-20250929',
+    heavy: 'claude-sonnet-4-5-20250929'
   },
   gemini: {
     light: 'gemini-3-flash-preview',
     standard: 'gemini-3-flash-preview',
-    heavy: 'gemini-1.5-pro'
-  },
-  openai: {
-    light: 'gpt-4o-mini',
-    standard: 'gpt-4o',
-    heavy: 'gpt-4o'
+    heavy: 'gemini-3-pro-preview'
   }
 }
 
 // AI Provider endpoints
 const AI_ENDPOINTS = {
   claude: 'https://api.anthropic.com/v1/messages',
-  gemini: 'https://generativelanguage.googleapis.com/v1beta/models',
-  openai: 'https://api.openai.com/v1/chat/completions'
+  gemini: 'https://generativelanguage.googleapis.com/v1beta/models'
 }
 
 /**
@@ -135,30 +129,6 @@ async function callAIProvider({ provider, apiKey, model, prompt, temperature, ma
 
       const data = await response.json()
       return data.candidates[0].content.parts[0].text
-    }
-
-    case 'openai': {
-      const response = await fetch(AI_ENDPOINTS.openai, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model,
-          max_tokens: maxTokens,
-          temperature,
-          messages: [{ role: 'user', content: prompt }]
-        })
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(`OpenAI API error: ${JSON.stringify(error)}`)
-      }
-
-      const data = await response.json()
-      return data.choices[0].message.content
     }
 
     default:
@@ -460,7 +430,7 @@ export async function onRequestGet(context) {
       requiredFields: ['apiKey', 'userId', 'topics', 'userContext'],
       optionalFields: [
         'selectedModel',
-        'provider (claude|gemini|openai)',
+        'provider (claude|gemini)',
         'complexity (light|standard|heavy)',
         'afbLevel (I|II|III)',
         'questionCount',
@@ -471,7 +441,7 @@ export async function onRequestGet(context) {
       features: [
         'Automatic model selection based on complexity',
         'Firestore question caching',
-        'Multi-provider support (Claude, Gemini, OpenAI)',
+        'Multi-provider support (Claude, Gemini)',
         'AFB-level aware generation'
       ]
     }),

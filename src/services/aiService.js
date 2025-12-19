@@ -3,41 +3,34 @@
  * Phase 2 Upgrade: Intelligent model selection based on task complexity
  *
  * Features:
- * - Multi-provider support (Claude, Gemini, OpenAI)
+ * - Multi-provider support (Claude, Gemini)
  * - Automatic model routing based on complexity
  * - Cost optimization for simple queries
  */
 
 const AI_ENDPOINTS = {
   claude: 'https://api.anthropic.com/v1/messages',
-  gemini: 'https://generativelanguage.googleapis.com/v1beta/models',
-  openai: 'https://api.openai.com/v1/chat/completions'
+  gemini: 'https://generativelanguage.googleapis.com/v1beta/models'
 }
 
 // Model tiers: light (fast/cheap), standard (balanced), heavy (powerful)
 const MODEL_TIERS = {
   claude: {
-    light: 'claude-3-5-haiku-20241022',
-    standard: 'claude-sonnet-4-20250514',
-    heavy: 'claude-sonnet-4-20250514'
+    light: 'claude-haiku-4-5-20251001',
+    standard: 'claude-sonnet-4-5-20250929',
+    heavy: 'claude-sonnet-4-5-20250929'
   },
   gemini: {
     light: 'gemini-3-flash-preview',
     standard: 'gemini-3-flash-preview',
-    heavy: 'gemini-1.5-pro'
-  },
-  openai: {
-    light: 'gpt-4o-mini',
-    standard: 'gpt-4o',
-    heavy: 'gpt-4o'
+    heavy: 'gemini-3-pro-preview'
   }
 }
 
 // Default models (for backward compatibility)
 const DEFAULT_MODELS = {
-  claude: 'claude-sonnet-4-20250514',
-  gemini: 'gemini-3-flash-preview',
-  openai: 'gpt-4o'
+  claude: 'claude-sonnet-4-5-20250929',
+  gemini: 'gemini-3-flash-preview'
 }
 
 // AFB (Anforderungsbereiche) complexity levels
@@ -148,8 +141,6 @@ export async function generateAIResponse({
         return await callClaude({ apiKey, model: selectedModel, systemPrompt, userPrompt, temperature, maxTokens })
       case 'gemini':
         return await callGemini({ apiKey, model: selectedModel, systemPrompt, userPrompt, temperature, maxTokens })
-      case 'openai':
-        return await callOpenAI({ apiKey, model: selectedModel, systemPrompt, userPrompt, temperature, maxTokens })
       default:
         throw new Error(`Unknown provider: ${provider}`)
     }
@@ -224,36 +215,6 @@ async function callGemini({ apiKey, model, systemPrompt, userPrompt, temperature
 }
 
 /**
- * Call OpenAI API
- */
-async function callOpenAI({ apiKey, model, systemPrompt, userPrompt, temperature, maxTokens }) {
-  const response = await fetch(AI_ENDPOINTS.openai, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: maxTokens,
-      temperature,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
-      ]
-    })
-  })
-
-  if (!response.ok) {
-    const error = await response.json()
-    throw new Error(`OpenAI API error: ${error.error?.message || JSON.stringify(error)}`)
-  }
-
-  const data = await response.json()
-  return data.choices[0].message.content
-}
-
-/**
  * Parse JSON from AI response (handles markdown code blocks)
  */
 export function parseJSONResponse(response) {
@@ -306,13 +267,10 @@ export function estimateTokens(text) {
  */
 export function estimateCost(provider, model, inputTokens, outputTokens) {
   const PRICING = {
-    'claude-3-5-haiku-20241022': { input: 0.0008, output: 0.004 },
-    'claude-sonnet-4-20250514': { input: 0.003, output: 0.015 },
+    'claude-haiku-4-5-20251001': { input: 0.0008, output: 0.004 },
+    'claude-sonnet-4-5-20250929': { input: 0.003, output: 0.015 },
     'gemini-3-flash-preview': { input: 0.0001, output: 0.0004 },
-    'gemini-1.5-flash': { input: 0.000075, output: 0.0003 },
-    'gemini-1.5-pro': { input: 0.00125, output: 0.005 },
-    'gpt-4o-mini': { input: 0.00015, output: 0.0006 },
-    'gpt-4o': { input: 0.0025, output: 0.01 }
+    'gemini-3-pro-preview': { input: 0.00125, output: 0.005 }
   }
 
   const pricing = PRICING[model]

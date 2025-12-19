@@ -97,7 +97,6 @@ function LiveFeed({ topics = [], userSettings = {}, onOpenContext }) {
     switch (aiProvider) {
       case 'claude': return userSettings.anthropicApiKey
       case 'gemini': return userSettings.geminiApiKey
-      case 'openai': return userSettings.openaiApiKey
       default: return userSettings.anthropicApiKey
     }
   }, [aiProvider, apiKeys, userSettings])

@@ -28,7 +28,9 @@ import {
   Eye,
   Trash,
   Check,
-  Warning
+  Warning,
+  Brain,
+  Gauge
 } from '@phosphor-icons/react'
 import './AppHub.css'
 
@@ -175,7 +177,6 @@ const GeoGebraApp = memo(function GeoGebraApp({ wrongQuestions = [], userSetting
     switch (aiProvider) {
       case 'claude': return userSettings.anthropicApiKey
       case 'gemini': return userSettings.geminiApiKey
-      case 'openai': return userSettings.openaiApiKey
       default: return userSettings.anthropicApiKey
     }
   }, [aiProvider, apiKeys, userSettings])
@@ -492,6 +493,36 @@ const GeoGebraApp = memo(function GeoGebraApp({ wrongQuestions = [], userSetting
   )
 })
 
+// Smart/Fast Model Toggle Component
+const ModelModeToggle = memo(function ModelModeToggle() {
+  const { modelMode, setModelMode } = useAppStore()
+
+  return (
+    <div className="model-mode-toggle">
+      <motion.button
+        className={`mode-btn ${modelMode === 'smart' ? 'active' : ''}`}
+        onClick={() => setModelMode('smart')}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        title="Smart: Leistungsstärkere Modelle für komplexe Aufgaben"
+      >
+        <Brain weight={modelMode === 'smart' ? 'fill' : 'bold'} />
+        <span>Smart</span>
+      </motion.button>
+      <motion.button
+        className={`mode-btn ${modelMode === 'fast' ? 'active' : ''}`}
+        onClick={() => setModelMode('fast')}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        title="Fast: Schnellere Modelle für einfache Aufgaben"
+      >
+        <Gauge weight={modelMode === 'fast' ? 'fill' : 'bold'} />
+        <span>Fast</span>
+      </motion.button>
+    </div>
+  )
+})
+
 // Main AppHub Component
 function AppHub({ wrongQuestions = [], userSettings = {}, onOpenContext }) {
   const [activeTab, setActiveTab] = useState('whiteboard')
@@ -513,20 +544,23 @@ function AppHub({ wrongQuestions = [], userSettings = {}, onOpenContext }) {
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           >
             <div className="sidebar-header">
-              <motion.h2
-                animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
-                transition={{ duration: 5, repeat: Infinity, ease: 'linear' }}
-                className="animated-text"
-              >
-                Apps
-              </motion.h2>
-              <motion.span
-                className="app-count"
-                animate={{ scale: [1, 1.05, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                {TABS.length} Tools
-              </motion.span>
+              <div className="sidebar-title">
+                <motion.h2
+                  animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
+                  transition={{ duration: 5, repeat: Infinity, ease: 'linear' }}
+                  className="animated-text"
+                >
+                  Apps
+                </motion.h2>
+                <motion.span
+                  className="app-count"
+                  animate={{ scale: [1, 1.05, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  {TABS.length} Tools
+                </motion.span>
+              </div>
+              <ModelModeToggle />
             </div>
 
             <div className="tabs-container">
